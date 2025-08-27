@@ -50,20 +50,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-Since this is a Phaser 3 project in early development, typical commands would be:
-
 ```bash
-# Install dependencies (once project is initialized)
+# Install dependencies
 npm install
 
-# Run development server
+# Run development server with hot reload
 npm run dev
 
-# Build for production
+# Build for production (TypeScript compile + Vite build)
 npm run build
 
-# Run tests (when implemented)
-npm test
+# Preview production build
+npm run preview
+
+# TypeScript type checking without emitting files
+npm run typecheck
+
+# ESLint code linting
+npm run lint
 ```
 
 ## Performance Guidelines
@@ -81,6 +85,26 @@ The game uses designer-owned data sheets for:
 - Skill definitions with rank progressions
 - Chest rewards and economy balancing
 - Mission objectives and deployment rules
+
+## Code Architecture
+
+### Core Systems
+- **Systems**: Located in `src/systems/` - modular game systems that can be independently updated
+- **Scenes**: Located in `src/scenes/` - Phaser scenes for different game states
+- **Data**: Located in `src/data/` - configuration and data definitions
+- **Entities**: Located in `src/entities/` - game object classes
+
+### Key Classes
+- `BattleScene`: Main gameplay scene orchestrating all systems
+- `IsometricRenderer`: Handles 2.5D isometric rendering with y-sorting
+- `PhysicsManager`: Matter.js physics integration and optimization
+- `UnitManager`: Unit lifecycle management and pooling
+- `CombatSystem`: Damage calculation, status effects, and combat mechanics
+- `DeploymentSystem`: Unit placement and formation management
+- `LevelUpSystem`: Vampire Survivors-style progression system
+
+### Scene Flow
+Boot → Preload → Battle (main gameplay) + UI (overlay) + SkillSelection (pause overlay)
 
 ## Current Development Phase
 

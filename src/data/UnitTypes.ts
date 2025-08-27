@@ -1,12 +1,12 @@
 import { UnitConfig } from '../entities/Unit';
 
 export enum UnitType {
-    KNIGHT = 'knight',
-    ARCHER = 'archer',
-    MAGE = 'mage',
-    SHIELD_BEARER = 'shield_bearer',
-    BERSERKER = 'berserker',
-    CATAPULT = 'catapult'
+    CHRONOTEMPORAL = 'chronotemporal',
+    SNIPER = 'sniper',
+    DARK_MAGE = 'dark_mage',
+    WARRIOR = 'warrior',
+    NINJA = 'ninja',
+    SHOTGUNNER = 'shotgunner'
 }
 
 export interface UnitTemplate {
@@ -28,111 +28,111 @@ export interface UnitTemplate {
 }
 
 export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
-    [UnitType.KNIGHT]: {
-        type: UnitType.KNIGHT,
-        name: 'Knight',
-        description: 'Heavily armored frontline warrior',
+    [UnitType.CHRONOTEMPORAL]: {
+        type: UnitType.CHRONOTEMPORAL,
+        name: 'Chronotemporal',
+        description: 'Time-manipulating support mage',
+        unitClass: 'support',
+        size: 'normal',
+        rarity: 'legendary',
+        baseStats: {
+            maxHealth: 80,
+            damage: 18,
+            armor: 3,
+            moveSpeed: 45,
+            attackSpeed: 1.2,
+            range: 100,
+            mass: 8
+        }
+    },
+    
+    [UnitType.SNIPER]: {
+        type: UnitType.SNIPER,
+        name: 'Sniper',
+        description: 'Elite long-range marksman',
+        unitClass: 'ranged',
+        size: 'small',
+        rarity: 'rare',
+        baseStats: {
+            maxHealth: 55,
+            damage: 25,
+            armor: 1,
+            moveSpeed: 40,
+            attackSpeed: 0.8,
+            range: 200,
+            mass: 6
+        }
+    },
+    
+    [UnitType.DARK_MAGE]: {
+        type: UnitType.DARK_MAGE,
+        name: 'Dark Mage',
+        description: 'Master of dark magic and curses',
+        unitClass: 'ranged',
+        size: 'normal',
+        rarity: 'epic',
+        baseStats: {
+            maxHealth: 65,
+            damage: 22,
+            armor: 2,
+            moveSpeed: 35,
+            attackSpeed: 0.9,
+            range: 130,
+            mass: 7
+        }
+    },
+    
+    [UnitType.WARRIOR]: {
+        type: UnitType.WARRIOR,
+        name: 'Warrior',
+        description: 'Stalwart frontline fighter',
         unitClass: 'frontline',
         size: 'normal',
         rarity: 'common',
         baseStats: {
-            maxHealth: 100,
-            damage: 15,
-            armor: 5,
-            moveSpeed: 40,
+            maxHealth: 120,
+            damage: 16,
+            armor: 6,
+            moveSpeed: 35,
             attackSpeed: 1.0,
             range: 30,
             mass: 10
         }
     },
     
-    [UnitType.ARCHER]: {
-        type: UnitType.ARCHER,
-        name: 'Archer',
-        description: 'Long-range damage dealer',
-        unitClass: 'ranged',
+    [UnitType.NINJA]: {
+        type: UnitType.NINJA,
+        name: 'Ninja',
+        description: 'Swift assassin with stealth abilities',
+        unitClass: 'frontline',
         size: 'small',
-        rarity: 'common',
+        rarity: 'rare',
         baseStats: {
-            maxHealth: 60,
-            damage: 12,
+            maxHealth: 70,
+            damage: 28,
             armor: 2,
-            moveSpeed: 50,
-            attackSpeed: 1.5,
-            range: 150,
+            moveSpeed: 70,
+            attackSpeed: 2.0,
+            range: 35,
             mass: 6
         }
     },
     
-    [UnitType.MAGE]: {
-        type: UnitType.MAGE,
-        name: 'Mage',
-        description: 'Magical damage and area effects',
+    [UnitType.SHOTGUNNER]: {
+        type: UnitType.SHOTGUNNER,
+        name: 'Shotgunner',
+        description: 'Close-range specialist with devastating firepower',
         unitClass: 'ranged',
         size: 'normal',
-        rarity: 'rare',
-        baseStats: {
-            maxHealth: 70,
-            damage: 20,
-            armor: 1,
-            moveSpeed: 35,
-            attackSpeed: 0.8,
-            range: 120,
-            mass: 7
-        }
-    },
-    
-    [UnitType.SHIELD_BEARER]: {
-        type: UnitType.SHIELD_BEARER,
-        name: 'Shield Bearer',
-        description: 'Defensive tank with high armor',
-        unitClass: 'frontline',
-        size: 'normal',
-        rarity: 'common',
-        baseStats: {
-            maxHealth: 150,
-            damage: 8,
-            armor: 8,
-            moveSpeed: 30,
-            attackSpeed: 0.7,
-            range: 25,
-            mass: 12
-        }
-    },
-    
-    [UnitType.BERSERKER]: {
-        type: UnitType.BERSERKER,
-        name: 'Berserker',
-        description: 'High damage glass cannon',
-        unitClass: 'frontline',
-        size: 'normal',
-        rarity: 'rare',
-        baseStats: {
-            maxHealth: 80,
-            damage: 25,
-            armor: 3,
-            moveSpeed: 60,
-            attackSpeed: 1.8,
-            range: 35,
-            mass: 8
-        }
-    },
-    
-    [UnitType.CATAPULT]: {
-        type: UnitType.CATAPULT,
-        name: 'Catapult',
-        description: 'Long-range siege weapon',
-        unitClass: 'siege',
-        size: 'large',
         rarity: 'epic',
         baseStats: {
-            maxHealth: 200,
-            damage: 40,
+            maxHealth: 90,
+            damage: 35,
             armor: 4,
-            moveSpeed: 20,
-            attackSpeed: 0.3,
-            range: 250,
-            mass: 20
+            moveSpeed: 45,
+            attackSpeed: 0.6,
+            range: 60,
+            mass: 9
         }
     }
 };
@@ -152,6 +152,7 @@ export class UnitFactory {
             x,
             y,
             team,
+            unitType: type,
             type: template.unitClass,
             size: template.size,
             stats: {

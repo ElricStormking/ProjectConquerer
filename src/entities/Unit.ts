@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { StatusEffect } from '../systems/CombatSystem';
+import { UnitType } from '../data/UnitTypes';
 
 export interface UnitConfig {
     x: number;
     y: number;
     team: number;
+    unitType: UnitType;
     type: 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner';
     size: 'small' | 'normal' | 'large';
     stats: {
@@ -24,10 +26,16 @@ export class Unit extends Phaser.Events.EventEmitter {
     private id: string;
     private config: UnitConfig;
     private physicsManager: PhysicsManager;
-    private body: MatterJS.BodyType;
-    private sprite: Phaser.GameObjects.Sprite;
-    private healthBar: Phaser.GameObjects.Graphics;
-    private healthBarBg: Phaser.GameObjects.Graphics;
+    private body!: MatterJS.BodyType;
+    private sprite!: Phaser.GameObjects.Sprite;
+    private healthBar!: Phaser.GameObjects.Graphics;
+    private healthBarBg!: Phaser.GameObjects.Graphics;
+    private teamFlag!: Phaser.GameObjects.Graphics;
+    private trailPoints: Array<{x: number, y: number, alpha: number}> = [];
+    private trailGraphics!: Phaser.GameObjects.Graphics;
+    private attackSwingGraphics!: Phaser.GameObjects.Graphics;
+    private isAttacking: boolean = false;
+    private lastMeleeAttackTime: number = 0;
     
     private health: number;
     private maxHealth: number;
@@ -53,6 +61,15 @@ export class Unit extends Phaser.Events.EventEmitter {
     private statusEffects: Map<StatusEffect, number> = new Map();
     private lastAttackTime: number = 0;
     
+    // Animation state
+    private lastMoveDirection: 'down' | 'up' | 'left' | 'right' = 'down';
+    private idleFrameByDirection: Record<'down' | 'up' | 'left' | 'right', number> = {
+        down: 0,
+        up: 0,
+        left: 0,
+        right: 0
+    };
+    
     constructor(scene: Phaser.Scene, id: string, config: UnitConfig, physicsManager: PhysicsManager) {
         super();
         
@@ -74,6 +91,8 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         this.createPhysicsBody();
         this.createSprite();
+        this.createTrailGraphics();
+        this.createAnimations();
     }
     
     private createPhysicsBody(): void {
@@ -96,29 +115,71 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private createSprite(): void {
-        const color = this.team === 1 ? 0x4444ff : 0xff4444;
+        const spriteKey = this.getSpriteKey();
+        
+        // Check if the texture exists, if not create a fallback
+        if (!this.scene.textures.exists(spriteKey)) {
+            console.warn(`Sprite texture '${spriteKey}' not found, creating fallback`);
+            this.createFallbackSprite();
+            return;
+        }
+        
+        this.sprite = this.scene.add.sprite(this.config.x, this.config.y, spriteKey);
+        this.sprite.setData('unit', this);
+        
+        // Set origin to center-bottom for proper positioning (feet at position)
+        this.sprite.setOrigin(0.5, 0.8);
+        
+        // 96x96 sprites loaded at full size - no scaling needed
+        this.sprite.setScale(1.0); // Display at native 96x96 pixel size
+        
+        // Set depth for proper layering
+        this.sprite.setDepth(this.config.y);
+        
+        // Set team color tint (lighter tints to preserve sprite visibility)
+        if (this.team === 1) {
+            this.sprite.setTint(0xaaccff); // Light blue team tint
+        } else {
+            this.sprite.setTint(0xffaaaa); // Light red team tint
+        }
+        
+        // Create health bar and team flag
+        this.healthBarBg = this.scene.add.graphics();
+        this.healthBar = this.scene.add.graphics();
+        this.teamFlag = this.scene.add.graphics();
+        this.attackSwingGraphics = this.scene.add.graphics();
+        this.updateHealthBar();
+        this.createTeamFlag();
+    }
+    
+    private createFallbackSprite(): void {
         const radius = this.getSizeRadius();
+        const color = this.team === 1 ? 0x4444ff : 0xff4444;
         
         const graphics = this.scene.add.graphics();
         graphics.fillStyle(color, 1);
         graphics.fillCircle(0, 0, radius);
-        graphics.generateTexture(`unit_${this.id}`, radius * 2, radius * 2);
+        graphics.generateTexture(`fallback_${this.id}`, radius * 2, radius * 2);
         graphics.destroy();
         
-        this.sprite = this.scene.add.sprite(this.config.x, this.config.y, `unit_${this.id}`);
+        this.sprite = this.scene.add.sprite(this.config.x, this.config.y, `fallback_${this.id}`);
         this.sprite.setData('unit', this);
+        this.sprite.setOrigin(0.5, 0.5);
         
-        // Create health bar
+        // Create health bar and team flag
         this.healthBarBg = this.scene.add.graphics();
         this.healthBar = this.scene.add.graphics();
+        this.teamFlag = this.scene.add.graphics();
+        this.attackSwingGraphics = this.scene.add.graphics();
         this.updateHealthBar();
+        this.createTeamFlag();
     }
     
     private updateHealthBar(): void {
-        const radius = this.getSizeRadius();
-        const barWidth = radius * 2;
+        const spriteHeight = 96; // 96x96 sprites at 1.0x scale = 96px
+        const barWidth = 50; // Width to match sprite size
         const barHeight = 4;
-        const barY = -radius - 10;
+        const barY = -spriteHeight - 10; // Position above sprite with margin
         
         // Background
         this.healthBarBg.clear();
@@ -133,11 +194,168 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar.fillRect(-barWidth/2, barY, barWidth * healthPercent, barHeight);
     }
     
+    private createTeamFlag(): void {
+        const spriteHeight = 96;
+        const flagSize = 8;
+        const barY = -spriteHeight - 10;
+        const flagX = 30; // Position flag to the right of health bar
+        const flagY = barY - 2; // Slightly above health bar
+        
+        this.teamFlag.clear();
+        
+        // Draw flag pole
+        this.teamFlag.lineStyle(1, 0x444444, 1);
+        this.teamFlag.lineBetween(flagX, flagY, flagX, flagY + flagSize + 2);
+        
+        // Draw flag based on team
+        const flagColor = this.team === 1 ? 0x4444ff : 0xff4444; // Blue for team 1, red for team 2
+        this.teamFlag.fillStyle(flagColor, 1);
+        
+        // Draw triangular flag shape
+        this.teamFlag.beginPath();
+        this.teamFlag.moveTo(flagX, flagY);
+        this.teamFlag.lineTo(flagX + flagSize, flagY + flagSize/2);
+        this.teamFlag.lineTo(flagX, flagY + flagSize);
+        this.teamFlag.closePath();
+        this.teamFlag.fillPath();
+        
+        // Add small white border for visibility
+        this.teamFlag.lineStyle(1, 0xffffff, 0.8);
+        this.teamFlag.strokePath();
+    }
+    
+    private createTrailGraphics(): void {
+        this.trailGraphics = this.scene.add.graphics();
+        this.trailGraphics.setDepth(this.config.y - 10); // Behind the unit
+    }
+    
+    private updateTrail(): void {
+        this.trailGraphics.clear();
+        
+        if (this.trailPoints.length < 2) return;
+        
+        // Fade trail points over time
+        for (let i = 0; i < this.trailPoints.length; i++) {
+            this.trailPoints[i].alpha = (i + 1) / this.trailPoints.length * 0.8;
+        }
+        
+        // Draw trail as connected circles
+        const teamColor = this.team === 1 ? 0x4444ff : 0xff4444;
+        
+        for (let i = 0; i < this.trailPoints.length; i++) {
+            const point = this.trailPoints[i];
+            const size = (i + 1) / this.trailPoints.length * 3; // Size increases towards unit
+            
+            this.trailGraphics.fillStyle(teamColor, point.alpha);
+            this.trailGraphics.fillCircle(point.x, point.y, size);
+        }
+    }
+    
+    private isMeleeUnit(): boolean {
+        return this.config.unitType === UnitType.WARRIOR || 
+               this.config.unitType === UnitType.NINJA || 
+               this.config.unitType === UnitType.SHOTGUNNER;
+    }
+    
+    public performMeleeAttack(targetUnit: any, currentTime: number): void {
+        if (!this.isMeleeUnit() || this.dead || this.isAttacking) return;
+        
+        // Check if enough time has passed since last attack (1 second cooldown)
+        if (currentTime - this.lastMeleeAttackTime < 1000) return;
+        
+        this.isAttacking = true;
+        this.lastMeleeAttackTime = currentTime;
+        
+        // Create attack swing visual
+        this.createAttackSwing(targetUnit);
+        
+        // Deal damage after short delay (to match visual)
+        this.scene.time.delayedCall(200, () => {
+            if (!targetUnit.isDead()) {
+                // Calculate damage and apply it
+                const damage = this.getDamage();
+                targetUnit.takeDamage(damage);
+            }
+            this.isAttacking = false;
+        });
+    }
+    
+    private createAttackSwing(targetUnit: any): void {
+        const targetPos = targetUnit.getPosition();
+        const myPos = this.getPosition();
+        
+        // Calculate attack direction
+        const dx = targetPos.x - myPos.x;
+        const dy = targetPos.y - myPos.y;
+        const angle = Math.atan2(dy, dx);
+        
+        // Create swing arc visual using modern Phaser 3 API
+        this.attackSwingGraphics.clear();
+        this.attackSwingGraphics.setPosition(myPos.x, myPos.y);
+        this.attackSwingGraphics.setDepth(1000); // Ensure it's visible on top
+        
+        // Choose swing color based on unit type
+        let swingColor = 0xffffff;
+        switch (this.config.unitType) {
+            case UnitType.WARRIOR:
+                swingColor = 0xffff00; // Bright yellow sword swing
+                break;
+            case UnitType.NINJA:
+                swingColor = 0xff0000; // Bright red blade swing
+                break;
+            case UnitType.SHOTGUNNER:
+                swingColor = 0xff8800; // Orange muzzle flash
+                break;
+        }
+        
+        // Draw attack swing using simple line approach (more reliable)
+        const swingRadius = Math.max(this.range * 0.8, 40); // Minimum 40px radius
+        const swingArc = Math.PI / 3; // 60 degree arc
+        
+        // Draw multiple lines to create arc effect
+        this.attackSwingGraphics.lineStyle(6, swingColor, 1.0);
+        
+        const numLines = 8;
+        for (let i = 0; i < numLines; i++) {
+            const lineAngle = angle - swingArc/2 + (swingArc / numLines) * i;
+            const startRadius = swingRadius * 0.3;
+            const endRadius = swingRadius;
+            
+            const startX = Math.cos(lineAngle) * startRadius;
+            const startY = Math.sin(lineAngle) * startRadius;
+            const endX = Math.cos(lineAngle) * endRadius;
+            const endY = Math.sin(lineAngle) * endRadius;
+            
+            this.attackSwingGraphics.lineBetween(startX, startY, endX, endY);
+        }
+        
+        // Add impact flash at target location using fillCircle
+        this.attackSwingGraphics.fillStyle(swingColor, 0.8);
+        this.attackSwingGraphics.fillCircle(dx, dy, 12);
+        
+        // Add smaller white flash
+        this.attackSwingGraphics.fillStyle(0xffffff, 0.9);
+        this.attackSwingGraphics.fillCircle(dx, dy, 6);
+        
+        console.log(`Attack swing created at ${myPos.x}, ${myPos.y} targeting ${targetPos.x}, ${targetPos.y} with color ${swingColor.toString(16)}`);
+        
+        // Animate swing fade out
+        this.scene.tweens.add({
+            targets: this.attackSwingGraphics,
+            alpha: 0,
+            duration: 500,
+            onComplete: () => {
+                this.attackSwingGraphics.clear();
+                this.attackSwingGraphics.setAlpha(1);
+            }
+        });
+    }
+    
     private getSizeRadius(): number {
         switch (this.config.size) {
-            case 'small': return 8;
-            case 'normal': return 12;
-            case 'large': return 18;
+            case 'small': return 20;
+            case 'normal': return 25;
+            case 'large': return 35;
         }
     }
     
@@ -150,15 +368,38 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.sprite.x = this.body.position.x;
         this.sprite.y = this.body.position.y;
         
-        // Update health bar position
+        // Update health bar and team flag positions
         this.healthBarBg.x = this.body.position.x;
         this.healthBarBg.y = this.body.position.y;
         this.healthBar.x = this.body.position.x;
         this.healthBar.y = this.body.position.y;
+        this.teamFlag.x = this.body.position.x;
+        this.teamFlag.y = this.body.position.y;
         
+        // Update trail graphics
         const velocity = this.body.velocity;
+        const isMoving = Math.abs(velocity.x) > 0.3 || Math.abs(velocity.y) > 0.3;
+        
+        if (isMoving) {
+            // Add new trail point
+            this.trailPoints.push({
+                x: this.body.position.x,
+                y: this.body.position.y + 15, // Slightly below unit
+                alpha: 1.0
+            });
+            
+            // Limit trail length
+            if (this.trailPoints.length > 15) {
+                this.trailPoints.shift();
+            }
+        }
+        
+        // Update and draw trail
+        this.updateTrail();
+        
         if (velocity.x !== 0 || velocity.y !== 0) {
             this.facing = Math.atan2(velocity.y, velocity.x);
+            this.updateAnimation();
         }
     }
     
@@ -167,8 +408,8 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         const speed = this.moveSpeed * this.moveSpeedMultiplier;
         const force = {
-            x: direction.x * speed * 0.01,
-            y: direction.y * speed * 0.01
+            x: direction.x * speed * 0.002, // Reduced to 20% of original speed
+            y: direction.y * speed * 0.002
         };
         
         this.physicsManager.applyImpulse(this.body, force);
@@ -196,6 +437,9 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         this.healthBar.setVisible(false);
         this.healthBarBg.setVisible(false);
+        this.teamFlag.setVisible(false);
+        this.trailGraphics.clear(); // Clear trail on death
+        this.trailPoints = []; // Clear trail points
         
         (this.body as any).isSensor = true;
         
@@ -257,6 +501,15 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.healthBarBg) {
             this.healthBarBg.destroy();
         }
+        if (this.teamFlag) {
+            this.teamFlag.destroy();
+        }
+        if (this.trailGraphics) {
+            this.trailGraphics.destroy();
+        }
+        if (this.attackSwingGraphics) {
+            this.attackSwingGraphics.destroy();
+        }
         this.removeAllListeners();
     }
     
@@ -291,4 +544,88 @@ export class Unit extends Phaser.Events.EventEmitter {
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
     public setFriction(value: number): void { this.friction = value; }
     public setAccuracy(value: number): void { this.accuracy = value; }
+    public getConfig(): UnitConfig { return this.config; }
+    
+    private getSpriteKey(): string {
+        switch (this.config.unitType) {
+            case UnitType.CHRONOTEMPORAL: return 'chronotemporal';
+            case UnitType.SNIPER: return 'sniper';
+            case UnitType.DARK_MAGE: return 'dark_mage';
+            case UnitType.WARRIOR: return 'warrior';
+            case UnitType.NINJA: return 'ninja';
+            case UnitType.SHOTGUNNER: return 'shotgunner';
+            default: return 'warrior';
+        }
+    }
+    
+    private createAnimations(): void {
+        const spriteKey = this.getSpriteKey();
+        const animKey = spriteKey + '_anim';
+        
+        // Load animation data if it exists
+        if (this.scene.cache.json.exists(animKey)) {
+            const animData = this.scene.cache.json.get(animKey);
+            
+            // Create animations from loaded data
+            if (animData.anims) {
+                animData.anims.forEach((anim: any) => {
+                    if (!this.scene.anims.exists(spriteKey + '_' + anim.key)) {
+                        this.scene.anims.create({
+                            key: spriteKey + '_' + anim.key,
+                            frames: this.scene.anims.generateFrameNumbers(spriteKey, { 
+                                frames: anim.frames.map((f: any) => f.frame) 
+                            }),
+                            frameRate: anim.frameRate || 6,
+                            repeat: anim.repeat
+                        });
+                    }
+                    // Remember the first frame of each walk animation as the idle frame
+                    if (typeof anim.key === 'string' && anim.key.startsWith('walk_') && anim.frames && anim.frames.length > 0) {
+                        const dir = anim.key.replace('walk_', '') as 'down' | 'up' | 'left' | 'right';
+                        const firstFrame = anim.frames[0].frame;
+                        if (dir === 'down' || dir === 'up' || dir === 'left' || dir === 'right') {
+                            this.idleFrameByDirection[dir] = firstFrame;
+                        }
+                    }
+                });
+            }
+        }
+    }
+    
+    private updateAnimation(): void {
+        const spriteKey = this.getSpriteKey();
+        const velocity = this.body.velocity;
+        const moving = Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1;
+
+        // Determine facing/direction
+        let direction: 'down' | 'up' | 'left' | 'right' = 'down';
+        if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+            direction = velocity.x > 0 ? 'right' : 'left';
+        } else if (velocity.y < 0) {
+            direction = 'up';
+        } else {
+            direction = 'down';
+        }
+
+        // If moving, ensure the correct walk animation is playing and can switch mid-play
+        if (moving) {
+            const desiredKey = spriteKey + '_walk_' + direction;
+            const currentKey = this.sprite.anims.currentAnim ? this.sprite.anims.currentAnim.key : '';
+            if (this.scene.anims.exists(desiredKey) && currentKey !== desiredKey) {
+                this.sprite.play(desiredKey, true);
+            } else if (!this.sprite.anims.isPlaying) {
+                // Start playing if previously idle
+                this.sprite.play(desiredKey, true);
+            }
+            this.lastMoveDirection = direction;
+            return;
+        }
+
+        // If idle, stop animation and set the idle frame for the last direction
+        if (this.sprite.anims.isPlaying) {
+            this.sprite.anims.stop();
+        }
+        const idleFrame = this.idleFrameByDirection[this.lastMoveDirection] ?? 0;
+        this.sprite.setFrame(idleFrame);
+    }
 }

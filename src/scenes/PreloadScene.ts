@@ -57,7 +57,24 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     private loadAssets() {
+        // Load character spritesheets with full frame dimensions (96x96 for complete character)
+        this.load.spritesheet('chronotemporal', 'assets/characters/Chronotemporal.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('chronotemporal_anim', 'assets/characters/Chronotemporal.json');
         
+        this.load.spritesheet('sniper', 'assets/characters/Sniper.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('sniper_anim', 'assets/characters/Sniper.json');
+        
+        this.load.spritesheet('dark_mage', 'assets/characters/Dark Mage.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('dark_mage_anim', 'assets/characters/Dark Mage.json');
+        
+        this.load.spritesheet('warrior', 'assets/characters/warrior.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('warrior_anim', 'assets/characters/warrior.json');
+        
+        this.load.spritesheet('ninja', 'assets/characters/ninja.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('ninja_anim', 'assets/characters/ninja.json');
+        
+        this.load.spritesheet('shotgunner', 'assets/characters/Shotgunner.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('shotgunner_anim', 'assets/characters/Shotgunner.json');
     }
 
     create() {

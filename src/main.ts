@@ -23,11 +23,7 @@ const config: Phaser.Types.Core.GameConfig = {
             enableSleeping: true,
             constraintIterations: 2,
             positionIterations: 6,
-            velocityIterations: 4,
-            timing: {
-                timeScale: 1,
-                timestamp: 0
-            }
+            velocityIterations: 4
         }
     },
     fps: {
