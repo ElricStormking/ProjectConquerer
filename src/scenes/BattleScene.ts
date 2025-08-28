@@ -64,21 +64,20 @@ export class BattleScene extends Phaser.Scene {
     private setupCamera() {
         const camera = this.cameras.main;
         
-        // Lock camera to 1920x1080 world in world units; avoid scaling offsets
+        // Lock camera to the battlefield rectangle, not the entire world
+        const left = this.battlefield.centerX - this.battlefield.width / 2;
+        const top = this.battlefield.centerY - this.battlefield.height / 2;
+        
         camera.setZoom(1);
-        camera.setBounds(0, 0, 1920, 1080);
-        camera.scrollX = 0;
-        camera.scrollY = 0;
+        camera.setBounds(left, top, this.battlefield.width, this.battlefield.height);
         camera.centerOn(this.battlefield.centerX, this.battlefield.centerY);
         camera.roundPixels = true;
         
-        // Disable camera panning - fixed battlefield view
-        // Remove pointer drag functionality to keep battlefield fixed
-        
-        // Optional: Allow minimal zoom for tactical overview
+        // Fixed battlefield view (no dragging), allow limited zoom without showing empty space
         this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
             const zoom = camera.zoom;
-            camera.zoom = Phaser.Math.Clamp(zoom - deltaY * 0.001, 0.8, 1.2);
+            // Prevent zooming out below 1 to avoid exposing empty space around the battlefield
+            camera.zoom = Phaser.Math.Clamp(zoom - deltaY * 0.001, 1, 1.2);
         });
     }
 

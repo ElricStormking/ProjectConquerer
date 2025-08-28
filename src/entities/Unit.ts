@@ -450,8 +450,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     public attemptNinjaJump(target: { x: number; y: number }, currentTime: number): boolean {
         if (this.dead) return false;
         if (this.config.unitType !== UnitType.NINJA) return false;
-        const cooldownMs = 4000; // 4s cooldown
-        const jumpRange = 300;   // medium range
+        const cooldownMs = 8000; // 8s cooldown
+        const jumpRange = 600;   // mid-longrange
         if (currentTime - this.lastJumpTime < cooldownMs) return false;
         const myPos = this.getPosition();
         const dx = target.x - myPos.x;

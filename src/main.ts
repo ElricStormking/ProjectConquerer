@@ -40,7 +40,7 @@ const config: Phaser.Types.Core.GameConfig = {
     scene: [BootScene, PreloadScene, BattleScene, UIScene, SkillSelectionScene]
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
 
 // Let Phaser Scale Manager handle resizing with FIT; no manual resize to avoid
 // skewed world coordinates or CSS scaling artifacts.

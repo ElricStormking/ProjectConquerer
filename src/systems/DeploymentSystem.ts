@@ -103,8 +103,6 @@ export class DeploymentSystem {
     }
     
     private findAvailableSlot(zone: DeploymentZone, unitSize: 'small' | 'normal' | 'large', preferredSection?: 'front' | 'middle' | 'back'): DeploymentSlot | null {
-        const slotsNeeded = this.getSlotsNeeded(unitSize);
-        
         // Prefer section if provided
         if (preferredSection) {
             for (const slot of zone.slots) {
@@ -123,13 +121,6 @@ export class DeploymentSystem {
         return null;
     }
     
-    private getSlotsNeeded(unitSize: 'small' | 'normal' | 'large'): number {
-        switch (unitSize) {
-            case 'small': return 1;
-            case 'normal': return 2;
-            case 'large': return 4;
-        }
-    }
     
     private canFitUnit(slot: DeploymentSlot, unitSize: 'small' | 'normal' | 'large'): boolean {
         const slotValue = { small: 1, normal: 2, large: 4 };

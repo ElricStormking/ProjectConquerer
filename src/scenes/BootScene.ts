@@ -28,7 +28,9 @@ export class BootScene extends Phaser.Scene {
             delay: 1000 / 60,
             loop: true,
             callback: () => {
-                matterPhysics.world.update(1000 / 60);
+                const time = this.time.now;
+                const delta = 1000 / 60;
+                matterPhysics.world.update(time, delta);
             }
         });
     }

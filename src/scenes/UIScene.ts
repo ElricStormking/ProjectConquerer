@@ -110,7 +110,7 @@ export class UIScene extends Phaser.Scene {
             }
         });
         
-        battleScene.events.on('level-up', (data: any) => {
+        battleScene.events.on('level-up', () => {
             // Flash effect on level up
             this.cameras.main.flash(500, 255, 255, 0);
         });

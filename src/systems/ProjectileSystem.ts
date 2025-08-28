@@ -14,27 +14,44 @@ export interface ProjectileConfig {
 
 export class Projectile extends Phaser.GameObjects.Container {
     private projectileGraphics!: Phaser.GameObjects.Graphics;
-    private targetX: number;
-    private targetY: number;
+    // Lock to first targeted position for self-detonation behavior
+    private initialTargetX: number;
+    private initialTargetY: number;
+    private totalDistanceToTarget: number = 0;
+    private traveledDistance: number = 0;
     private speed: number;
     private damage: number;
     private unitType: UnitType;
     private trail: Phaser.GameObjects.Graphics[] = [];
     private exploded: boolean = false;
     private attackerTeam: number | undefined;
+    // Debug helpers to visualize landing point
+    private debugTargetMarker?: Phaser.GameObjects.Graphics;
+    private debugTargetLabel?: Phaser.GameObjects.Text;
 
     constructor(scene: Phaser.Scene, config: ProjectileConfig) {
         super(scene, config.startX, config.startY);
         
-        this.targetX = config.targetX;
-        this.targetY = config.targetY;
+        this.initialTargetX = config.targetX;
+        this.initialTargetY = config.targetY;
         this.speed = config.speed;
         this.damage = config.damage;
         this.unitType = config.unitType;
         this.attackerTeam = config.attackerTeam;
 
+        // Precompute the total distance from spawn to the initial target.
+        this.totalDistanceToTarget = Math.sqrt(
+            (this.initialTargetX - this.x) * (this.initialTargetX - this.x) +
+            (this.initialTargetY - this.y) * (this.initialTargetY - this.y)
+        );
+
         this.createProjectileGraphics();
         scene.add.existing(this);
+
+        // For Dark Mage, draw a red marker and coordinates at the landing point for debugging
+        if (this.unitType === UnitType.DARK_MAGE) {
+            this.createDebugTargetMarker();
+        }
     }
 
     private createProjectileGraphics() {
@@ -42,9 +59,27 @@ export class Projectile extends Phaser.GameObjects.Container {
         
         switch (this.unitType) {
             case UnitType.SNIPER:
-                // Bullet projectile
-                this.projectileGraphics.fillStyle(0xFFD700, 1); // Gold bullet
-                this.projectileGraphics.fillCircle(0, 0, 3);
+                // Arrow projectile (drawn pointing along +X; rotated during update)
+                this.projectileGraphics.clear();
+                this.projectileGraphics.fillStyle(0xFFD700, 1); // Gold
+                this.projectileGraphics.lineStyle(1, 0xFFF1A8, 0.9);
+                this.projectileGraphics.beginPath();
+                // Shaft
+                this.projectileGraphics.moveTo(-6, -1);
+                this.projectileGraphics.lineTo(2, -1);
+                this.projectileGraphics.lineTo(2, 1);
+                this.projectileGraphics.lineTo(-6, 1);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                // Head (triangle)
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(2, -3);
+                this.projectileGraphics.lineTo(6, 0);
+                this.projectileGraphics.lineTo(2, 3);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
                 break;
                 
             case UnitType.SHOTGUNNER:
@@ -98,25 +133,37 @@ export class Projectile extends Phaser.GameObjects.Container {
     }
 
     public update(deltaTime: number): boolean {
+        // Always head toward the initial targeted position
         const direction = {
-            x: this.targetX - this.x,
-            y: this.targetY - this.y
+            x: this.initialTargetX - this.x,
+            y: this.initialTargetY - this.y
         };
 
-        const distance = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-        
-        if (distance < this.speed * deltaTime) {
-            // Reached target
+        const remainingDistance = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+
+        // If we are within this frame's travel distance, detonate exactly at the initial target
+        const stepDistance = this.speed * deltaTime;
+        if (remainingDistance <= stepDistance || this.traveledDistance + stepDistance >= this.totalDistanceToTarget) {
+            // Snap to target and explode
+            this.x = this.initialTargetX;
+            this.y = this.initialTargetY;
             this.createImpactEffect();
             return true; // Signal for removal
         }
 
-        // Normalize direction and move
-        direction.x /= distance;
-        direction.y /= distance;
+        // Normalize direction and move by stepDistance
+        const inv = 1 / Math.max(1e-6, remainingDistance);
+        const vx = direction.x * inv;
+        const vy = direction.y * inv;
+        this.x += vx * stepDistance;
+        this.y += vy * stepDistance;
+        this.traveledDistance += stepDistance;
 
-        this.x += direction.x * this.speed * deltaTime;
-        this.y += direction.y * this.speed * deltaTime;
+        // Orient projectile graphics along travel direction
+        if (this.unitType === UnitType.SNIPER) {
+            const angle = Math.atan2(vy, vx);
+            this.projectileGraphics.setRotation(angle);
+        }
 
         // Create trail effect for magic projectiles
         if (this.unitType === UnitType.DARK_MAGE || this.unitType === UnitType.CHRONOTEMPORAL) {
@@ -124,6 +171,29 @@ export class Projectile extends Phaser.GameObjects.Container {
         }
 
         return false;
+    }
+
+    private createDebugTargetMarker() {
+        const g = this.scene.add.graphics();
+        g.setDepth(10000);
+        g.setPosition(this.initialTargetX, this.initialTargetY);
+        g.lineStyle(2, 0xff0000, 0.95);
+        g.fillStyle(0xff0000, 0.45);
+        // Draw around local (0,0) so transforms apply correctly
+        g.strokeCircle(0, 0, 10);
+        g.fillCircle(0, 0, 4);
+        g.lineBetween(-12, 0, 12, 0);
+        g.lineBetween(0, -12, 0, 12);
+        this.debugTargetMarker = g;
+
+        const label = this.scene.add.text(0, 0, `(${Math.round(this.initialTargetX)}, ${Math.round(this.initialTargetY)})`,
+            { font: '12px monospace', color: '#ff4444', stroke: '#000000', strokeThickness: 2 });
+        label.setPosition(this.initialTargetX + 14, this.initialTargetY - 16);
+        label.setDepth(10001);
+        this.debugTargetLabel = label;
+
+        // Pulse to make it visible
+        this.scene.tweens.add({ targets: g, alpha: 0.4, yoyo: true, repeat: -1, duration: 400 });
     }
 
     private createTrailEffect() {
@@ -157,22 +227,24 @@ export class Projectile extends Phaser.GameObjects.Container {
 
     private createImpactEffect() {
         const impactGraphics = this.scene.add.graphics();
+        // Draw at local (0,0) and place the graphics at world position
+        impactGraphics.setPosition(this.x, this.y);
         
         switch (this.unitType) {
             case UnitType.SNIPER:
-                // Bullet impact spark
+                // Bullet impact spark (centered at local origin)
                 impactGraphics.fillStyle(0xFFD700, 1);
-                impactGraphics.fillCircle(this.x, this.y, 5);
+                impactGraphics.fillCircle(0, 0, 5);
                 break;
                 
             case UnitType.SHOTGUNNER:
-                // Spread impact
+                // Spread impact (centered at local origin)
                 for (let i = 0; i < 5; i++) {
                     const angle = (i / 4) * Math.PI * 2;
                     const offsetX = Math.cos(angle) * 8;
                     const offsetY = Math.sin(angle) * 8;
                     impactGraphics.fillStyle(0xC0C0C0, 0.8);
-                    impactGraphics.fillCircle(this.x + offsetX, this.y + offsetY, 2);
+                    impactGraphics.fillCircle(offsetX, offsetY, 2);
                 }
                 break;
                 
@@ -180,11 +252,11 @@ export class Projectile extends Phaser.GameObjects.Container {
                 // Dark magic explosion (purple, more obvious)
                 impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
                 impactGraphics.fillStyle(0xAA66FF, 0.65);
-                impactGraphics.fillCircle(this.x, this.y, 24);
+                impactGraphics.fillCircle(0, 0, 24);
                 impactGraphics.fillStyle(0x7A33FF, 0.55);
-                impactGraphics.fillCircle(this.x, this.y, 14);
+                impactGraphics.fillCircle(0, 0, 14);
                 impactGraphics.lineStyle(3, 0xE0CCFF, 0.9);
-                impactGraphics.strokeCircle(this.x, this.y, 28);
+                impactGraphics.strokeCircle(0, 0, 28);
 
                 // (No particles flying away; keep explosion anchored only)
 
@@ -200,14 +272,17 @@ export class Projectile extends Phaser.GameObjects.Container {
                         attackerTeam: this.attackerTeam
                     });
                 }
+                // Remove debug marker once detonated
+                this.debugTargetMarker?.destroy();
+                this.debugTargetLabel?.destroy();
                 break;
                 
             case UnitType.CHRONOTEMPORAL:
-                // Time distortion effect
+                // Time distortion effect (centered at local origin)
                 impactGraphics.lineStyle(3, 0x00FFFF, 0.8);
-                impactGraphics.strokeCircle(this.x, this.y, 10);
+                impactGraphics.strokeCircle(0, 0, 10);
                 impactGraphics.lineStyle(2, 0xFFFFFF, 0.6);
-                impactGraphics.strokeCircle(this.x, this.y, 15);
+                impactGraphics.strokeCircle(0, 0, 15);
                 break;
         }
 

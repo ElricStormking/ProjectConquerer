@@ -1,7 +1,16 @@
 import { defineConfig } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
   base: './',
+  plugins: [
+    // Ensure non-imported runtime-loaded assets are available in production
+    viteStaticCopy({
+      targets: [
+        { src: 'assets', dest: '' }
+      ]
+    })
+  ],
   build: {
     target: 'es2015',
     minify: 'terser',

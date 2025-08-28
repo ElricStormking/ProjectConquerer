@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Skill, SkillType } from '../data/Skills';
+import { Skill } from '../data/Skills';
 import type { UnitManager } from './UnitManager';
 
 export interface XPOrb {
