@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Skill, SkillType } from '../data/Skills';
+import type { UnitManager } from './UnitManager';
 
 export interface XPOrb {
     id: string;
@@ -8,10 +9,12 @@ export interface XPOrb {
     value: number;
     sprite: Phaser.GameObjects.Sprite;
     magnet: boolean;
+    collectorTeam: number;
 }
 
 export class LevelUpSystem {
     private scene: Phaser.Scene;
+    private unitManager?: UnitManager;
     private currentXP: number = 0;
     private currentLevel: number = 1;
     private xpOrbs: Map<string, XPOrb> = new Map();
@@ -26,11 +29,12 @@ export class LevelUpSystem {
     private magnetRange: number = 80;
     private magnetSpeed: number = 300;
     
-    constructor(scene: Phaser.Scene) {
+    constructor(scene: Phaser.Scene, unitManager?: UnitManager) {
         this.scene = scene;
+        this.unitManager = unitManager;
     }
     
-    public spawnXPOrb(x: number, y: number, value: number = 5): void {
+    public spawnXPOrb(x: number, y: number, value: number = 5, collectorTeam: number = 1): void {
         const orbId = `xp_orb_${this.orbIdCounter++}`;
         
         // Create visual representation
@@ -52,7 +56,8 @@ export class LevelUpSystem {
             y,
             value,
             sprite,
-            magnet: false
+            magnet: false,
+            collectorTeam
         };
         
         this.xpOrbs.set(orbId, orb);
@@ -64,19 +69,31 @@ export class LevelUpSystem {
     }
     
     public update(playerPosition?: { x: number; y: number }): void {
-        if (!playerPosition) {
-            // Use camera center as player position for now
-            const camera = this.scene.cameras.main;
-            playerPosition = {
-                x: camera.scrollX + camera.width / 2,
-                y: camera.scrollY + camera.height / 2
-            };
-        }
         
         this.xpOrbs.forEach(orb => {
+            // Determine target position for this orb
+            let target = playerPosition;
+            if (!target && this.unitManager) {
+                const candidates = this.unitManager.getUnitsByTeam(orb.collectorTeam).filter(u => !u.isDead());
+                if (candidates.length > 0) {
+                    // choose nearest unit
+                    let best = candidates[0];
+                    let bestDist = Phaser.Math.Distance.Between(orb.x, orb.y, best.getPosition().x, best.getPosition().y);
+                    for (let i = 1; i < candidates.length; i++) {
+                        const p = candidates[i].getPosition();
+                        const d = Phaser.Math.Distance.Between(orb.x, orb.y, p.x, p.y);
+                        if (d < bestDist) { best = candidates[i]; bestDist = d; }
+                    }
+                    target = best.getPosition();
+                }
+            }
+            if (!target) {
+                const camera = this.scene.cameras.main;
+                target = { x: camera.scrollX + camera.width / 2, y: camera.scrollY + camera.height / 2 };
+            }
             const distance = Phaser.Math.Distance.Between(
                 orb.x, orb.y,
-                playerPosition!.x, playerPosition!.y
+                target!.x, target!.y
             );
             
             // Start magnet effect when close enough
@@ -86,10 +103,7 @@ export class LevelUpSystem {
             
             if (orb.magnet) {
                 // Move orb toward player
-                const angle = Phaser.Math.Angle.Between(
-                    orb.x, orb.y,
-                    playerPosition!.x, playerPosition!.y
-                );
+                const angle = Phaser.Math.Angle.Between(orb.x, orb.y, target!.x, target!.y);
                 
                 const speed = this.magnetSpeed * (1 / Math.max(1, distance * 0.01));
                 orb.x += Math.cos(angle) * speed * (1/60); // 60 FPS assumption

@@ -42,7 +42,7 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             moveSpeed: 45,
             attackSpeed: 1.2,
             range: 100,
-            mass: 8
+            mass: 40
         }
     },
     
@@ -59,8 +59,8 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             armor: 1,
             moveSpeed: 40,
             attackSpeed: 0.8,
-            range: 200,
-            mass: 6
+            range: 500,
+            mass: 48
         }
     },
     
@@ -77,8 +77,8 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             armor: 2,
             moveSpeed: 35,
             attackSpeed: 0.9,
-            range: 130,
-            mass: 7
+            range: 300,
+            mass: 36
         }
     },
     
@@ -93,10 +93,10 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             maxHealth: 120,
             damage: 16,
             armor: 6,
-            moveSpeed: 35,
+            moveSpeed: 50,
             attackSpeed: 1.0,
             range: 30,
-            mass: 10
+            mass: 60
         }
     },
     
@@ -111,10 +111,10 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             maxHealth: 70,
             damage: 28,
             armor: 2,
-            moveSpeed: 70,
+            moveSpeed: 80,
             attackSpeed: 2.0,
             range: 35,
-            mass: 6
+            mass: 30
         }
     },
     
@@ -131,8 +131,8 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             armor: 4,
             moveSpeed: 45,
             attackSpeed: 0.6,
-            range: 60,
-            mass: 9
+            range: 200,
+            mass: 64
         }
     }
 };

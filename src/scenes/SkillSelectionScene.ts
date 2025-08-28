@@ -15,17 +15,22 @@ export class SkillSelectionScene extends Phaser.Scene {
         this.background = this.add.graphics();
         this.background.fillStyle(0x000000, 0.8);
         this.background.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
+        this.background.setDepth(10000);
         
         // Create container for skill selection UI
         this.container = this.add.container(this.cameras.main.centerX, this.cameras.main.centerY);
+        this.container.setDepth(10001);
         
-        // Initially hidden
-        this.setVisible(false);
+        // Initially hidden but scene stays running above BattleScene
+        this.background.setVisible(false);
+        this.container.setVisible(false);
+        this.scene.bringToTop();
     }
     
     public showSkillSelection(choices: Skill[], playerLevel: number): void {
         this.skillChoices = choices;
-        this.setVisible(true);
+        this.background.setVisible(true);
+        this.container.setVisible(true);
         
         // Clear previous UI
         this.container.removeAll(true);
@@ -208,7 +213,8 @@ export class SkillSelectionScene extends Phaser.Scene {
             this.events.emit('skill-selected', selectedSkill);
             
             // Hide UI
-            this.setVisible(false);
+            this.background.setVisible(false);
+            this.container.setVisible(false);
         }
     }
 }

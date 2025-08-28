@@ -58,6 +58,7 @@ export class PreloadScene extends Phaser.Scene {
 
     private loadAssets() {
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
+        this.load.image('world_bg', 'assets/gamemap_01.jpg');
         this.load.spritesheet('chronotemporal', 'assets/characters/Chronotemporal.png', { frameWidth: 96, frameHeight: 96 });
         this.load.json('chronotemporal_anim', 'assets/characters/Chronotemporal.json');
         

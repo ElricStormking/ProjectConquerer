@@ -9,16 +9,19 @@ export interface ProjectileConfig {
     unitType: UnitType;
     damage: number;
     speed: number;
+    attackerTeam?: number;
 }
 
 export class Projectile extends Phaser.GameObjects.Container {
-    private projectileGraphics: Phaser.GameObjects.Graphics;
+    private projectileGraphics!: Phaser.GameObjects.Graphics;
     private targetX: number;
     private targetY: number;
     private speed: number;
     private damage: number;
     private unitType: UnitType;
     private trail: Phaser.GameObjects.Graphics[] = [];
+    private exploded: boolean = false;
+    private attackerTeam: number | undefined;
 
     constructor(scene: Phaser.Scene, config: ProjectileConfig) {
         super(scene, config.startX, config.startY);
@@ -28,6 +31,7 @@ export class Projectile extends Phaser.GameObjects.Container {
         this.speed = config.speed;
         this.damage = config.damage;
         this.unitType = config.unitType;
+        this.attackerTeam = config.attackerTeam;
 
         this.createProjectileGraphics();
         scene.add.existing(this);
@@ -50,11 +54,29 @@ export class Projectile extends Phaser.GameObjects.Container {
                 break;
                 
             case UnitType.DARK_MAGE:
-                // Dark magic orb
-                this.projectileGraphics.fillStyle(0x8B0000, 0.8); // Dark red
+                // Dark magic orb (full purple)
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                // Outer glow
+                this.projectileGraphics.fillStyle(0xAA66FF, 0.9);
+                this.projectileGraphics.fillCircle(0, 0, 9);
+                // Inner aura
+                this.projectileGraphics.fillStyle(0x7A33FF, 0.85);
                 this.projectileGraphics.fillCircle(0, 0, 6);
-                this.projectileGraphics.fillStyle(0x000000, 0.6); // Black center
+                // Core
+                this.projectileGraphics.fillStyle(0x330066, 1.0);
                 this.projectileGraphics.fillCircle(0, 0, 3);
+                // Subtle edge ring
+                this.projectileGraphics.lineStyle(2, 0xD0B0FF, 0.8);
+                this.projectileGraphics.strokeCircle(0, 0, 9);
+                // subtle pulse
+                this.scene.tweens.add({
+                    targets: this.projectileGraphics,
+                    scaleX: 1.15,
+                    scaleY: 1.15,
+                    duration: 300,
+                    yoyo: true,
+                    repeat: -1
+                });
                 break;
                 
             case UnitType.CHRONOTEMPORAL:
@@ -114,7 +136,7 @@ export class Projectile extends Phaser.GameObjects.Container {
         const alpha = 0.3;
         
         if (this.unitType === UnitType.DARK_MAGE) {
-            trailGraphics.fillStyle(0x8B0000, alpha);
+            trailGraphics.fillStyle(0xAA66FF, alpha);
         } else {
             trailGraphics.fillStyle(0x00FFFF, alpha);
         }
@@ -155,11 +177,29 @@ export class Projectile extends Phaser.GameObjects.Container {
                 break;
                 
             case UnitType.DARK_MAGE:
-                // Dark magic explosion
-                impactGraphics.fillStyle(0x8B0000, 0.6);
-                impactGraphics.fillCircle(this.x, this.y, 12);
-                impactGraphics.fillStyle(0x000000, 0.4);
-                impactGraphics.fillCircle(this.x, this.y, 6);
+                // Dark magic explosion (purple, more obvious)
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.fillStyle(0xAA66FF, 0.65);
+                impactGraphics.fillCircle(this.x, this.y, 24);
+                impactGraphics.fillStyle(0x7A33FF, 0.55);
+                impactGraphics.fillCircle(this.x, this.y, 14);
+                impactGraphics.lineStyle(3, 0xE0CCFF, 0.9);
+                impactGraphics.strokeCircle(this.x, this.y, 28);
+
+                // (No particles flying away; keep explosion anchored only)
+
+                // Area damage on impact
+                if (!this.exploded) {
+                    this.exploded = true;
+                    const explosionRadius = 100;
+                    this.scene.events.emit('dark-mage-explosion', {
+                        x: this.x,
+                        y: this.y,
+                        radius: explosionRadius,
+                        damage: Math.round(this.damage * 0.85),
+                        attackerTeam: this.attackerTeam
+                    });
+                }
                 break;
                 
             case UnitType.CHRONOTEMPORAL:

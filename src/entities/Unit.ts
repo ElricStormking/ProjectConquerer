@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { StatusEffect } from '../systems/CombatSystem';
-import { UnitType } from '../data/UnitTypes';
+import type { UnitManager } from '../systems/UnitManager';
+import type { CombatSystem } from '../systems/CombatSystem';
+import { UnitType, UNIT_TEMPLATES } from '../data/UnitTypes';
 
 export interface UnitConfig {
     x: number;
@@ -31,11 +33,13 @@ export class Unit extends Phaser.Events.EventEmitter {
     private healthBar!: Phaser.GameObjects.Graphics;
     private healthBarBg!: Phaser.GameObjects.Graphics;
     private teamFlag!: Phaser.GameObjects.Graphics;
+    private classLabel!: Phaser.GameObjects.Text;
     private trailPoints: Array<{x: number, y: number, alpha: number}> = [];
     private trailGraphics!: Phaser.GameObjects.Graphics;
     private attackSwingGraphics!: Phaser.GameObjects.Graphics;
     private isAttacking: boolean = false;
     private lastMeleeAttackTime: number = 0;
+    private lastJumpTime: number = 0;
     
     private health: number;
     private maxHealth: number;
@@ -148,6 +152,14 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar = this.scene.add.graphics();
         this.teamFlag = this.scene.add.graphics();
         this.attackSwingGraphics = this.scene.add.graphics();
+        // Class label above unit
+        const className = UNIT_TEMPLATES[this.config.unitType]?.name ?? this.config.unitType;
+        this.classLabel = this.scene.add.text(this.config.x, this.config.y - 110, className, {
+            fontSize: '12px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5, 0.5);
         this.updateHealthBar();
         this.createTeamFlag();
     }
@@ -253,11 +265,10 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     private isMeleeUnit(): boolean {
         return this.config.unitType === UnitType.WARRIOR || 
-               this.config.unitType === UnitType.NINJA || 
-               this.config.unitType === UnitType.SHOTGUNNER;
+               this.config.unitType === UnitType.NINJA;
     }
     
-    public performMeleeAttack(targetUnit: any, currentTime: number): void {
+    public performMeleeAttack(targetUnit: any, currentTime: number, unitManager?: UnitManager, combatSystem?: CombatSystem): void {
         if (!this.isMeleeUnit() || this.dead || this.isAttacking) return;
         
         // Check if enough time has passed since last attack (1 second cooldown)
@@ -267,12 +278,35 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.lastMeleeAttackTime = currentTime;
         
         // Create attack swing visual
-        this.createAttackSwing(targetUnit);
+        const directionToTarget = Math.atan2(
+            targetUnit.getPosition().y - this.getPosition().y,
+            targetUnit.getPosition().x - this.getPosition().x
+        );
+        this.createAttackSwing(directionToTarget);
         
         // Deal damage after short delay (to match visual)
         this.scene.time.delayedCall(200, () => {
-            if (!targetUnit.isDead()) {
-                // Calculate damage and apply it
+            // Area damage in 160-degree sector in front of unit
+            if (unitManager && combatSystem) {
+                const center = this.getPosition();
+                const swingAngle = Phaser.Math.DegToRad(160);
+                const radius = Math.max(this.range, 60);
+                const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const pos = enemy.getPosition();
+                    const dx = pos.x - center.x;
+                    const dy = pos.y - center.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > radius) return;
+                    const angleToEnemy = Math.atan2(dy, dx);
+                    const diff = Phaser.Math.Angle.Wrap(angleToEnemy - directionToTarget);
+                    if (Math.abs(diff) <= swingAngle / 2) {
+                        combatSystem.dealDamage(this as any, enemy as any, this.getDamage());
+                    }
+                });
+            } else if (!targetUnit.isDead()) {
+                // Fallback: single target damage
                 const damage = this.getDamage();
                 targetUnit.takeDamage(damage);
             }
@@ -280,19 +314,18 @@ export class Unit extends Phaser.Events.EventEmitter {
         });
     }
     
-    private createAttackSwing(targetUnit: any): void {
-        const targetPos = targetUnit.getPosition();
+    private createAttackSwing(directionAngle: number): void {
         const myPos = this.getPosition();
         
-        // Calculate attack direction
-        const dx = targetPos.x - myPos.x;
-        const dy = targetPos.y - myPos.y;
-        const angle = Math.atan2(dy, dx);
-        
         // Create swing arc visual using modern Phaser 3 API
+        // Ensure visibility in case a previous fade-out tween left alpha at 0
+        this.scene.tweens.killTweensOf(this.attackSwingGraphics);
+        this.attackSwingGraphics.setAlpha(1);
+        this.attackSwingGraphics.setVisible(true);
         this.attackSwingGraphics.clear();
         this.attackSwingGraphics.setPosition(myPos.x, myPos.y);
-        this.attackSwingGraphics.setDepth(1000); // Ensure it's visible on top
+        this.attackSwingGraphics.setDepth(5000); // Ensure it's visible on top of sprites
+        this.attackSwingGraphics.setBlendMode(Phaser.BlendModes.ADD);
         
         // Choose swing color based on unit type
         let swingColor = 0xffffff;
@@ -308,45 +341,38 @@ export class Unit extends Phaser.Events.EventEmitter {
                 break;
         }
         
-        // Draw attack swing using simple line approach (more reliable)
-        const swingRadius = Math.max(this.range * 0.8, 40); // Minimum 40px radius
-        const swingArc = Math.PI / 3; // 60 degree arc
+        // Draw 160-degree filled sector (fan) using Shapes Arc for reliability
+        const swingRadius = Math.max(this.range, 60);
+        const swingArc = Phaser.Math.DegToRad(160);
+        const startDeg = Phaser.Math.RadToDeg(directionAngle - swingArc / 2);
+        const endDeg = Phaser.Math.RadToDeg(directionAngle + swingArc / 2);
         
-        // Draw multiple lines to create arc effect
-        this.attackSwingGraphics.lineStyle(6, swingColor, 1.0);
+        // Render on UI scene to guarantee top-most display (in case display list order conflicts)
+        const uiScene = (this.scene.scene.get('UIScene') as Phaser.Scene) || this.scene;
+        const sector = uiScene.add.arc(myPos.x, myPos.y, swingRadius, startDeg, endDeg, true, swingColor, 0.6);
+        sector.setDepth(5000);
+        sector.setBlendMode(Phaser.BlendModes.ADD);
+        sector.setStrokeStyle(2, 0xffffff, 0.5);
         
-        const numLines = 8;
-        for (let i = 0; i < numLines; i++) {
-            const lineAngle = angle - swingArc/2 + (swingArc / numLines) * i;
-            const startRadius = swingRadius * 0.3;
-            const endRadius = swingRadius;
-            
-            const startX = Math.cos(lineAngle) * startRadius;
-            const startY = Math.sin(lineAngle) * startRadius;
-            const endX = Math.cos(lineAngle) * endRadius;
-            const endY = Math.sin(lineAngle) * endRadius;
-            
-            this.attackSwingGraphics.lineBetween(startX, startY, endX, endY);
-        }
+        // Keep a reference lifespan short and independent of unit updates
+        uiScene.tweens.add({
+            targets: sector,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => sector.destroy()
+        });
         
-        // Add impact flash at target location using fillCircle
-        this.attackSwingGraphics.fillStyle(swingColor, 0.8);
-        this.attackSwingGraphics.fillCircle(dx, dy, 12);
-        
-        // Add smaller white flash
-        this.attackSwingGraphics.fillStyle(0xffffff, 0.9);
-        this.attackSwingGraphics.fillCircle(dx, dy, 6);
-        
-        console.log(`Attack swing created at ${myPos.x}, ${myPos.y} targeting ${targetPos.x}, ${targetPos.y} with color ${swingColor.toString(16)}`);
+        console.log(`Attack swing sector at ${myPos.x},${myPos.y} angle=${directionAngle.toFixed(2)} radius=${swingRadius}`);
         
         // Animate swing fade out
         this.scene.tweens.add({
             targets: this.attackSwingGraphics,
             alpha: 0,
-            duration: 500,
+            duration: 200,
             onComplete: () => {
                 this.attackSwingGraphics.clear();
                 this.attackSwingGraphics.setAlpha(1);
+                this.attackSwingGraphics.setBlendMode(Phaser.BlendModes.NORMAL);
             }
         });
     }
@@ -375,6 +401,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar.y = this.body.position.y;
         this.teamFlag.x = this.body.position.x;
         this.teamFlag.y = this.body.position.y;
+        if (this.classLabel) {
+            this.classLabel.x = this.body.position.x;
+            this.classLabel.y = this.body.position.y - 110;
+            this.classLabel.setDepth(this.body.position.y + 2000);
+        }
         
         // Update trail graphics
         const velocity = this.body.velocity;
@@ -414,6 +445,35 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         this.physicsManager.applyImpulse(this.body, force);
     }
+
+    // Quick jump for Ninja: medium range dash with 4s cooldown
+    public attemptNinjaJump(target: { x: number; y: number }, currentTime: number): boolean {
+        if (this.dead) return false;
+        if (this.config.unitType !== UnitType.NINJA) return false;
+        const cooldownMs = 4000; // 4s cooldown
+        const jumpRange = 300;   // medium range
+        if (currentTime - this.lastJumpTime < cooldownMs) return false;
+        const myPos = this.getPosition();
+        const dx = target.x - myPos.x;
+        const dy = target.y - myPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 40 || dist > jumpRange) return false;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        // Dash by setting a high velocity briefly (mass-independent)
+        const dashSpeed = 18; // tuned for heavy masses
+        (this.scene.matter.body as any).setVelocity(this.body, { x: nx * dashSpeed, y: ny * dashSpeed });
+        const prevFrictionAir = (this.body as any).frictionAir;
+        const prevFriction = this.friction;
+        (this.body as any).frictionAir = 0.01;
+        this.friction = 0.05;
+        this.lastJumpTime = currentTime;
+        this.scene.time.delayedCall(220, () => {
+            (this.body as any).frictionAir = prevFrictionAir;
+            this.friction = prevFriction;
+        });
+        return true;
+    }
     
     public takeDamage(amount: number): void {
         if (this.dead) return;
@@ -426,6 +486,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         
         this.emit('damage-taken', amount);
+    }
+
+    public heal(amount: number): void {
+        if (this.dead || amount <= 0) return;
+        this.health = Math.min(this.maxHealth, this.health + amount);
+        this.updateHealthBar();
     }
     
     private die(): void {
@@ -451,6 +517,20 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public applyImpulse(force: { x: number; y: number }): void {
         this.physicsManager.applyImpulse(this.body, force);
+    }
+    
+    // Instantly move unit to a position (used for out-of-bounds recovery)
+    public teleportTo(x: number, y: number): void {
+        if (!this.body) return;
+        (this.scene.matter.body as any).setPosition(this.body, { x, y });
+        (this.scene.matter.body as any).setVelocity(this.body, { x: 0, y: 0 });
+        // Immediately sync visuals to avoid one-frame delay
+        this.sprite.x = x;
+        this.sprite.y = y;
+        if (this.healthBarBg) { this.healthBarBg.x = x; this.healthBarBg.y = y; }
+        if (this.healthBar) { this.healthBar.x = x; this.healthBar.y = y; }
+        if (this.teamFlag) { this.teamFlag.x = x; this.teamFlag.y = y; }
+        if (this.classLabel) { this.classLabel.x = x; this.classLabel.y = y - 110; }
     }
     
     public addStatusEffect(effect: StatusEffect, duration: number): void {
@@ -509,6 +589,9 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         if (this.attackSwingGraphics) {
             this.attackSwingGraphics.destroy();
+        }
+        if (this.classLabel) {
+            this.classLabel.destroy();
         }
         this.removeAllListeners();
     }

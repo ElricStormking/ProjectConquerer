@@ -42,6 +42,5 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 
-window.addEventListener('resize', () => {
-    game.scale.resize(window.innerWidth, window.innerHeight);
-});
+// Let Phaser Scale Manager handle resizing with FIT; no manual resize to avoid
+// skewed world coordinates or CSS scaling artifacts.

@@ -1,11 +1,13 @@
 import { UnitManager } from './UnitManager';
 import { UnitConfig } from '../entities/Unit';
+import { UnitType } from '../data/UnitTypes';
 
 export interface DeploymentSlot {
     size: 'small' | 'normal' | 'large';
     position: { x: number; y: number };
     occupied: boolean;
     unitId?: string;
+    section: 'front' | 'middle' | 'back';
 }
 
 export interface DeploymentZone {
@@ -30,10 +32,14 @@ export class DeploymentSystem {
     
     public createDeploymentZone(team: number, centerX: number, centerY: number, width: number, height: number): void {
         const slots: DeploymentSlot[] = [];
-        const rows = 4;
+        // Grid for three column sections (front/middle/back)
+        const rows = 8; // increase vertical capacity so back column can fit mages/support (>= 8 slots)
         const cols = 6;
         const slotWidth = width / cols;
         const slotHeight = height / rows;
+        const frontCols = 3; // higher demand for melee
+        const middleCols = 2; // ranged
+        const backCols = 1;   // mage/support
         
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -42,12 +48,29 @@ export class DeploymentSystem {
                 
                 let size: 'small' | 'normal' | 'large' = 'normal';
                 if (row === 0) size = 'large';
-                else if (row === rows - 1) size = 'small';
+                else if (row === rows - 1 || row === rows - 2) size = 'small';
+
+                // Determine section based on team orientation and column index
+                // Team 1 zone is on the left; "front" is toward the enemy (higher x => larger col)
+                // Team 2 zone is on the right; "front" is toward the enemy (lower x => smaller col)
+                let section: 'front' | 'middle' | 'back' = 'middle';
+                if (team === 1) {
+                    // left->right: back | middle | front
+                    if (col < backCols) section = 'back';
+                    else if (col < backCols + middleCols) section = 'middle';
+                    else section = 'front';
+                } else {
+                    // left->right: front | middle | back
+                    if (col < frontCols) section = 'front';
+                    else if (col < frontCols + middleCols) section = 'middle';
+                    else section = 'back';
+                }
                 
                 slots.push({
                     size,
                     position: { x, y },
-                    occupied: false
+                    occupied: false,
+                    section
                 });
             }
         }
@@ -71,6 +94,7 @@ export class DeploymentSystem {
         const zone = this.deploymentZones.get(team);
         if (!zone) return false;
         
+        // Quick capacity check; actual slot choice happens during deploy respecting sections
         const availableSlot = this.findAvailableSlot(zone, unitConfig.size);
         if (!availableSlot) return false;
         
@@ -78,9 +102,18 @@ export class DeploymentSystem {
         return true;
     }
     
-    private findAvailableSlot(zone: DeploymentZone, unitSize: 'small' | 'normal' | 'large'): DeploymentSlot | null {
+    private findAvailableSlot(zone: DeploymentZone, unitSize: 'small' | 'normal' | 'large', preferredSection?: 'front' | 'middle' | 'back'): DeploymentSlot | null {
         const slotsNeeded = this.getSlotsNeeded(unitSize);
         
+        // Prefer section if provided
+        if (preferredSection) {
+            for (const slot of zone.slots) {
+                if (!slot.occupied && slot.section === preferredSection && this.canFitUnit(slot, unitSize)) {
+                    return slot;
+                }
+            }
+        }
+        // Fallback to any available slot
         for (const slot of zone.slots) {
             if (!slot.occupied && this.canFitUnit(slot, unitSize)) {
                 return slot;
@@ -112,7 +145,8 @@ export class DeploymentSystem {
         
         while (queue.length > 0) {
             const unitConfig = queue[0];
-            const slot = this.findAvailableSlot(zone, unitConfig.size);
+            const preferredSection = this.getPreferredSection(unitConfig.unitType);
+            const slot = this.findAvailableSlot(zone, unitConfig.size, preferredSection);
             
             if (!slot) break;
             
@@ -127,6 +161,22 @@ export class DeploymentSystem {
             } else {
                 break;
             }
+        }
+    }
+
+    private getPreferredSection(unitType: UnitType): 'front' | 'middle' | 'back' {
+        switch (unitType) {
+            case UnitType.WARRIOR:
+            case UnitType.NINJA:
+                return 'front';
+            case UnitType.SNIPER:
+            case UnitType.SHOTGUNNER:
+                return 'middle';
+            case UnitType.DARK_MAGE:
+            case UnitType.CHRONOTEMPORAL:
+                return 'back';
+            default:
+                return 'middle';
         }
     }
     

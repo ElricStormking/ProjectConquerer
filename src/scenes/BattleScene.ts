@@ -21,6 +21,7 @@ export class BattleScene extends Phaser.Scene {
     
     // Victory system
     private battleEnded: boolean = false;
+    private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
     private victoryOverlay!: Phaser.GameObjects.Graphics;
     private victoryText!: Phaser.GameObjects.Text;
     
@@ -30,6 +31,14 @@ export class BattleScene extends Phaser.Scene {
 
     create() {
         this.setupSystems();
+        // Ensure SkillSelectionScene is running so its display list exists
+        if (!this.scene.isActive('SkillSelectionScene')) {
+            this.scene.launch('SkillSelectionScene');
+        }
+        // World background
+        const bg = this.add.image(960, 540, 'world_bg');
+        bg.setDepth(-10000);
+        bg.setDisplaySize(1920, 1080);
         this.setupCamera();
         this.createTestEnvironment();
         this.setupDeploymentZones();
@@ -43,22 +52,25 @@ export class BattleScene extends Phaser.Scene {
         this.unitManager = new UnitManager(this, this.physicsManager);
         this.combatSystem = new CombatSystem(this, this.unitManager);
         this.deploymentSystem = new DeploymentSystem(this.unitManager);
-        this.levelUpSystem = new LevelUpSystem(this);
+        this.levelUpSystem = new LevelUpSystem(this, this.unitManager);
         this.skillManager = new SkillManager();
         this.projectileSystem = new ProjectileSystem(this);
+
+        // Create physical walls matching the green frame battlefield (100,100, 1720x880)
+        // Add a small inward padding so unit centers never cross the visible line
+        this.physicsManager.setBattlefieldBounds(100, 100, 1720, 880, 5, 5);
     }
 
     private setupCamera() {
         const camera = this.cameras.main;
         
-        // Set camera to show exactly 1920x1080 battlefield at 1:1 scale
-        camera.setZoom(1.0);
-        
-        // Center camera on the battlefield center and lock it
-        camera.centerOn(960, 540);
-        
-        // Set fixed bounds - no scrolling beyond battlefield
+        // Lock camera to 1920x1080 world in world units; avoid scaling offsets
+        camera.setZoom(1);
         camera.setBounds(0, 0, 1920, 1080);
+        camera.scrollX = 0;
+        camera.scrollY = 0;
+        camera.centerOn(this.battlefield.centerX, this.battlefield.centerY);
+        camera.roundPixels = true;
         
         // Disable camera panning - fixed battlefield view
         // Remove pointer drag functionality to keep battlefield fixed
@@ -91,17 +103,25 @@ export class BattleScene extends Phaser.Scene {
         // Add battlefield boundary (visible edges of play area)
         const boundaryGraphics = this.add.graphics();
         boundaryGraphics.lineStyle(3, 0x00ff00, 0.5);
-        boundaryGraphics.strokeRect(100, 100, 1720, 880);
+        const left = this.battlefield.centerX - this.battlefield.width / 2;
+        const top = this.battlefield.centerY - this.battlefield.height / 2;
+        boundaryGraphics.strokeRect(left, top, this.battlefield.width, this.battlefield.height);
         
         // Add environmental objects (trees and bushes)
         this.createEnvironmentalObjects();
     }
 
     private setupDeploymentZones() {
-        // Position deployment zones within 1920x1080 battlefield
-        // Zone 1 on the left side, Zone 2 on the right side
-        this.deploymentSystem.createDeploymentZone(1, 350, 540, 350, 400);
-        this.deploymentSystem.createDeploymentZone(2, 1570, 540, 350, 400);
+        // Position deployment zones within centered battlefield
+        const left = this.battlefield.centerX - this.battlefield.width / 2;
+        const zoneWidth = 350;
+        const zoneHeight = 400;
+        const sideOffset = 250; // distance from border to zone center
+        const zone1CenterX = left + sideOffset;
+        const zone2CenterX = left + this.battlefield.width - sideOffset;
+        const zoneCenterY = this.battlefield.centerY;
+        this.deploymentSystem.createDeploymentZone(1, zone1CenterX, zoneCenterY, zoneWidth, zoneHeight);
+        this.deploymentSystem.createDeploymentZone(2, zone2CenterX, zoneCenterY, zoneWidth, zoneHeight);
         
         this.visualizeDeploymentZones();
     }
@@ -110,34 +130,66 @@ export class BattleScene extends Phaser.Scene {
         const zone1 = this.deploymentSystem.getDeploymentZone(1);
         const zone2 = this.deploymentSystem.getDeploymentZone(2);
         
-        if (zone1) {
-            const graphics1 = this.add.graphics();
-            graphics1.lineStyle(2, 0x4444ff, 0.3);
-            graphics1.fillStyle(0x4444ff, 0.1);
-            graphics1.fillRect(zone1.centerX - zone1.width/2, zone1.centerY - zone1.height/2, zone1.width, zone1.height);
-            graphics1.strokeRect(zone1.centerX - zone1.width/2, zone1.centerY - zone1.height/2, zone1.width, zone1.height);
-        }
-        
-        if (zone2) {
-            const graphics2 = this.add.graphics();
-            graphics2.lineStyle(2, 0xff4444, 0.3);
-            graphics2.fillStyle(0xff4444, 0.1);
-            graphics2.fillRect(zone2.centerX - zone2.width/2, zone2.centerY - zone2.height/2, zone2.width, zone2.height);
-            graphics2.strokeRect(zone2.centerX - zone2.width/2, zone2.centerY - zone2.height/2, zone2.width, zone2.height);
-        }
+        const drawThreeColumns = (zone: any, team: number) => {
+            const x0 = zone.centerX - zone.width/2;
+            const y0 = zone.centerY - zone.height/2;
+            // Match columns used in DeploymentSystem: 3/2/1 distribution
+            const totalCols = 6;
+            const frontCols = 3, middleCols = 2, backCols = 1;
+            const colW = zone.width / totalCols;
+            // rows increased in DeploymentSystem for capacity; we don't slice horizontally here
+            const colors = {
+                front: 0xffcc33,   // amber
+                middle: 0x66ccff,  // cyan
+                back: 0xcc99ff     // purple
+            };
+            // Determine visual spans per section
+            const sections = team === 1
+                ? [ { key: 'back', span: backCols }, { key: 'middle', span: middleCols }, { key: 'front', span: frontCols } ]
+                : [ { key: 'front', span: frontCols }, { key: 'middle', span: middleCols }, { key: 'back', span: backCols } ];
+            let cursor = 0;
+            sections.forEach(sec => {
+                const g = this.add.graphics();
+                const color = (colors as any)[sec.key];
+                g.lineStyle(2, color, 0.6);
+                g.fillStyle(color, 0.15);
+                // For back column, give a slightly darker fill to emphasize area but height remains full; vertical capacity increased via rows
+                g.fillRect(x0 + cursor * colW, y0, sec.span * colW, zone.height);
+                g.strokeRect(x0 + cursor * colW, y0, sec.span * colW, zone.height);
+                // Label
+                const label = this.add.text(x0 + (cursor + sec.span/2) * colW, y0 - 12, sec.key.toUpperCase(), {
+                    fontSize: '12px', color: '#ffffff', stroke: '#000000', strokeThickness: 2
+                }).setOrigin(0.5, 1);
+                label.setAlpha(0.7);
+                cursor += sec.span;
+            });
+            // Outline whole zone lightly
+            const outline = this.add.graphics();
+            outline.lineStyle(2, team === 1 ? 0x4444ff : 0xff4444, 0.3);
+            outline.strokeRect(x0, y0, zone.width, zone.height);
+        };
+
+        if (zone1) drawThreeColumns(zone1, 1);
+        if (zone2) drawThreeColumns(zone2, 2);
     }
 
     private setupTestUnits() {
-        const team1Units = [];
-        const team2Units = [];
+        const team1Units = [] as any[];
+        const team2Units = [] as any[];
         
-        // Create exactly 8 units for each of the 6 unit classes = 48 units per team
-        const unitTypes = [UnitType.CHRONOTEMPORAL, UnitType.SNIPER, UnitType.DARK_MAGE, UnitType.WARRIOR, UnitType.NINJA, UnitType.SHOTGUNNER];
+        const counts: Array<{ type: UnitType; count: number }> = [
+            { type: UnitType.WARRIOR, count: 10 },
+            { type: UnitType.NINJA, count: 6 },
+            { type: UnitType.SNIPER, count: 6 },
+            { type: UnitType.DARK_MAGE, count: 4 },
+            { type: UnitType.SHOTGUNNER, count: 4 },
+            { type: UnitType.CHRONOTEMPORAL, count: 4 }
+        ];
         
-        unitTypes.forEach(unitType => {
-            for (let i = 0; i < 8; i++) {
-                team1Units.push(UnitFactory.createUnit(unitType, 1, 0, 0, 1));
-                team2Units.push(UnitFactory.createUnit(unitType, 2, 0, 0, 1));
+        counts.forEach(({ type, count }) => {
+            for (let i = 0; i < count; i++) {
+                team1Units.push(UnitFactory.createUnit(type, 1, 0, 0, 1));
+                team2Units.push(UnitFactory.createUnit(type, 2, 0, 0, 1));
             }
         });
         
@@ -256,6 +308,22 @@ export class BattleScene extends Phaser.Scene {
         this.events.on('damage-dealt', (event: any) => {
             console.log(`Damage dealt: ${event.damage} (${event.armorFacing})`);
         });
+
+        // Handle Dark Mage projectile explosion AoE damage
+        this.events.on('dark-mage-explosion', (payload: { x: number; y: number; radius: number; damage: number; attackerTeam?: number }) => {
+            const { x, y, radius, damage, attackerTeam } = payload;
+            const units = this.unitManager.getAllUnits();
+            units.forEach(unit => {
+                if (unit.isDead()) return;
+                const pos = unit.getPosition();
+                const dist = Phaser.Math.Distance.Between(x, y, pos.x, pos.y);
+                if (dist <= radius) {
+                    // Apply damage only to opposing teams if attackerTeam provided
+                    if (attackerTeam && unit.getTeam() === attackerTeam) return;
+                    this.combatSystem.dealDamage(unit, unit, damage);
+                }
+            });
+        });
         
         // Unit death -> spawn XP orb  
         this.events.on('unit-death', (unit: any) => {
@@ -271,6 +339,10 @@ export class BattleScene extends Phaser.Scene {
         this.events.on('level-up', (data: any) => {
             const choices = this.skillManager.generateSkillChoices(data.newLevel);
             const skillScene = this.scene.get('SkillSelectionScene') as any;
+            // Make sure the selection UI is above everything
+            if (this.scene.isActive('SkillSelectionScene')) {
+                this.scene.bringToTop('SkillSelectionScene');
+            }
             skillScene.showSkillSelection(choices, data.newLevel);
         });
         
@@ -302,39 +374,31 @@ export class BattleScene extends Phaser.Scene {
             
             const currentPos = unit.getPosition();
             
-            // Battlefield bounds (with 50px margin from edges)
+            // Battlefield bounds (based on centered battlefield)
+            const bfLeft = this.battlefield.centerX - this.battlefield.width / 2;
+            const bfTop = this.battlefield.centerY - this.battlefield.height / 2;
             const bounds = {
-                minX: 50,
-                maxX: 1870,
-                minY: 50,
-                maxY: 1030
+                minX: bfLeft + 5,
+                maxX: bfLeft + this.battlefield.width - 5,
+                minY: bfTop + 5,
+                maxY: bfTop + this.battlefield.height - 5
             };
             
             // If unit is outside bounds, push it back towards center
             if (currentPos.x < bounds.minX || currentPos.x > bounds.maxX || 
                 currentPos.y < bounds.minY || currentPos.y > bounds.maxY) {
-                
-                const centerX = 960;
-                const centerY = 540;
-                const direction = {
-                    x: centerX - currentPos.x,
-                    y: centerY - currentPos.y
-                };
-                
-                const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-                if (magnitude > 0) {
-                    direction.x /= magnitude;
-                    direction.y /= magnitude;
-                    unit.move(direction);
-                }
-                return; // Don't pursue enemies when out of bounds
+                // Teleport back to nearest edge point and zero velocity
+                const clampedX = Phaser.Math.Clamp(currentPos.x, bounds.minX, bounds.maxX);
+                const clampedY = Phaser.Math.Clamp(currentPos.y, bounds.minY, bounds.maxY);
+                (unit as any).teleportTo(clampedX, clampedY);
+                return; // Skip AI this tick
             }
             
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
             if (enemies.length === 0) return;
             
             // Find closest enemy
-            let closestEnemy = null;
+            let closestEnemy: any = null;
             let closestDistance = Infinity;
             
             enemies.forEach(enemy => {
@@ -352,9 +416,27 @@ export class BattleScene extends Phaser.Scene {
             
             if (closestEnemy) {
                 const targetPos = closestEnemy.getPosition();
+                const dxToTarget = targetPos.x - currentPos.x;
+                const dyToTarget = targetPos.y - currentPos.y;
+                const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
+                
+                // Ranged units stop advancing once in range
+                const unitConfig = unit.getConfig();
+                if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
+                    return; // hold position and let combat system handle firing
+                }
+
+                // Ninja jump: quick gap close if within medium range and off cooldown
+                if (unitConfig.unitType === UnitType.NINJA) {
+                    const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
+                    if (jumped) {
+                        return; // let the jump carry for this tick
+                    }
+                }
+                
                 let direction = {
-                    x: targetPos.x - currentPos.x,
-                    y: targetPos.y - currentPos.y
+                    x: dxToTarget,
+                    y: dyToTarget
                 };
                 
                 // Check if moving towards target would take unit out of bounds
@@ -400,9 +482,15 @@ export class BattleScene extends Phaser.Scene {
         const units = this.unitManager.getAllUnits();
         
         units.forEach(unit => {
-            if (unit.isDead() || !unit.canAttack(currentTime)) return;
+            if (unit.isDead()) return;
+            // Chronotemporal heal pulses should not depend on attack cooldown
+            if (unit.getConfig().unitType === UnitType.CHRONOTEMPORAL) {
+                this.pulseChronoHeal(unit as any, currentTime);
+            }
+            if (!unit.canAttack(currentTime)) return;
             
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            // allies variable removed (no direct use here)
             
             // Find enemies in range
             let targetEnemy = null;
@@ -429,13 +517,61 @@ export class BattleScene extends Phaser.Scene {
                 if (this.isRangedUnit(unitConfig.unitType)) {
                     this.createProjectileAttack(unit, targetEnemy, unitConfig.unitType);
                 } else if (this.isMeleeUnit(unitConfig.unitType)) {
-                    // Melee attack with swing animation and 1-second cooldown
-                    unit.performMeleeAttack(targetEnemy, currentTime);
+                    // Melee attack with swing animation and sector damage
+                    unit.performMeleeAttack(targetEnemy, currentTime, this.unitManager as any, this.combatSystem as any);
                 }
                 
                 unit.setLastAttackTime(currentTime);
             }
         });
+    }
+
+    private pulseChronoHeal(unit: any, currentTime: number): void {
+        // Trigger roughly every 2s
+        if (currentTime % 2000 >= 60) return;
+        const center = unit.getPosition();
+        const healRadius = 220;
+        const healAmount = 8;
+        const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+        allies.forEach(a => {
+            if (a.isDead()) return;
+            const p = a.getPosition();
+            const d = Phaser.Math.Distance.Between(center.x, center.y, p.x, p.y);
+            if (d <= healRadius) {
+                (a as any).heal(healAmount);
+                // Green cross effect above healed ally
+                const cross = this.add.graphics();
+                cross.setDepth(5001);
+                cross.setBlendMode(Phaser.BlendModes.ADD);
+                const cx = p.x;
+                const cy = p.y - 30;
+                cross.setPosition(cx, cy);
+                cross.fillStyle(0x00ff66, 1);
+                // Draw relative to (0,0) so tweening y actually moves it
+                cross.fillRect(-3, -10, 6, 20);
+                cross.fillRect(-10, -3, 20, 6);
+                this.tweens.add({ targets: cross, alpha: 0, y: cy - 16, duration: 400, onComplete: () => cross.destroy() });
+            }
+        });
+        // Healing circle visuals
+        const g = this.add.graphics();
+        g.setDepth(4000);
+        g.setBlendMode(Phaser.BlendModes.ADD);
+        g.setPosition(center.x, center.y);
+        g.fillStyle(0x00ffcc, 0.06);
+        g.fillCircle(0, 0, healRadius);
+        g.lineStyle(2, 0x00ffcc, 0.5);
+        g.strokeCircle(0, 0, healRadius);
+        const ring = this.add.graphics();
+        ring.setDepth(4001);
+        ring.setBlendMode(Phaser.BlendModes.ADD);
+        ring.setPosition(center.x, center.y);
+        ring.lineStyle(2, 0x66ffe6, 0.6);
+        ring.strokeCircle(0, 0, healRadius * 0.7);
+        // Scale around its own position instead of world origin by keeping drawing at (0,0)
+        ring.setScale(1);
+        this.tweens.add({ targets: ring, alpha: 0, scaleX: 1.35, scaleY: 1.35, duration: 320, onComplete: () => ring.destroy() });
+        this.tweens.add({ targets: g, alpha: 0, duration: 380, onComplete: () => g.destroy() });
     }
     
     private applySkillEffects(): void {
@@ -482,7 +618,7 @@ export class BattleScene extends Phaser.Scene {
                 speed = 600; // Fast bullet
                 break;
             case UnitType.SHOTGUNNER:
-                speed = 400; // Medium speed pellets
+                speed = 450; // Slightly faster pellets
                 break;
             case UnitType.DARK_MAGE:
                 speed = 200; // Slow magic orb
@@ -492,6 +628,28 @@ export class BattleScene extends Phaser.Scene {
                 break;
         }
         
+        // For shotgunner, draw a 90° cone toward nearest enemy for feedback
+        if (unitType === UnitType.SHOTGUNNER) {
+            const start = attackerPos;
+            const target = targetPos;
+            const angle = Phaser.Math.Angle.Between(start.x, start.y, target.x, target.y);
+            const arc = Phaser.Math.DegToRad(90);
+            const radius = 140;
+            const uiScene = this.scene.get('UIScene');
+            const sector = uiScene ? (uiScene as any).add.graphics() : this.add.graphics();
+            sector.setBlendMode(Phaser.BlendModes.ADD);
+            sector.setDepth(4500);
+            sector.setPosition(start.x, start.y);
+            sector.fillStyle(0xffaa33, 0.35);
+            sector.beginPath();
+            sector.moveTo(0, 0);
+            sector.arc(0, 0, radius, angle - arc/2, angle + arc/2, false);
+            sector.closePath();
+            sector.fillPath();
+            const tw = uiScene ? (uiScene as any).tweens : this.tweens;
+            tw.add({ targets: sector, alpha: 0, duration: 250, onComplete: () => sector.destroy() });
+        }
+
         this.projectileSystem.createProjectile({
             startX: attackerPos.x,
             startY: attackerPos.y,
@@ -499,7 +657,8 @@ export class BattleScene extends Phaser.Scene {
             targetY: targetPos.y,
             unitType: unitType,
             damage: attackerUnit.getDamage(),
-            speed: speed
+            speed: speed,
+            attackerTeam: attackerUnit.getTeam()
         });
         
         // Schedule damage to be dealt when projectile hits
