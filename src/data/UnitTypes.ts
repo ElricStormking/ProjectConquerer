@@ -90,13 +90,13 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
         size: 'normal',
         rarity: 'common',
         baseStats: {
-            maxHealth: 120,
+            maxHealth: 200,
             damage: 16,
             armor: 6,
             moveSpeed: 50,
             attackSpeed: 1.0,
             range: 30,
-            mass: 60
+            mass: 100
         }
     },
     
