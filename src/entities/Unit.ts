@@ -64,6 +64,11 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     private statusEffects: Map<StatusEffect, number> = new Map();
     private lastAttackTime: number = 0;
+
+    // Visual indicator for building-based buffs (Armor Shop / Overclock
+    // Stable) shown as a yellow square next to the unit name.
+    private buildingBuffActive: boolean = false;
+    private buffSquare?: Phaser.GameObjects.Rectangle;
     
     // Animation state
     private lastMoveDirection: 'down' | 'up' | 'left' | 'right' = 'down';
@@ -134,8 +139,14 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Set origin to center-bottom for proper positioning (feet at position)
         this.sprite.setOrigin(0.5, 0.8);
         
-        // 96x96 sprites loaded at full size - no scaling needed
-        this.sprite.setScale(1.0); // Display at native 96x96 pixel size
+        // 96x96 sprites; render at half scale for normal units. Bosses like
+        // the Raider Boss are visually scaled up to be three times larger
+        // than a normal enemy.
+        let scale = 0.5;
+        if (this.config.unitType === UnitType.RAIDER_BOSS) {
+            scale *= 3;
+        }
+        this.sprite.setScale(scale);
         
         // Set depth for proper layering
         this.sprite.setDepth(this.config.y);
@@ -177,6 +188,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.sprite = this.scene.add.sprite(this.config.x, this.config.y, `fallback_${this.id}`);
         this.sprite.setData('unit', this);
         this.sprite.setOrigin(0.5, 0.5);
+        let scale = 0.5;
+        if (this.config.unitType === UnitType.RAIDER_BOSS) {
+            scale *= 3;
+        }
+        this.sprite.setScale(scale);
         
         // Create health bar and team flag
         this.healthBarBg = this.scene.add.graphics();
@@ -188,7 +204,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private updateHealthBar(): void {
-        const spriteHeight = 96; // 96x96 sprites at 1.0x scale = 96px
+        const spriteHeight = this.sprite ? this.sprite.displayHeight : 96;
         const barWidth = 50; // Width to match sprite size
         const barHeight = 4;
         const barY = -spriteHeight - 10; // Position above sprite with margin
@@ -207,7 +223,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private createTeamFlag(): void {
-        const spriteHeight = 96;
+        const spriteHeight = this.sprite ? this.sprite.displayHeight : 96;
         const flagSize = 8;
         const barY = -spriteHeight - 10;
         const flagX = 30; // Position flag to the right of health bar
@@ -264,8 +280,16 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private isMeleeUnit(): boolean {
-        return this.config.unitType === UnitType.WARRIOR || 
-               this.config.unitType === UnitType.NINJA;
+        switch (this.config.unitType) {
+            case UnitType.WARRIOR:
+            case UnitType.NINJA:
+            case UnitType.COG_SOLDIER:
+            case UnitType.COG_AEGIS_TANK:
+            case UnitType.RAIDER_GRUNT:
+                return true;
+            default:
+                return false;
+        }
     }
     
     public performMeleeAttack(targetUnit: any, currentTime: number, unitManager?: UnitManager, combatSystem?: CombatSystem): void {
@@ -277,19 +301,21 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.isAttacking = true;
         this.lastMeleeAttackTime = currentTime;
         
-        // Create attack swing visual
+        // Create attack swing visual: always face directly toward the
+        // target, regardless of any pushback forces.
         const directionToTarget = Math.atan2(
             targetUnit.getPosition().y - this.getPosition().y,
             targetUnit.getPosition().x - this.getPosition().x
         );
-        this.createAttackSwing(directionToTarget);
+        this.facing = directionToTarget;
+        this.createAttackSwing(this.facing);
         
         // Deal damage after short delay (to match visual)
         this.scene.time.delayedCall(200, () => {
             // Area damage in 160-degree sector in front of unit
             if (unitManager && combatSystem) {
                 const center = this.getPosition();
-                const swingAngle = Phaser.Math.DegToRad(160);
+                const swingAngle = Phaser.Math.DegToRad(120); // narrower cone so it feels forward
                 const radius = Math.max(this.range, 60);
                 const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
                 enemies.forEach(enemy => {
@@ -300,7 +326,7 @@ export class Unit extends Phaser.Events.EventEmitter {
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     if (distance > radius) return;
                     const angleToEnemy = Math.atan2(dy, dx);
-                    const diff = Phaser.Math.Angle.Wrap(angleToEnemy - directionToTarget);
+                    const diff = Phaser.Math.Angle.Wrap(angleToEnemy - this.facing);
                     if (Math.abs(diff) <= swingAngle / 2) {
                         combatSystem.dealDamage(this as any, enemy as any, this.getDamage());
                     }
@@ -343,13 +369,13 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         // Draw 160-degree filled sector (fan) using Shapes Arc for reliability
         const swingRadius = Math.max(this.range, 60);
-        const swingArc = Phaser.Math.DegToRad(160);
+        const swingArc = Phaser.Math.DegToRad(120);
         const startDeg = Phaser.Math.RadToDeg(directionAngle - swingArc / 2);
         const endDeg = Phaser.Math.RadToDeg(directionAngle + swingArc / 2);
         
         // Render on UI scene to guarantee top-most display (in case display list order conflicts)
         const uiScene = (this.scene.scene.get('UIScene') as Phaser.Scene) || this.scene;
-        const sector = uiScene.add.arc(myPos.x, myPos.y, swingRadius, startDeg, endDeg, true, swingColor, 0.6);
+        const sector = uiScene.add.arc(myPos.x, myPos.y, swingRadius, startDeg, endDeg, false, swingColor, 0.6);
         sector.setDepth(5000);
         sector.setBlendMode(Phaser.BlendModes.ADD);
         sector.setStrokeStyle(2, 0xffffff, 0.5);
@@ -378,10 +404,14 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private getSizeRadius(): number {
+        if (this.config.unitType === UnitType.RAIDER_BOSS) {
+            // Triple the footprint of a normal large unit
+            return 52.5;
+        }
         switch (this.config.size) {
-            case 'small': return 20;
-            case 'normal': return 25;
-            case 'large': return 35;
+            case 'small': return 10;      // was 20
+            case 'normal': return 12.5;   // was 25
+            case 'large': return 17.5;    // was 35
         }
     }
     
@@ -406,6 +436,16 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.classLabel.y = this.body.position.y - 110;
             this.classLabel.setDepth(this.body.position.y + 2000);
         }
+
+        if (this.buffSquare && this.buildingBuffActive) {
+            const labelWidth = this.classLabel ? this.classLabel.displayWidth : 40;
+            const labelX = this.classLabel ? this.classLabel.x : this.body.position.x;
+            const labelY = this.classLabel ? this.classLabel.y : this.body.position.y - 110;
+            const size = this.buffSquare.width;
+            this.buffSquare.x = labelX - labelWidth / 2 - size - 4;
+            this.buffSquare.y = labelY;
+            this.buffSquare.setDepth(this.classLabel ? this.classLabel.depth : this.body.position.y + 2001);
+        }
         
         // Update trail graphics
         const velocity = this.body.velocity;
@@ -427,23 +467,59 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         // Update and draw trail
         this.updateTrail();
-        
-        if (velocity.x !== 0 || velocity.y !== 0) {
-            this.facing = Math.atan2(velocity.y, velocity.x);
-            this.updateAnimation();
-        }
+
+        // Update animations based on intended facing/movement; do not let
+        // knockback velocity flip unit facing away from enemies.
+        this.updateAnimation();
     }
     
     public move(direction: { x: number; y: number }): void {
         if (this.dead) return;
-        
+
+        const dx = direction.x;
+        const dy = direction.y;
+        const mag = Math.sqrt(dx * dx + dy * dy);
+        if (mag === 0) return;
+
+        const nx = dx / mag;
+        const ny = dy / mag;
+
+        // For melee units, lock facing to the intentional movement
+        // direction (toward enemies), so pushback does not turn them
+        // around.
+        if (this.isMeleeUnit()) {
+            this.facing = Math.atan2(ny, nx);
+        }
+
         const speed = this.moveSpeed * this.moveSpeedMultiplier;
         const force = {
-            x: direction.x * speed * 0.002, // Reduced to 20% of original speed
-            y: direction.y * speed * 0.002
+            x: nx * speed * 0.002, // Reduced to 20% of original speed
+            y: ny * speed * 0.002
         };
         
         this.physicsManager.applyImpulse(this.body, force);
+    }
+
+    public markBuildingBuff(): void {
+        if (this.buildingBuffActive) {
+            return;
+        }
+        this.buildingBuffActive = true;
+
+        const size = 10;
+        const labelWidth = this.classLabel ? this.classLabel.displayWidth : 40;
+        const labelX = this.classLabel ? this.classLabel.x : this.body.position.x;
+        const labelY = this.classLabel ? this.classLabel.y : this.body.position.y - 110;
+
+        this.buffSquare = this.scene.add.rectangle(
+            labelX - labelWidth / 2 - size - 4,
+            labelY,
+            size,
+            size,
+            0xffdd33,
+            1
+        );
+        this.buffSquare.setStrokeStyle(1, 0xffffff, 0.9);
     }
 
     // Quick jump for Ninja: medium range dash with 4s cooldown
@@ -593,6 +669,9 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.classLabel) {
             this.classLabel.destroy();
         }
+        if (this.buffSquare) {
+            this.buffSquare.destroy();
+        }
         this.removeAllListeners();
     }
     
@@ -637,6 +716,16 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.WARRIOR: return 'warrior';
             case UnitType.NINJA: return 'ninja';
             case UnitType.SHOTGUNNER: return 'shotgunner';
+            case UnitType.COG_SOLDIER: return 'warrior';
+            case UnitType.COG_RAILGUNNER: return 'sniper';
+            case UnitType.COG_AEGIS_TANK: return 'shotgunner';
+            case UnitType.COG_MEDIC_DRONE: return 'chronotemporal';
+            case UnitType.COG_THUNDER_CANNON: return 'dark_mage';
+            case UnitType.RAIDER_GRUNT: return 'warrior';
+            case UnitType.RAIDER_BOMBER: return 'shotgunner';
+            case UnitType.RAIDER_BOSS: return 'shotgunner';
+            case UnitType.RAIDER_ROGUE: return 'ninja';
+            case UnitType.RAIDER_ARCHER: return 'sniper';
             default: return 'warrior';
         }
     }
@@ -679,15 +768,29 @@ export class Unit extends Phaser.Events.EventEmitter {
         const spriteKey = this.getSpriteKey();
         const velocity = this.body.velocity;
         const moving = Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1;
+        
+        // Determine facing/direction. For melee units, derive this from the
+        // intended facing (toward enemies) instead of raw physics velocity so
+        // knockback does not cause them to turn their backs.
+        let direction: 'down' | 'up' | 'left' | 'right' = this.lastMoveDirection;
 
-        // Determine facing/direction
-        let direction: 'down' | 'up' | 'left' | 'right' = 'down';
-        if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
-            direction = velocity.x > 0 ? 'right' : 'left';
-        } else if (velocity.y < 0) {
-            direction = 'up';
+        if (this.isMeleeUnit()) {
+            const angle = this.facing;
+            const dx = Math.cos(angle);
+            const dy = Math.sin(angle);
+            if (Math.abs(dx) > Math.abs(dy)) {
+                direction = dx > 0 ? 'right' : 'left';
+            } else {
+                direction = dy < 0 ? 'up' : 'down';
+            }
         } else {
-            direction = 'down';
+            if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+                direction = velocity.x > 0 ? 'right' : 'left';
+            } else if (velocity.y < 0) {
+                direction = 'up';
+            } else {
+                direction = 'down';
+            }
         }
 
         // If moving, ensure the correct walk animation is playing and can switch mid-play

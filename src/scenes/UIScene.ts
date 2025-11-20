@@ -1,139 +1,160 @@
 import Phaser from 'phaser';
+import { ICard, IGameState } from '../types/ironwars';
+import { HandManager } from '../ui/HandManager';
+import { GameStateManager } from '../systems/GameStateManager';
 
 export class UIScene extends Phaser.Scene {
+    private handManager!: HandManager;
+    private battleScene!: Phaser.Scene;
+    private profitText!: Phaser.GameObjects.Text;
+    private goldText!: Phaser.GameObjects.Text;
+    private fortressText!: Phaser.GameObjects.Text;
+    private waveText!: Phaser.GameObjects.Text;
+    private phaseText!: Phaser.GameObjects.Text;
+    private commanderText!: Phaser.GameObjects.Text;
     private fpsText!: Phaser.GameObjects.Text;
-    private unitCountText!: Phaser.GameObjects.Text;
-    private performanceText!: Phaser.GameObjects.Text;
-    private levelText!: Phaser.GameObjects.Text;
-    private xpBar!: Phaser.GameObjects.Graphics;
-    private xpBarBg!: Phaser.GameObjects.Graphics;
-    
+    private startButton!: Phaser.GameObjects.Rectangle;
+    private startButtonLabel!: Phaser.GameObjects.Text;
+    private commanderCooldown = 0;
+    private lastCommanderCast = 0;
+
     constructor() {
         super({ key: 'UIScene' });
     }
 
-    create() {
-        this.setupDebugUI();
-        this.setupBattleUI();
-        this.setupLevelUI();
-        this.setupEventListeners();
+    public create() {
+        this.battleScene = this.scene.get('BattleScene');
+        this.handManager = new HandManager(this, this.battleScene.events);
+        this.createTopHud();
+        this.createStartButton();
+        this.registerBattleEvents();
+        const state = GameStateManager.getInstance().getState();
+        this.handManager.setCards(state.hand);
+        this.updateStateTexts(state);
     }
 
-    private setupDebugUI() {
-        const debugContainer = this.add.container(10, 10);
-        
-        this.fpsText = this.add.text(0, 0, 'FPS: 30', {
-            font: '14px monospace',
-            color: '#00ff00'
-        });
-        
-        this.unitCountText = this.add.text(0, 20, 'Units: 0', {
-            font: '14px monospace',
-            color: '#ffffff'
-        });
-        
-        this.performanceText = this.add.text(0, 40, 'Bodies: 0 / 160', {
-            font: '14px monospace',
-            color: '#ffffff'
-        });
-        
-        debugContainer.add([this.fpsText, this.unitCountText, this.performanceText]);
-    }
-
-    private setupBattleUI() {
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
-        
-        const deployButton = this.add.text(width - 150, height - 60, 'DEPLOY', {
-            font: 'bold 20px sans-serif',
-            color: '#ffffff',
-            backgroundColor: '#4444ff',
-            padding: { x: 20, y: 10 }
-        }).setInteractive();
-        
-        deployButton.on('pointerdown', () => {
-            this.events.emit('deploy-units');
-        });
-        
-        deployButton.on('pointerover', () => {
-            deployButton.setBackgroundColor('#6666ff');
-        });
-        
-        deployButton.on('pointerout', () => {
-            deployButton.setBackgroundColor('#4444ff');
-        });
-    }
-    
-    private setupLevelUI() {
-        const width = this.cameras.main.width;
-        
-        // Level display
-        this.levelText = this.add.text(width / 2, 30, 'Level 1', {
-            font: 'bold 24px sans-serif',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-        
-        // XP Bar background
-        this.xpBarBg = this.add.graphics();
-        this.xpBarBg.fillStyle(0x333333, 1);
-        this.xpBarBg.fillRect(width / 2 - 200, 50, 400, 10);
-        
-        // XP Bar fill
-        this.xpBar = this.add.graphics();
-        
-        this.updateXPBar(0, 100, 1);
-    }
-    
-    private updateXPBar(currentXP: number, requiredXP: number, level: number) {
-        const width = this.cameras.main.width;
-        const percentage = requiredXP > 0 ? (currentXP / requiredXP) : 0;
-        
-        // Update level text
-        this.levelText.setText(`Level ${level}`);
-        
-        // Update XP bar
-        this.xpBar.clear();
-        this.xpBar.fillStyle(0x00ff00, 1);
-        this.xpBar.fillRect(width / 2 - 200, 50, 400 * Math.min(1, percentage), 10);
-    }
-    
-    private setupEventListeners() {
-        // Listen for XP and level changes from the battle scene
-        const battleScene = this.scene.get('BattleScene');
-        
-        battleScene.events.on('xp-gained', (data: any) => {
-            // Get level system from battle scene to calculate progress
-            const levelUpSystem = (battleScene as any).levelUpSystem;
-            if (levelUpSystem) {
-                const progress = levelUpSystem.getXPProgressToNextLevel();
-                this.updateXPBar(progress.current, progress.required, data.currentLevel);
-            }
-        });
-        
-        battleScene.events.on('level-up', () => {
-            // Flash effect on level up
-            this.cameras.main.flash(500, 255, 255, 0);
-        });
-    }
-
-    update() {
+    public update() {
         const fps = Math.round(this.game.loop.actualFps);
-        this.fpsText.setText(`FPS: ${fps}`);
-        this.fpsText.setColor(fps < 25 ? '#ff0000' : fps < 28 ? '#ffff00' : '#00ff00');
-        
-        const battleScene = this.scene.get('BattleScene');
-        if (battleScene && battleScene.scene.isActive()) {
-            const unitManager = (battleScene as any).unitManager;
-            if (unitManager) {
-                this.unitCountText.setText(`Units: ${unitManager.getUnitCount?.() || 0}`);
-            }
-            
-            const physicsManager = (battleScene as any).physicsManager;
-            if (physicsManager) {
-                const bodyCount = physicsManager.getActiveBodyCount?.() || 0;
-                this.performanceText.setText(`Bodies: ${bodyCount} / 160`);
-                this.performanceText.setColor(bodyCount > 140 ? '#ff0000' : bodyCount > 120 ? '#ffff00' : '#ffffff');
-            }
+        this.fpsText.setText(`FPS ${fps}`);
+        this.updateCommanderCooldown();
+    }
+
+    private createTopHud() {
+        const leftPanel = this.add.rectangle(170, 60, 320, 90, 0x0f111a, 0.7)
+            .setOrigin(0.5)
+            .setStrokeStyle(2, 0xffffff, 0.2);
+        this.profitText = this.add.text(40, 30, 'PROFIT 0', {
+            fontSize: '20px',
+            color: '#ffffff'
+        });
+        this.goldText = this.add.text(40, 60, 'GOLD 0', {
+            fontSize: '18px',
+            color: '#b8c2d3'
+        });
+        this.fortressText = this.add.text(40, 90, 'FORTRESS 0 / 0', {
+            fontSize: '18px',
+            color: '#ffdd88'
+        });
+
+        const rightPanel = this.add.rectangle(1750, 60, 340, 90, 0x0f111a, 0.7)
+            .setOrigin(0.5)
+            .setStrokeStyle(2, 0xffffff, 0.2);
+        this.waveText = this.add.text(1600, 30, 'Wave 0', {
+            fontSize: '20px',
+            color: '#ffffff'
+        });
+        this.phaseText = this.add.text(1600, 60, 'Preparation', {
+            fontSize: '18px',
+            color: '#b8c2d3'
+        });
+        this.commanderText = this.add.text(1600, 90, 'Commander Ready', {
+            fontSize: '18px',
+            color: '#ffb347'
+        });
+
+        this.fpsText = this.add.text(20, 110, 'FPS 0', {
+            fontSize: '16px',
+            color: '#7f8ea3'
+        });
+
+        this.add.existing(leftPanel);
+        this.add.existing(rightPanel);
+    }
+
+    private createStartButton() {
+        const cx = this.cameras.main.width / 2;
+        const cy = this.cameras.main.height - 80;
+
+        const button = this.add.rectangle(cx, cy, 260, 60, 0x1d1f2c, 0.9)
+            .setStrokeStyle(2, 0xffffff, 0.4)
+            .setOrigin(0.5);
+        const label = this.add.text(cx, cy, 'Start Battle', {
+            fontSize: '24px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        button.setInteractive({ useHandCursor: true });
+        button.on('pointerover', () => button.setFillStyle(0x262a40, 0.95));
+        button.on('pointerout', () => button.setFillStyle(0x1d1f2c, 0.9));
+        button.on('pointerdown', () => {
+            this.battleScene.events.emit('ui:start-wave');
+        });
+
+        this.startButton = button;
+        this.startButtonLabel = label;
+    }
+
+    private registerBattleEvents() {
+        this.battleScene.events.on('hand-updated', (payload: { hand: ICard[] }) => {
+            this.handManager.setCards(payload.hand);
+        });
+
+        this.battleScene.events.on('state-updated', (state: IGameState) => {
+            this.updateStateTexts(state);
+        });
+
+        this.battleScene.events.on('phase-changed', (phase: string) => {
+            this.phaseText.setText(phase);
+            // Only show Start button when in a building/transition phase
+            const visible = phase === 'PREPARATION' || phase === 'WAVE_COMPLETE';
+            this.startButton.setVisible(visible);
+            this.startButtonLabel.setVisible(visible);
+        });
+
+        this.battleScene.events.on('commander-cast', (payload: { cooldown: number; lastCast: number }) => {
+            this.commanderCooldown = payload.cooldown;
+            this.lastCommanderCast = payload.lastCast;
+        });
+
+        this.battleScene.events.on('battle-victory', () => {
+            this.phaseText.setText('Victory');
+            this.commanderText.setText('Playtest ready');
+        });
+
+        this.battleScene.events.on('battle-defeat', () => {
+            this.phaseText.setText('Defeat');
+            this.commanderText.setText('Fortress destroyed');
+        });
+    }
+
+    private updateStateTexts(state: IGameState) {
+        this.profitText.setText(`PROFIT ${state.factionResource}`);
+        this.goldText.setText(`GOLD ${state.gold}`);
+        this.fortressText.setText(`FORTRESS ${state.fortressHp} / ${state.fortressMaxHp}`);
+        this.waveText.setText(`Wave ${state.currentWave}`);
+    }
+
+    private updateCommanderCooldown() {
+        if (this.commanderCooldown <= 0) {
+            this.commanderText.setText('Commander Ready');
+            return;
+        }
+        const remaining = Math.max(0, this.commanderCooldown - (this.time.now - this.lastCommanderCast));
+        if (remaining === 0) {
+            this.commanderText.setText('Commander Ready');
+        } else {
+            this.commanderText.setText(`Commander ${Math.ceil(remaining / 1000)}s`);
         }
     }
 }

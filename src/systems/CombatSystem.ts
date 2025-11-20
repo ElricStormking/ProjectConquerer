@@ -119,9 +119,10 @@ export class CombatSystem {
             targetPos.x - attackerPos.x
         );
         
-        const baseForce = damage * 0.5;
+        // Softer knockback: scale force down so units don't fly unrealistically far
+        const baseForce = damage * 0.05; // was 0.5 – 10x weaker
         const massRatio = attacker.getMass() / target.getMass();
-        const finalForce = baseForce * Math.min(2, massRatio);
+        const finalForce = baseForce * Math.min(1, massRatio); // cap ratio at 1
         
         return {
             x: Math.cos(angle) * finalForce,

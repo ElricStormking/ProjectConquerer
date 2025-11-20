@@ -3,377 +3,519 @@ import { IsometricRenderer } from '../systems/IsometricRenderer';
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { UnitManager } from '../systems/UnitManager';
 import { CombatSystem } from '../systems/CombatSystem';
-import { DeploymentSystem } from '../systems/DeploymentSystem';
-import { UnitFactory, UnitType } from '../data/UnitTypes';
-import { LevelUpSystem } from '../systems/LevelUpSystem';
-import { SkillManager } from '../data/Skills';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
+import { DeckSystem } from '../systems/DeckSystem';
+import { CardSystem } from '../systems/CardSystem';
+import { GameStateManager } from '../systems/GameStateManager';
+import { FortressSystem } from '../systems/FortressSystem';
+import { WaveManager } from '../systems/WaveManager';
+import { CommanderSystem } from '../systems/CommanderSystem';
+import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
+import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState } from '../types/ironwars';
+
+type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
+type CommanderCastPayload = { screenX: number; screenY: number };
+import { UnitType } from '../data/UnitTypes';
+
+const STARTING_HAND = 5;
 
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
     private physicsManager!: PhysicsManager;
     private unitManager!: UnitManager;
     private combatSystem!: CombatSystem;
-    private deploymentSystem!: DeploymentSystem;
-    private levelUpSystem!: LevelUpSystem;
-    private skillManager!: SkillManager;
     private projectileSystem!: ProjectileSystem;
-    
-    // Victory system
-    private battleEnded: boolean = false;
+    private deckSystem!: DeckSystem;
+    private cardSystem!: CardSystem;
+    private fortressSystem!: FortressSystem;
+    private waveManager!: WaveManager;
+    private commanderSystem!: CommanderSystem;
+    private readonly gameState = GameStateManager.getInstance();
+    private readonly starterData = COG_DOMINION_STARTER;
+
     private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
-    private victoryOverlay!: Phaser.GameObjects.Graphics;
-    private victoryText!: Phaser.GameObjects.Text;
-    
+    private currentDraggedCard?: ICard;
+    private fortressCoreWorld = { x: 0, y: 0 };
+    private fortressCoreGraphic?: Phaser.GameObjects.Graphics;
+    private startButton!: Phaser.GameObjects.Container;
+    private startButtonLabel!: Phaser.GameObjects.Text;
+    private overlayContainer?: Phaser.GameObjects.Container;
+    private battleState: 'preparation' | 'running' | 'victory' | 'defeat' = 'preparation';
+    private hasStartedFirstWave = false;
+    private medicLastHeal: Map<string, number> = new Map();
+
     constructor() {
         super({ key: 'BattleScene' });
     }
 
-    create() {
-        this.setupSystems();
-        // Ensure SkillSelectionScene is running so its display list exists
-        if (!this.scene.isActive('SkillSelectionScene')) {
-            this.scene.launch('SkillSelectionScene');
-        }
-        // World background
-        const bg = this.add.image(960, 540, 'world_bg');
-        bg.setDepth(-10000);
-        bg.setDisplaySize(1920, 1080);
+    public create() {
+        this.launchUIScene();
         this.setupCamera();
-        this.createTestEnvironment();
-        this.setupDeploymentZones();
-        this.setupTestUnits();
-        this.setupEventListeners();
+        this.setupCoreSystems();
+        this.createEnvironment();
+        this.initializeIronwarsPrototype();
+        this.setupPointerBridge();
     }
 
-    private setupSystems() {
-        this.isometricRenderer = new IsometricRenderer(this);
-        this.physicsManager = new PhysicsManager(this);
-        this.unitManager = new UnitManager(this, this.physicsManager);
-        this.combatSystem = new CombatSystem(this, this.unitManager);
-        this.deploymentSystem = new DeploymentSystem(this.unitManager);
-        this.levelUpSystem = new LevelUpSystem(this, this.unitManager);
-        this.skillManager = new SkillManager();
-        this.projectileSystem = new ProjectileSystem(this);
+    public update(_time: number, delta: number) {
+        const deltaSeconds = delta / 1000;
+        this.physicsManager.update(deltaSeconds);
+        this.unitManager.update(deltaSeconds);
+        this.combatSystem.update(deltaSeconds);
+        this.projectileSystem.update(deltaSeconds);
+        this.isometricRenderer.update();
 
-        // Create physical walls matching the green frame battlefield (100,100, 1720x880)
-        // Add a small inward padding so unit centers never cross the visible line
-        this.physicsManager.setBattlefieldBounds(100, 100, 1720, 880, 5, 5);
+        if (this.battleState === 'running') {
+            this.updateUnitAI();
+            this.checkCombat();
+            this.checkFortressCollisions();
+            this.updateMedicHealing(this.time.now);
+            this.cardSystem.update(this.time.now, deltaSeconds);
+        }
+    }
+
+    private launchUIScene() {
+        if (!this.scene.isActive('UIScene')) {
+            this.scene.launch('UIScene');
+        }
     }
 
     private setupCamera() {
         const camera = this.cameras.main;
-        
-        // Lock camera to the battlefield rectangle, not the entire world
-        const left = this.battlefield.centerX - this.battlefield.width / 2;
-        const top = this.battlefield.centerY - this.battlefield.height / 2;
-        
+        // Allow camera to move freely enough that we can center on the
+        // fortress grid and then zoom back out to full battlefield.
         camera.setZoom(1);
-        camera.setBounds(left, top, this.battlefield.width, this.battlefield.height);
+        camera.setBounds(0, 0, 1920, 1080);
         camera.centerOn(this.battlefield.centerX, this.battlefield.centerY);
         camera.roundPixels = true;
-        
-        // Fixed battlefield view (no dragging), allow limited zoom without showing empty space
+
         this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
             const zoom = camera.zoom;
-            // Prevent zooming out below 1 to avoid exposing empty space around the battlefield
-            camera.zoom = Phaser.Math.Clamp(zoom - deltaY * 0.001, 1, 1.2);
+            camera.zoom = Phaser.Math.Clamp(zoom - deltaY * 0.001, 1, 2.5);
         });
     }
 
-    private createTestEnvironment() {
-        // Create grid for 1920x1080 battlefield at 1:1 zoom
-        const gridSize = 40;
-        const tileWidth = 32;
-        const tileHeight = 16;
-        
-        // Create isometric battlefield grid
-        for (let x = 0; x < gridSize; x++) {
-            for (let y = 0; y < gridSize; y++) {
-                const isoX = (x - y) * (tileWidth / 2);
-                const isoY = (x + y) * (tileHeight / 2);
-                
-                const graphics = this.add.graphics();
-                graphics.lineStyle(1, 0x444444, 0.15); // Very transparent grid
-                graphics.strokeRect(isoX + 960 - tileWidth/2, isoY + 540 - tileHeight/2, tileWidth, tileHeight);
+    private setupCoreSystems() {
+        this.isometricRenderer = new IsometricRenderer(this);
+        this.physicsManager = new PhysicsManager(this);
+        this.unitManager = new UnitManager(this, this.physicsManager);
+        this.combatSystem = new CombatSystem(this, this.unitManager);
+        this.projectileSystem = new ProjectileSystem(this);
+        this.physicsManager.setBattlefieldBounds(100, 100, 1720, 880, 5, 5);
+    }
+
+    private createEnvironment() {
+        const bg = this.add.image(960, 540, 'world_bg');
+        bg.setDepth(-10000);
+        bg.setDisplaySize(1920, 1080);
+
+        // Global isometric grid covering the whole canvas. Use medium-sized
+        // diamonds (128x64) so they are easy to hit but not oversized.
+        const gridSize = 46;
+        const cellWidth = 128;
+        const cellHeight = 64;
+        const gridGraphics = this.add.graphics();
+        gridGraphics.setDepth(-9000);
+        gridGraphics.lineStyle(1, 0xffffff, 0.06);
+
+        for (let gx = -gridSize; gx <= gridSize; gx++) {
+            for (let gy = -gridSize; gy <= gridSize; gy++) {
+                const worldX = (gx - gy) * (cellWidth / 2) + 960;
+                const worldY = (gx + gy) * (cellHeight / 2) + 540;
+
+                if (worldX < -cellWidth || worldX > 1920 + cellWidth || worldY < -cellHeight || worldY > 1080 + cellHeight) {
+                    continue;
+                }
+
+                const halfW = cellWidth / 2;
+                const halfH = cellHeight / 2;
+                gridGraphics.beginPath();
+                gridGraphics.moveTo(worldX, worldY - halfH);
+                gridGraphics.lineTo(worldX + halfW, worldY);
+                gridGraphics.lineTo(worldX, worldY + halfH);
+                gridGraphics.lineTo(worldX - halfW, worldY);
+                gridGraphics.closePath();
+                gridGraphics.strokePath();
             }
         }
-        
-        // Add battlefield boundary (visible edges of play area)
+
         const boundaryGraphics = this.add.graphics();
-        boundaryGraphics.lineStyle(3, 0x00ff00, 0.5);
+        boundaryGraphics.lineStyle(3, 0xffffff, 0.15);
         const left = this.battlefield.centerX - this.battlefield.width / 2;
         const top = this.battlefield.centerY - this.battlefield.height / 2;
         boundaryGraphics.strokeRect(left, top, this.battlefield.width, this.battlefield.height);
-        
-        // Add environmental objects (trees and bushes)
+
         this.createEnvironmentalObjects();
     }
 
-    private setupDeploymentZones() {
-        // Position deployment zones within centered battlefield
-        const left = this.battlefield.centerX - this.battlefield.width / 2;
-        const zoneWidth = 350;
-        const zoneHeight = 400;
-        const sideOffset = 250; // distance from border to zone center
-        const zone1CenterX = left + sideOffset;
-        const zone2CenterX = left + this.battlefield.width - sideOffset;
-        const zoneCenterY = this.battlefield.centerY;
-        this.deploymentSystem.createDeploymentZone(1, zone1CenterX, zoneCenterY, zoneWidth, zoneHeight);
-        this.deploymentSystem.createDeploymentZone(2, zone2CenterX, zoneCenterY, zoneWidth, zoneHeight);
-        
-        this.visualizeDeploymentZones();
-    }
+    private initializeIronwarsPrototype() {
+        // Use generous starting resources in the prototype so all 5 unit types
+        // (soldier, railgunner, tank, medic, cannon) can be summoned for testing.
+        this.gameState.initialize(this.starterData, 10, 40);
 
-    private visualizeDeploymentZones() {
-        const zone1 = this.deploymentSystem.getDeploymentZone(1);
-        const zone2 = this.deploymentSystem.getDeploymentZone(2);
-        
-        const drawThreeColumns = (zone: any, team: number) => {
-            const x0 = zone.centerX - zone.width/2;
-            const y0 = zone.centerY - zone.height/2;
-            // Match columns used in DeploymentSystem: 3/2/1 distribution
-            const totalCols = 6;
-            const frontCols = 3, middleCols = 2, backCols = 1;
-            const colW = zone.width / totalCols;
-            // rows increased in DeploymentSystem for capacity; we don't slice horizontally here
-            const colors = {
-                front: 0xffcc33,   // amber
-                middle: 0x66ccff,  // cyan
-                back: 0xcc99ff     // purple
-            };
-            // Determine visual spans per section
-            const sections = team === 1
-                ? [ { key: 'back', span: backCols }, { key: 'middle', span: middleCols }, { key: 'front', span: frontCols } ]
-                : [ { key: 'front', span: frontCols }, { key: 'middle', span: middleCols }, { key: 'back', span: backCols } ];
-            let cursor = 0;
-            sections.forEach(sec => {
-                const g = this.add.graphics();
-                const color = (colors as any)[sec.key];
-                g.lineStyle(2, color, 0.6);
-                g.fillStyle(color, 0.15);
-                // For back column, give a slightly darker fill to emphasize area but height remains full; vertical capacity increased via rows
-                g.fillRect(x0 + cursor * colW, y0, sec.span * colW, zone.height);
-                g.strokeRect(x0 + cursor * colW, y0, sec.span * colW, zone.height);
-                // Label
-                const label = this.add.text(x0 + (cursor + sec.span/2) * colW, y0 - 12, sec.key.toUpperCase(), {
-                    fontSize: '12px', color: '#ffffff', stroke: '#000000', strokeThickness: 2
-                }).setOrigin(0.5, 1);
-                label.setAlpha(0.7);
-                cursor += sec.span;
-            });
-            // Outline whole zone lightly
-            const outline = this.add.graphics();
-            outline.lineStyle(2, team === 1 ? 0x4444ff : 0xff4444, 0.3);
-            outline.strokeRect(x0, y0, zone.width, zone.height);
-        };
-
-        if (zone1) drawThreeColumns(zone1, 1);
-        if (zone2) drawThreeColumns(zone2, 2);
-    }
-
-    private setupTestUnits() {
-        const team1Units = [] as any[];
-        const team2Units = [] as any[];
-        
-        const counts: Array<{ type: UnitType; count: number }> = [
-            { type: UnitType.WARRIOR, count: 10 },
-            { type: UnitType.NINJA, count: 6 },
-            { type: UnitType.SNIPER, count: 6 },
-            { type: UnitType.DARK_MAGE, count: 4 },
-            { type: UnitType.SHOTGUNNER, count: 4 },
-            { type: UnitType.CHRONOTEMPORAL, count: 4 }
-        ];
-        
-        counts.forEach(({ type, count }) => {
-            for (let i = 0; i < count; i++) {
-                team1Units.push(UnitFactory.createUnit(type, 1, 0, 0, 1));
-                team2Units.push(UnitFactory.createUnit(type, 2, 0, 0, 1));
-            }
-        });
-        
-        console.log(`Created ${team1Units.length} units for Team 1 and ${team2Units.length} units for Team 2`);
-        
-        team1Units.forEach(unit => this.deploymentSystem.queueUnit(1, unit));
-        team2Units.forEach(unit => this.deploymentSystem.queueUnit(2, unit));
-    }
-
-    private createEnvironmentalObjects() {
-        // Create trees and bushes within 1920x1080 battlefield
-        // Avoid placement in deployment zones and center combat area
-        
-        const numTrees = 25;
-        const numBushes = 35;
-        
-        // Define exclusion zones (deployment areas and central combat zone)
-        const exclusionZones = [
-            { x: 175, y: 340, width: 350, height: 400 },  // Zone 1 area
-            { x: 1395, y: 340, width: 350, height: 400 }, // Zone 2 area
-            { x: 760, y: 440, width: 400, height: 200 }   // Central combat area
-        ];
-        
-        // Create trees within battlefield bounds
-        for (let i = 0; i < numTrees; i++) {
-            let x, y;
-            let attempts = 0;
-            
-            // Find valid position within battlefield bounds
-            do {
-                x = Phaser.Math.Between(150, 1770);
-                y = Phaser.Math.Between(150, 930);
-                attempts++;
-            } while (attempts < 50 && this.isInExclusionZone(x, y, exclusionZones));
-            
-            if (attempts < 50) {
-                this.createTree(x, y);
-            }
-        }
-        
-        // Create bushes within battlefield bounds
-        for (let i = 0; i < numBushes; i++) {
-            let x, y;
-            let attempts = 0;
-            
-            // Find valid position within battlefield bounds
-            do {
-                x = Phaser.Math.Between(150, 1770);
-                y = Phaser.Math.Between(150, 930);
-                attempts++;
-            } while (attempts < 50 && this.isInExclusionZone(x, y, exclusionZones));
-            
-            if (attempts < 50) {
-                this.createBush(x, y);
-            }
-        }
-    }
-    
-    private isInExclusionZone(x: number, y: number, zones: Array<{x: number, y: number, width: number, height: number}>): boolean {
-        return zones.some(zone => 
-            x >= zone.x && x <= zone.x + zone.width &&
-            y >= zone.y && y <= zone.y + zone.height
+        // Position the player's fortress/grid (blue team summon area) in the
+        // upper-left region of the canvas, with medium diamond cells.
+        this.fortressSystem = new FortressSystem(
+            this,
+            this.isometricRenderer,
+            this.starterData.fortress,
+            340, 140,
+            128, 64
         );
-    }
-    
-    private createTree(x: number, y: number) {
-        // Create tree using graphics
-        const tree = this.add.graphics();
-        
-        // Tree trunk
-        tree.fillStyle(0x8B4513, 1); // Brown
-        tree.fillRect(x - 4, y - 8, 8, 16);
-        
-        // Tree canopy (multiple green circles for natural look)
-        tree.fillStyle(0x228B22, 0.8); // Forest green
-        tree.fillCircle(x, y - 20, 16);
-        tree.fillStyle(0x32CD32, 0.7); // Lime green
-        tree.fillCircle(x - 8, y - 15, 12);
-        tree.fillCircle(x + 8, y - 15, 12);
-        tree.fillStyle(0x006400, 0.6); // Dark green
-        tree.fillCircle(x, y - 10, 10);
-        
-        // Add to isometric renderer for proper depth sorting
-        this.isometricRenderer.addToRenderGroup(tree);
-    }
-    
-    private createBush(x: number, y: number) {
-        // Create bush using graphics
-        const bush = this.add.graphics();
-        
-        // Bush body (multiple overlapping circles)
-        bush.fillStyle(0x228B22, 0.7); // Forest green
-        bush.fillCircle(x, y, 8);
-        bush.fillStyle(0x32CD32, 0.6); // Lime green
-        bush.fillCircle(x - 6, y + 2, 6);
-        bush.fillCircle(x + 6, y + 2, 6);
-        bush.fillStyle(0x006400, 0.5); // Dark green
-        bush.fillCircle(x, y + 4, 5);
-        
-        // Add to isometric renderer for proper depth sorting
-        this.isometricRenderer.addToRenderGroup(bush);
+        this.fortressSystem.initialize();
+        const coreX = Math.floor(this.starterData.fortress.gridWidth / 2);
+        const coreY = Math.floor(this.starterData.fortress.gridHeight / 2);
+        this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
+        this.createFortressCorePlaceholder();
+
+        this.deckSystem = new DeckSystem(7);
+        this.deckSystem.reset(this.starterData.deck);
+        this.deckSystem.draw(STARTING_HAND);
+        this.cardSystem = new CardSystem(
+            this,
+            this.deckSystem,
+            this.gameState,
+            this.fortressSystem,
+            this.unitManager
+        );
+
+        this.waveManager = new WaveManager(this, this.unitManager, this.gameState, this.fortressSystem);
+        this.waveManager.loadWaves(this.starterData.waves);
+
+        this.commanderSystem = new CommanderSystem(this, this.unitManager);
+        this.commanderSystem.initialize(this.starterData.commander);
+
+        this.bindStateEvents();
+        this.createPhaseControls();
+        this.gameState.setDeckState(this.deckSystem.getState());
+
+        // Start in building phase view, zoomed in on the fortress grid.
+        this.updateCameraForPhase('PREPARATION');
     }
 
-    private setupEventListeners() {
-        const uiScene = this.scene.get('UIScene');
-        
-        uiScene.events.on('deploy-units', () => {
-            this.deploymentSystem.deployUnits(1);
-            this.deploymentSystem.deployUnits(2);
-            
-            this.time.delayedCall(1000, () => {
-                this.startBattle();
-            });
-        });
-        
-        this.events.on('damage-dealt', (event: any) => {
-            console.log(`Damage dealt: ${event.damage} (${event.armorFacing})`);
+    private bindStateEvents() {
+        this.deckSystem.on('deck-state-changed', (state: IDeckState) => {
+            this.gameState.setDeckState(state);
         });
 
-        // Handle Dark Mage projectile explosion AoE damage
-        this.events.on('dark-mage-explosion', (payload: { x: number; y: number; radius: number; damage: number; attackerTeam?: number }) => {
-            const { x, y, radius, damage, attackerTeam } = payload;
-            const units = this.unitManager.getAllUnits();
-            units.forEach(unit => {
-                if (unit.isDead()) return;
-                const pos = unit.getPosition();
-                const dist = Phaser.Math.Distance.Between(x, y, pos.x, pos.y);
-                if (dist <= radius) {
-                    // Apply damage only to opposing teams if attackerTeam provided
-                    if (attackerTeam && unit.getTeam() === attackerTeam) return;
-                    this.combatSystem.dealDamage(unit, unit, damage);
-                }
-            });
+        this.deckSystem.on('hand-updated', (payload: IHandUpdatePayload) => {
+            this.events.emit('hand-updated', payload);
         });
-        
-        // Unit death -> spawn XP orb  
-        this.events.on('unit-death', (unit: any) => {
-            const xpValue = Math.floor(5 + unit.getMaxHealth() / 20);
-            this.levelUpSystem.spawnXPOrb(
-                unit.getPosition().x,
-                unit.getPosition().y,
-                xpValue
-            );
+
+        this.gameState.on('state-updated', (state: IGameState) => {
+            this.events.emit('state-updated', state);
         });
-        
-        // Level up -> show skill selection
-        this.events.on('level-up', (data: any) => {
-            const choices = this.skillManager.generateSkillChoices(data.newLevel);
-            const skillScene = this.scene.get('SkillSelectionScene') as any;
-            // Make sure the selection UI is above everything
-            if (this.scene.isActive('SkillSelectionScene')) {
-                this.scene.bringToTop('SkillSelectionScene');
+
+        this.gameState.on('phase-changed', (phase: BattlePhase) => {
+            this.events.emit('phase-changed', phase);
+            this.updateCameraForPhase(phase);
+        });
+
+        this.gameState.on('fortress-damaged', (payload: { hp: number; max: number }) => {
+            this.events.emit('fortress-damaged', payload);
+        });
+
+        this.gameState.on('fortress-destroyed', () => {
+            if (this.battleState !== 'defeat' && this.battleState !== 'victory') {
+                this.handleDefeat();
             }
-            skillScene.showSkillSelection(choices, data.newLevel);
         });
-        
-        // Skill selection handling
-        const skillScene = this.scene.get('SkillSelectionScene');
-        skillScene.events.on('skill-selected', (skill: any) => {
-            this.skillManager.selectSkill(skill);
-            this.levelUpSystem.onSkillSelected(skill);
-            this.applySkillEffects();
+
+        this.waveManager.on('wave-started', (index: number) => {
+            this.events.emit('wave-started', index);
+            this.gameState.advanceWave();
+            this.gameState.setPhase('BATTLE');
+            this.battleState = 'running';
+        });
+
+        this.waveManager.on('wave-cleared', () => {
+            if (this.waveManager.hasNextWave()) {
+                // Between waves, return to a full building phase so the
+                // player can adjust their fortress and play additional
+                // cards before the next fight, and draw one new card at the
+                // start of this preparation.
+                this.battleState = 'preparation';
+                this.gameState.setPhase('PREPARATION');
+                this.deckSystem.draw(1);
+                this.showStartButton('Start Next Wave');
+            } else {
+                this.handleVictory();
+            }
+        });
+
+        this.commanderSystem.on('skill-cast', (payload: { cooldown: number; lastCast: number }) => {
+            this.events.emit('commander-cast', payload);
         });
     }
 
-    private startBattle() {
-        console.log('Battle started! Units:', this.unitManager.getUnitCount());
-        
-        // Create a repeating timer for unit AI
-        this.time.addEvent({
-            delay: 100,
-            callback: () => this.updateUnitAI(),
-            loop: true
+    private createPhaseControls() {
+        const container = this.add.container(960, 860);
+        const background = this.add.rectangle(0, 0, 260, 66, 0x1d1f2c, 0.85)
+            .setStrokeStyle(2, 0xffffff, 0.35)
+            .setOrigin(0.5);
+        const label = this.add.text(0, 0, 'Start Battle', {
+            fontSize: '24px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add([background, label]);
+        container.setDepth(5000);
+        container.setSize(260, 66);
+        container.setInteractive(new Phaser.Geom.Rectangle(-130, -33, 260, 66), Phaser.Geom.Rectangle.Contains);
+        container.on('pointerover', () => background.setFillStyle(0x262a40, 0.95));
+        container.on('pointerout', () => background.setFillStyle(0x1d1f2c, 0.85));
+        container.on('pointerdown', () => this.tryStartWave());
+        this.startButton = container;
+        this.startButtonLabel = label;
+    }
+
+    private showStartButton(text: string) {
+        this.startButtonLabel.setText(text);
+        this.startButton.setVisible(true);
+    }
+
+    private hideStartButton() {
+        this.startButton.setVisible(false);
+    }
+
+    private tryStartWave() {
+        if (this.battleState === 'running') {
+            return;
+        }
+        // When the player starts the fighting phase, apply all building
+        // buffs (Armor Shop, Overclock Stable) to units in their adjacent
+        // fortress cells.
+        this.cardSystem.applyBuildingBuffsAtBattleStart();
+        if (!this.hasStartedFirstWave) {
+            this.waveManager.startFirstWave();
+            this.hasStartedFirstWave = true;
+        } else {
+            this.waveManager.startNextWave();
+        }
+        this.hideStartButton();
+    }
+
+    private setupPointerBridge() {
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handlePointerMove(pointer));
+
+        this.events.on('ui:card-drag-start', (card: ICard) => {
+            this.currentDraggedCard = card;
+        });
+
+        this.events.on('ui:card-drag-end', () => {
+            this.currentDraggedCard = undefined;
+            this.fortressSystem.clearHover();
+        });
+
+        this.events.on('ui:card-play', (payload: CardPlayPayload) => {
+            this.handleCardPlacement(payload);
+        });
+
+        this.events.on('ui:start-wave', () => this.tryStartWave());
+
+        this.events.on('ui:commander-cast', (payload: CommanderCastPayload) => {
+            const worldPoint = this.cameras.main.getWorldPoint(payload.screenX, payload.screenY);
+            this.commanderSystem.tryCast(worldPoint.x, worldPoint.y);
         });
     }
-    
+
+    private handlePointerMove(pointer: Phaser.Input.Pointer) {
+        if (!this.currentDraggedCard) {
+            this.fortressSystem.clearHover();
+            return;
+        }
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        const grid = this.fortressSystem.worldToGrid(worldPoint.x, worldPoint.y);
+        const isValid = this.gameState.getState().phase === 'PREPARATION' && this.fortressSystem.isValidCell(grid.x, grid.y);
+        this.fortressSystem.setHoverCell(grid.x, grid.y, isValid);
+    }
+
+    private handleCardPlacement(payload: CardPlayPayload) {
+        const state = this.gameState.getState();
+        if (state.phase !== 'PREPARATION') {
+            this.events.emit('card-placement-result', { cardId: payload.card.id, success: false });
+            return;
+        }
+        const worldPoint = this.cameras.main.getWorldPoint(payload.screenX, payload.screenY);
+        const grid = this.fortressSystem.worldToGrid(worldPoint.x, worldPoint.y);
+        const success = this.cardSystem.resolveCardPlacement({
+            card: payload.card,
+            gridX: grid.x,
+            gridY: grid.y
+        });
+        if (success) {
+            this.fortressSystem.clearHover();
+        }
+        this.events.emit('card-placement-result', { cardId: payload.card.id, success });
+    }
+
+    private checkFortressCollisions() {
+        const enemies = this.unitManager.getUnitsByTeam(2);
+        enemies.forEach(unit => {
+            if (unit.isDead()) return;
+            const pos = unit.getPosition();
+            const dist = Phaser.Math.Distance.Between(pos.x, pos.y, this.fortressCoreWorld.x, this.fortressCoreWorld.y);
+            if (dist <= 90) {
+                this.gameState.takeFortressDamage(25);
+                unit.takeDamage(9999);
+            }
+        });
+    }
+
+    private createFortressCorePlaceholder() {
+        const x = this.fortressCoreWorld.x;
+        const y = this.fortressCoreWorld.y;
+
+        if (this.fortressCoreGraphic) {
+            this.fortressCoreGraphic.destroy();
+        }
+
+        const g = this.add.graphics();
+        this.fortressCoreGraphic = g;
+
+        // Draw a tower base diamond on the core cell.
+        const baseHalfW = 64;
+        const baseHalfH = 32;
+        g.fillStyle(0x1f2229, 0.95);
+        g.lineStyle(2, 0xffcc66, 0.9);
+        g.beginPath();
+        g.moveTo(x, y - baseHalfH);
+        g.lineTo(x + baseHalfW, y);
+        g.lineTo(x, y + baseHalfH);
+        g.lineTo(x - baseHalfW, y);
+        g.closePath();
+        g.fillPath();
+        g.strokePath();
+
+        // Vertical tower body rising from the core.
+        const towerWidth = 46;
+        const towerHeight = 90;
+        const towerBottomY = y - 8;
+        const towerTopY = towerBottomY - towerHeight;
+
+        g.fillStyle(0x343b4a, 1);
+        g.fillRect(x - towerWidth / 2, towerTopY, towerWidth, towerHeight);
+
+        // Subtle vertical edge highlights.
+        g.lineStyle(1.5, 0x6b7a92, 0.8);
+        g.beginPath();
+        g.moveTo(x - towerWidth / 4, towerTopY + 4);
+        g.lineTo(x - towerWidth / 4, towerBottomY - 4);
+        g.moveTo(x + towerWidth / 4, towerTopY + 4);
+        g.lineTo(x + towerWidth / 4, towerBottomY - 4);
+        g.strokePath();
+
+        // Eye on top of the tower.
+        const eyeY = towerTopY - 14;
+        g.fillStyle(0xfff3a8, 1);
+        g.fillCircle(x, eyeY, 13);
+        g.lineStyle(2, 0xffe06b, 0.9);
+        g.strokeCircle(x, eyeY, 13);
+
+        // Pupil / slit.
+        g.fillStyle(0x3b2308, 1);
+        g.fillCircle(x, eyeY, 5);
+        g.lineStyle(2, 0xffe06b, 0.9);
+        g.beginPath();
+        g.moveTo(x, eyeY - 6);
+        g.lineTo(x, eyeY + 6);
+        g.strokePath();
+
+        // Subtle glow rays from the eye.
+        g.lineStyle(1.5, 0xfff3a8, 0.7);
+        const rayLen = 20;
+        g.beginPath();
+        g.moveTo(x - rayLen, eyeY);
+        g.lineTo(x - rayLen / 2, eyeY);
+        g.moveTo(x + rayLen, eyeY);
+        g.lineTo(x + rayLen / 2, eyeY);
+        g.moveTo(x, eyeY - rayLen);
+        g.lineTo(x, eyeY - rayLen / 2);
+        g.moveTo(x, eyeY + rayLen);
+        g.lineTo(x, eyeY + rayLen / 2);
+        g.strokePath();
+
+        // Depth: keep tower in front of units standing near the core.
+        g.setDepth(y + 4000);
+
+        // Gentle breathing animation so the eye feels alive.
+        this.tweens.add({
+            targets: g,
+            scale: { from: 1, to: 1.03 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1
+        });
+    }
+
+    private handleVictory() {
+        if (this.battleState === 'victory') return;
+        this.battleState = 'victory';
+        this.showOverlay('Victory!', 'Prototype wave cleared. Ready for playtest.', 0x44ff88);
+        this.events.emit('battle-victory');
+    }
+
+    private handleDefeat() {
+        if (this.battleState === 'defeat') return;
+        this.battleState = 'defeat';
+        this.showOverlay('Fortress Destroyed', 'Rebuild and try again.', 0xff5566);
+        this.events.emit('battle-defeat');
+    }
+
+    private updateCameraForPhase(phase: BattlePhase) {
+        const camera = this.cameras.main;
+        const duration = 600;
+
+        if (phase === 'PREPARATION') {
+            // Zoom in and center on the player's fortress grid (building phase),
+            // so the spawn diamonds sit in the middle of the screen.
+            const target = this.fortressCoreWorld;
+            camera.pan(target.x, target.y, duration, 'Sine.easeInOut');
+            camera.zoomTo(2.5, duration);
+        } else {
+            // Zoom back out to full battlefield view for fighting / wave clear.
+            camera.pan(this.battlefield.centerX, this.battlefield.centerY, duration, 'Sine.easeInOut');
+            camera.zoomTo(1, duration);
+        }
+    }
+
+    private showOverlay(title: string, subtitle: string, tint: number) {
+        if (this.overlayContainer) {
+            this.overlayContainer.destroy();
+        }
+        const container = this.add.container(960, 540);
+        const bg = this.add.rectangle(0, 0, 620, 260, 0x0b0c10, 0.9)
+            .setStrokeStyle(3, tint, 0.8)
+            .setOrigin(0.5);
+        const titleText = this.add.text(0, -40, title, {
+            fontSize: '48px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        titleText.setTint(tint);
+        const subtitleText = this.add.text(0, 30, subtitle, {
+            fontSize: '24px',
+            color: '#bfc5d2'
+        }).setOrigin(0.5);
+        const restart = this.add.text(0, 100, 'Press R to restart prototype', {
+            fontSize: '20px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        container.add([bg, titleText, subtitleText, restart]);
+        container.setDepth(9000);
+        this.overlayContainer = container;
+
+        this.input.keyboard?.once('keydown-R', () => {
+            this.scene.restart();
+        });
+    }
+
     private updateUnitAI() {
         const units = this.unitManager.getAllUnits();
-        
         units.forEach(unit => {
             if (unit.isDead()) return;
-            
+
             const currentPos = unit.getPosition();
-            
-            // Battlefield bounds (based on centered battlefield)
             const bfLeft = this.battlefield.centerX - this.battlefield.width / 2;
             const bfTop = this.battlefield.centerY - this.battlefield.height / 2;
             const bounds = {
@@ -382,76 +524,61 @@ export class BattleScene extends Phaser.Scene {
                 minY: bfTop + 5,
                 maxY: bfTop + this.battlefield.height - 5
             };
-            
-            // If unit is outside bounds, push it back towards center
-            if (currentPos.x < bounds.minX || currentPos.x > bounds.maxX || 
+
+            if (currentPos.x < bounds.minX || currentPos.x > bounds.maxX ||
                 currentPos.y < bounds.minY || currentPos.y > bounds.maxY) {
-                // Teleport back to nearest edge point and zero velocity
                 const clampedX = Phaser.Math.Clamp(currentPos.x, bounds.minX, bounds.maxX);
                 const clampedY = Phaser.Math.Clamp(currentPos.y, bounds.minY, bounds.maxY);
                 (unit as any).teleportTo(clampedX, clampedY);
-                return; // Skip AI this tick
+                return;
             }
-            
+
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
             if (enemies.length === 0) return;
-            
-            // Find closest enemy
+
             let closestEnemy: any = null;
             let closestDistance = Infinity;
-            
             enemies.forEach(enemy => {
-                if (!enemy.isDead()) {
-                    const distance = Phaser.Math.Distance.Between(
-                        unit.getPosition().x, unit.getPosition().y,
-                        enemy.getPosition().x, enemy.getPosition().y
-                    );
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        closestEnemy = enemy;
-                    }
+                if (enemy.isDead()) return;
+                const distance = Phaser.Math.Distance.Between(
+                    unit.getPosition().x, unit.getPosition().y,
+                    enemy.getPosition().x, enemy.getPosition().y
+                );
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestEnemy = enemy;
                 }
             });
-            
+
             if (closestEnemy) {
                 const targetPos = closestEnemy.getPosition();
                 const dxToTarget = targetPos.x - currentPos.x;
                 const dyToTarget = targetPos.y - currentPos.y;
                 const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
-                
-                // Ranged units stop advancing once in range
+
                 const unitConfig = unit.getConfig();
                 if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
-                    return; // hold position and let combat system handle firing
+                    return;
                 }
 
-                // Ninja jump: quick gap close if within medium range and off cooldown
                 if (unitConfig.unitType === UnitType.NINJA) {
                     const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
                     if (jumped) {
-                        return; // let the jump carry for this tick
+                        return;
                     }
                 }
-                
-                let direction = {
-                    x: dxToTarget,
-                    y: dyToTarget
-                };
-                
-                // Check if moving towards target would take unit out of bounds
-                const nextX = currentPos.x + direction.x * 0.1; // Small step to test
+
+                const direction = { x: dxToTarget, y: dyToTarget };
+                const nextX = currentPos.x + direction.x * 0.1;
                 const nextY = currentPos.y + direction.y * 0.1;
-                
-                if (nextX < bounds.minX || nextX > bounds.maxX || 
-                    nextY < bounds.minY || nextY > bounds.maxY) {
-                    
-                    // Adjust direction to stay within bounds
+
+                if (nextX < bounds.minX || nextX > bounds.maxX || nextY < bounds.minY || nextY > bounds.maxY) {
                     if (nextX < bounds.minX) direction.x = Math.max(0, direction.x);
                     if (nextX > bounds.maxX) direction.x = Math.min(0, direction.x);
                     if (nextY < bounds.minY) direction.y = Math.max(0, direction.y);
                     if (nextY > bounds.maxY) direction.y = Math.min(0, direction.y);
                 }
-                
+
                 const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
                 if (magnitude > 0) {
                     direction.x /= magnitude;
@@ -462,191 +589,158 @@ export class BattleScene extends Phaser.Scene {
         });
     }
 
-    update(_time: number, delta: number) {
-        const deltaSeconds = delta / 1000;
-        
-        this.physicsManager.update(deltaSeconds);
-        this.unitManager.update(deltaSeconds);
-        this.combatSystem.update(deltaSeconds);
-        this.projectileSystem.update(deltaSeconds);
-        this.isometricRenderer.update();
-        this.levelUpSystem.update();
-        
-        this.checkCombat();
-        this.checkVictoryCondition();
-    }
-
     private checkCombat() {
         const currentTime = this.time.now;
         const units = this.unitManager.getAllUnits();
-        
         units.forEach(unit => {
             if (unit.isDead()) return;
-            // Chronotemporal heal pulses should not depend on attack cooldown
-            if (unit.getConfig().unitType === UnitType.CHRONOTEMPORAL) {
-                this.pulseChronoHeal(unit as any, currentTime);
-            }
             if (!unit.canAttack(currentTime)) return;
-            
+
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
-            // allies variable removed (no direct use here)
-            
-            // Find enemies in range
             let targetEnemy = null;
             let closestDistance = unit.getRange();
-            
+
             enemies.forEach(enemy => {
                 if (enemy.isDead()) return;
-                
                 const distance = Phaser.Math.Distance.Between(
                     unit.getPosition().x, unit.getPosition().y,
                     enemy.getPosition().x, enemy.getPosition().y
                 );
-                
                 if (distance <= unit.getRange() && distance < closestDistance) {
                     closestDistance = distance;
                     targetEnemy = enemy;
                 }
             });
-            
+
             if (targetEnemy) {
                 const unitConfig = unit.getConfig();
-                
-                // Check if this is a ranged unit that should fire projectiles
-                if (this.isRangedUnit(unitConfig.unitType)) {
+                if (unitConfig.unitType === UnitType.RAIDER_BOSS) {
+                    this.performBossAreaAttack(unit);
+                } else if (this.isRangedUnit(unitConfig.unitType)) {
                     this.createProjectileAttack(unit, targetEnemy, unitConfig.unitType);
                 } else if (this.isMeleeUnit(unitConfig.unitType)) {
-                    // Melee attack with swing animation and sector damage
                     unit.performMeleeAttack(targetEnemy, currentTime, this.unitManager as any, this.combatSystem as any);
                 }
-                
                 unit.setLastAttackTime(currentTime);
             }
         });
     }
 
-    private pulseChronoHeal(unit: any, currentTime: number): void {
-        // Trigger roughly every 2s
-        if (currentTime % 2000 >= 60) return;
-        const center = unit.getPosition();
-        const healRadius = 220;
-        const healAmount = 8;
-        const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
-        allies.forEach(a => {
-            if (a.isDead()) return;
-            const p = a.getPosition();
-            const d = Phaser.Math.Distance.Between(center.x, center.y, p.x, p.y);
-            if (d <= healRadius) {
-                (a as any).heal(healAmount);
-                // Green cross effect above healed ally
-                const cross = this.add.graphics();
-                cross.setDepth(5001);
-                cross.setBlendMode(Phaser.BlendModes.ADD);
-                const cx = p.x;
-                const cy = p.y - 30;
-                cross.setPosition(cx, cy);
-                cross.fillStyle(0x00ff66, 1);
-                // Draw relative to (0,0) so tweening y actually moves it
-                cross.fillRect(-3, -10, 6, 20);
-                cross.fillRect(-10, -3, 20, 6);
-                this.tweens.add({ targets: cross, alpha: 0, y: cy - 16, duration: 400, onComplete: () => cross.destroy() });
+    private updateMedicHealing(currentTime: number): void {
+        const HEAL_COOLDOWN = 1500; // ms
+        const HEAL_RADIUS = 220;
+        const HEAL_AMOUNT = 6;
+
+        const allies = this.unitManager.getUnitsByTeam(1);
+        const medics = allies.filter(u => u.getConfig().unitType === UnitType.COG_MEDIC_DRONE);
+
+        medics.forEach(medic => {
+            const id = medic.getId();
+            const last = this.medicLastHeal.get(id) ?? 0;
+            if (currentTime - last < HEAL_COOLDOWN) {
+                return;
             }
-        });
-        // Healing circle visuals
-        const g = this.add.graphics();
-        g.setDepth(4000);
-        g.setBlendMode(Phaser.BlendModes.ADD);
-        g.setPosition(center.x, center.y);
-        g.fillStyle(0x00ffcc, 0.06);
-        g.fillCircle(0, 0, healRadius);
-        g.lineStyle(2, 0x00ffcc, 0.5);
-        g.strokeCircle(0, 0, healRadius);
-        const ring = this.add.graphics();
-        ring.setDepth(4001);
-        ring.setBlendMode(Phaser.BlendModes.ADD);
-        ring.setPosition(center.x, center.y);
-        ring.lineStyle(2, 0x66ffe6, 0.6);
-        ring.strokeCircle(0, 0, healRadius * 0.7);
-        // Scale around its own position instead of world origin by keeping drawing at (0,0)
-        ring.setScale(1);
-        this.tweens.add({ targets: ring, alpha: 0, scaleX: 1.35, scaleY: 1.35, duration: 320, onComplete: () => ring.destroy() });
-        this.tweens.add({ targets: g, alpha: 0, duration: 380, onComplete: () => g.destroy() });
-    }
-    
-    private applySkillEffects(): void {
-        const activeSkills = this.skillManager.getActiveSkills();
-        const units = this.unitManager.getAllUnits();
-        
-        // Apply skill effects to all units
-        units.forEach(unit => {
-            activeSkills.forEach(skill => {
-                skill.effects.forEach(effect => {
-                    const value = effect.baseValue + (effect.perRank * (skill.currentRank - 1));
-                    this.applyEffectToUnit(unit, effect.stat, value, effect.isMultiplier);
-                });
+            this.medicLastHeal.set(id, currentTime);
+
+            const center = medic.getPosition();
+            allies.forEach(ally => {
+                if (ally.isDead()) return;
+                const pos = ally.getPosition();
+                const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+                if (dist <= HEAL_RADIUS) {
+                    (ally as any).heal(HEAL_AMOUNT);
+                }
+            });
+
+            const g = this.add.graphics();
+            g.setDepth(4000);
+            g.setBlendMode(Phaser.BlendModes.ADD);
+            g.lineStyle(2, 0x66ffcc, 0.8);
+            g.strokeCircle(center.x, center.y, HEAL_RADIUS);
+            this.tweens.add({
+                targets: g,
+                alpha: 0,
+                duration: 400,
+                onComplete: () => g.destroy()
             });
         });
     }
-    
-    private applyEffectToUnit(unit: any, stat: string, value: number, isMultiplier: boolean): void {
-        // This would apply the effect to the unit based on the stat type
-        // For now, just log it
-        console.log(`Applied ${stat}: ${value}${isMultiplier ? '%' : ''} to unit ${unit.getId()}`);
-    }
-    
+
     private isRangedUnit(unitType: UnitType): boolean {
-        return unitType === UnitType.SNIPER || 
-               unitType === UnitType.DARK_MAGE || 
-               unitType === UnitType.CHRONOTEMPORAL;
+        return [
+            UnitType.SNIPER,
+            UnitType.DARK_MAGE,
+            UnitType.CHRONOTEMPORAL,
+            UnitType.COG_RAILGUNNER,
+            UnitType.COG_THUNDER_CANNON,
+            UnitType.RAIDER_BOMBER,
+            UnitType.RAIDER_ARCHER
+        ].includes(unitType);
     }
-    
+
     private isMeleeUnit(unitType: UnitType): boolean {
-        return unitType === UnitType.WARRIOR || 
-               unitType === UnitType.NINJA || 
-               unitType === UnitType.SHOTGUNNER;
+        return [
+            UnitType.WARRIOR,
+            UnitType.NINJA,
+            UnitType.SHOTGUNNER,
+            UnitType.COG_SOLDIER,
+            UnitType.COG_AEGIS_TANK,
+            UnitType.RAIDER_GRUNT,
+            UnitType.RAIDER_ROGUE
+        ].includes(unitType);
     }
-    
-    private createProjectileAttack(attackerUnit: any, targetUnit: any, unitType: UnitType): void {
+
+    private performBossAreaAttack(boss: any): void {
+        const center = boss.getPosition();
+        const RADIUS = 80; // roughly size of a fortress grid diamond
+
+        const enemies = this.unitManager.getUnitsByTeam(1);
+        enemies.forEach(enemy => {
+            if (enemy.isDead()) return;
+            const pos = enemy.getPosition();
+            const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+            if (dist <= RADIUS) {
+                this.combatSystem.dealDamage(boss as any, enemy as any, boss.getDamage());
+            }
+        });
+
+        // Visual ground slam indicator
+        const g = this.add.graphics();
+        g.setDepth(6000);
+        g.setBlendMode(Phaser.BlendModes.ADD);
+        g.lineStyle(3, 0xffaa55, 0.9);
+        g.strokeCircle(center.x, center.y, RADIUS);
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => g.destroy()
+        });
+    }
+
+    private createProjectileAttack(attackerUnit: any, targetUnit: any, unitType: UnitType) {
         const attackerPos = attackerUnit.getPosition();
         const targetPos = targetUnit.getPosition();
-        
-        // Calculate projectile speed based on unit type
-        let speed = 300; // Default speed
+        let speed = 320;
         switch (unitType) {
             case UnitType.SNIPER:
-                speed = 600; // Fast bullet
+                speed = 600;
                 break;
-            case UnitType.SHOTGUNNER:
-                speed = 450; // Slightly faster pellets
+            case UnitType.COG_THUNDER_CANNON:
+                speed = 220;
                 break;
             case UnitType.DARK_MAGE:
-                speed = 200; // Slow magic orb
+                speed = 220;
                 break;
             case UnitType.CHRONOTEMPORAL:
-                speed = 250; // Medium magic
+                speed = 250;
                 break;
-        }
-        
-        // For shotgunner, draw a 90° cone toward nearest enemy for feedback
-        if (unitType === UnitType.SHOTGUNNER) {
-            const start = attackerPos;
-            const target = targetPos;
-            const angle = Phaser.Math.Angle.Between(start.x, start.y, target.x, target.y);
-            const arc = Phaser.Math.DegToRad(90);
-            const radius = 140;
-            const uiScene = this.scene.get('UIScene');
-            const sector = uiScene ? (uiScene as any).add.graphics() : this.add.graphics();
-            sector.setBlendMode(Phaser.BlendModes.ADD);
-            sector.setDepth(4500);
-            sector.setPosition(start.x, start.y);
-            sector.fillStyle(0xffaa33, 0.35);
-            sector.beginPath();
-            sector.moveTo(0, 0);
-            sector.arc(0, 0, radius, angle - arc/2, angle + arc/2, false);
-            sector.closePath();
-            sector.fillPath();
-            const tw = uiScene ? (uiScene as any).tweens : this.tweens;
-            tw.add({ targets: sector, alpha: 0, duration: 250, onComplete: () => sector.destroy() });
+            case UnitType.COG_RAILGUNNER:
+                speed = 420;
+                break;
+            case UnitType.RAIDER_ARCHER:
+                speed = 420;
+                break;
         }
 
         this.projectileSystem.createProjectile({
@@ -654,118 +748,83 @@ export class BattleScene extends Phaser.Scene {
             startY: attackerPos.y,
             targetX: targetPos.x,
             targetY: targetPos.y,
-            unitType: unitType,
+            unitType,
             damage: attackerUnit.getDamage(),
-            speed: speed,
+            speed,
             attackerTeam: attackerUnit.getTeam()
         });
-        
-        // Schedule damage to be dealt when projectile hits
-        const distance = Phaser.Math.Distance.Between(
-            attackerPos.x, attackerPos.y,
-            targetPos.x, targetPos.y
-        );
-        const travelTime = (distance / speed) * 1000; // Convert to milliseconds
-        
+
+        const distance = Phaser.Math.Distance.Between(attackerPos.x, attackerPos.y, targetPos.x, targetPos.y);
+        const travelTime = (distance / speed) * 1000;
+
         this.time.delayedCall(travelTime, () => {
             if (!targetUnit.isDead()) {
                 this.combatSystem.dealDamage(attackerUnit, targetUnit, attackerUnit.getDamage());
             }
         });
     }
-    
-    private checkVictoryCondition(): void {
-        if (this.battleEnded) return;
-        
-        const team1Units = this.unitManager.getUnitsByTeam(1).filter(unit => !unit.isDead());
-        const team2Units = this.unitManager.getUnitsByTeam(2).filter(unit => !unit.isDead());
-        
-        if (team1Units.length === 0 && team2Units.length > 0) {
-            this.endBattle(2); // Red team wins
-        } else if (team2Units.length === 0 && team1Units.length > 0) {
-            this.endBattle(1); // Blue team wins
+
+    private createEnvironmentalObjects() {
+        const numTrees = 24;
+        const numBushes = 32;
+        const exclusionZones = [
+            { x: 175, y: 340, width: 350, height: 400 },
+            { x: 1395, y: 340, width: 350, height: 400 },
+            { x: 760, y: 440, width: 400, height: 200 }
+        ];
+
+        for (let i = 0; i < numTrees; i++) {
+            let x = 0, y = 0, attempts = 0;
+            do {
+                x = Phaser.Math.Between(150, 1770);
+                y = Phaser.Math.Between(150, 930);
+                attempts++;
+            } while (attempts < 40 && this.isInExclusionZone(x, y, exclusionZones));
+            if (attempts < 40) {
+                this.createTree(x, y);
+            }
+        }
+
+        for (let i = 0; i < numBushes; i++) {
+            let x = 0, y = 0, attempts = 0;
+            do {
+                x = Phaser.Math.Between(150, 1770);
+                y = Phaser.Math.Between(150, 930);
+                attempts++;
+            } while (attempts < 40 && this.isInExclusionZone(x, y, exclusionZones));
+            if (attempts < 40) {
+                this.createBush(x, y);
+            }
         }
     }
-    
-    private endBattle(winningTeam: number): void {
-        this.battleEnded = true;
-        
-        // Stop unit AI
-        this.time.removeAllEvents();
-        
-        // Create victory UI after a short delay
-        this.time.delayedCall(1000, () => {
-            this.showVictoryScreen(winningTeam);
-        });
+
+    private isInExclusionZone(x: number, y: number, zones: Array<{ x: number; y: number; width: number; height: number }>): boolean {
+        return zones.some(zone => x >= zone.x && x <= zone.x + zone.width && y >= zone.y && y <= zone.y + zone.height);
     }
-    
-    private showVictoryScreen(winningTeam: number): void {
-        const centerX = 960;
-        const centerY = 540;
-        
-        // Create semi-transparent overlay
-        this.victoryOverlay = this.add.graphics();
-        this.victoryOverlay.fillStyle(0x000000, 0.7);
-        this.victoryOverlay.fillRect(0, 0, 1920, 1080);
-        this.victoryOverlay.setDepth(1000); // Ensure it's on top
-        
-        // Determine victory message and color
-        const isBlueWin = winningTeam === 1;
-        const victoryMessage = isBlueWin ? "Blue Team Wins!" : "Red Team Wins!";
-        const textColor = isBlueWin ? '#4444ff' : '#ff4444';
-        
-        // Create victory text
-        this.victoryText = this.add.text(centerX, centerY - 50, victoryMessage, {
-            fontSize: '72px',
-            color: textColor,
-            fontStyle: 'bold',
-            stroke: '#ffffff',
-            strokeThickness: 4,
-            shadow: {
-                offsetX: 3,
-                offsetY: 3,
-                color: '#000000',
-                blur: 5,
-                fill: true
-            }
-        });
-        this.victoryText.setOrigin(0.5, 0.5);
-        this.victoryText.setDepth(1001);
-        
-        // Add subtitle text
-        const subtitleText = this.add.text(centerX, centerY + 30, "Battle Complete", {
-            fontSize: '36px',
-            color: '#ffffff',
-            fontStyle: 'bold',
-            stroke: '#000000',
-            strokeThickness: 2
-        });
-        subtitleText.setOrigin(0.5, 0.5);
-        subtitleText.setDepth(1001);
-        
-        // Add animated effects
-        this.tweens.add({
-            targets: this.victoryText,
-            scaleX: 1.2,
-            scaleY: 1.2,
-            duration: 500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Power2'
-        });
-        
-        // Add restart instruction
-        const restartText = this.add.text(centerX, centerY + 100, "Press R to restart battle", {
-            fontSize: '24px',
-            color: '#cccccc',
-            fontStyle: 'italic'
-        });
-        restartText.setOrigin(0.5, 0.5);
-        restartText.setDepth(1001);
-        
-        // Add keyboard input for restart
-        this.input.keyboard?.on('keydown-R', () => {
-            this.scene.restart();
-        });
+
+    private createTree(x: number, y: number) {
+        const tree = this.add.graphics();
+        tree.fillStyle(0x8b4513, 1);
+        tree.fillRect(x - 4, y - 8, 8, 16);
+        tree.fillStyle(0x228b22, 0.8);
+        tree.fillCircle(x, y - 20, 16);
+        tree.fillStyle(0x32cd32, 0.7);
+        tree.fillCircle(x - 8, y - 15, 12);
+        tree.fillCircle(x + 8, y - 15, 12);
+        tree.fillStyle(0x006400, 0.6);
+        tree.fillCircle(x, y - 10, 10);
+        this.isometricRenderer.addToRenderGroup(tree);
+    }
+
+    private createBush(x: number, y: number) {
+        const bush = this.add.graphics();
+        bush.fillStyle(0x228b22, 0.7);
+        bush.fillCircle(x, y, 8);
+        bush.fillStyle(0x32cd32, 0.6);
+        bush.fillCircle(x - 6, y + 2, 6);
+        bush.fillCircle(x + 6, y + 2, 6);
+        bush.fillStyle(0x006400, 0.5);
+        bush.fillCircle(x, y + 4, 5);
+        this.isometricRenderer.addToRenderGroup(bush);
     }
 }
