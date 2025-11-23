@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { IEnemySpawn, IWaveConfig } from '../types/ironwars';
 import { UnitManager } from './UnitManager';
 import { GameStateManager } from './GameStateManager';
-import { FortressSystem } from './FortressSystem';
 import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { UnitType } from '../data/UnitTypes';
 
@@ -16,8 +15,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     constructor(
         private scene: Phaser.Scene,
         private unitManager: UnitManager,
-        private gameState: GameStateManager,
-        private fortressSystem: FortressSystem
+        private gameState: GameStateManager
     ) {
         super();
         this.scene.events.on('unit-death', (unit: any) => {
@@ -88,24 +86,6 @@ export class WaveManager extends Phaser.Events.EventEmitter {
 
     private applyEnemyBehavior(unit: any) {
         unit.setAttackSpeedMultiplier(1);
-        this.scene.time.addEvent({
-            delay: 120,
-            loop: true,
-            callback: () => {
-                if (unit.isDead?.()) {
-                    return;
-                }
-                const fortressCenter = this.fortressSystem.gridToWorld(2, 2);
-                const pos = unit.getPosition();
-                const angle = Phaser.Math.Angle.Between(pos.x, pos.y, fortressCenter.x, fortressCenter.y);
-                const moveSpeed = unit.getConfig?.().stats.moveSpeed ?? 60;
-                const magnitude = moveSpeed * 0.0006;
-                unit.applyImpulse({
-                    x: Math.cos(angle) * magnitude,
-                    y: Math.sin(angle) * magnitude
-                });
-            }
-        });
     }
 
     private getLanePoint(lane: IEnemySpawn['lane']): { x: number; y: number } {

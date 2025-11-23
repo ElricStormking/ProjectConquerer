@@ -121,6 +121,21 @@ export class Projectile extends Phaser.GameObjects.Container {
                 this.projectileGraphics.fillStyle(0xFFFFFF, 0.5); // White center
                 this.projectileGraphics.fillCircle(0, 0, 2);
                 break;
+
+            case UnitType.COG_THUNDER_CANNON:
+                // Thunder Cannon bolt: bright, jagged lightning shard
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.lineStyle(3, 0xE3F2FD, 1.0);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(0, -10);
+                this.projectileGraphics.lineTo(4, -4);
+                this.projectileGraphics.lineTo(-2, 2);
+                this.projectileGraphics.lineTo(5, 8);
+                this.projectileGraphics.lineTo(0, 12);
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.fillStyle(0x90CAF9, 0.85);
+                this.projectileGraphics.fillCircle(0, 0, 4);
+                break;
                 
             default:
                 // Generic ranged attack
@@ -283,6 +298,15 @@ export class Projectile extends Phaser.GameObjects.Container {
                 impactGraphics.strokeCircle(0, 0, 10);
                 impactGraphics.lineStyle(2, 0xFFFFFF, 0.6);
                 impactGraphics.strokeCircle(0, 0, 15);
+                break;
+
+            case UnitType.COG_THUNDER_CANNON:
+                // Thunder Cannon impact: small explosive lightning ring
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.lineStyle(3, 0xE3F2FD, 0.95);
+                impactGraphics.strokeCircle(0, 0, 32);
+                impactGraphics.fillStyle(0x90CAF9, 0.35);
+                impactGraphics.fillCircle(0, 0, 24);
                 break;
         }
 

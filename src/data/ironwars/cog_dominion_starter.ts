@@ -27,7 +27,7 @@ export const COG_DOMINION_STARTER: IStarterData = {
         factionId: 'cog_dominion',
         passiveId: 'profit_dividend',
         activeSkillId: 'orbital_strike',
-        cooldown: 15000,
+        cooldown: 2000,
         portraitKey: 'commander_valen'
     },
     fortress: {
@@ -43,7 +43,7 @@ export const COG_DOMINION_STARTER: IStarterData = {
     units: {
         cog_soldier: {
             id: 'cog_soldier',
-            name: 'Cog Soldier',
+            name: 'Feral Warrior',
             role: 'melee',
             factionId: 'cog_dominion',
             maxHp: 160,
@@ -85,7 +85,7 @@ export const COG_DOMINION_STARTER: IStarterData = {
         },
         cog_medic_drone: {
             id: 'cog_medic_drone',
-            name: 'Medic Drone',
+            name: 'Medic Druid',
             role: 'support',
             factionId: 'cog_dominion',
             maxHp: 90,
@@ -99,7 +99,7 @@ export const COG_DOMINION_STARTER: IStarterData = {
         },
         cog_thunder_cannon: {
             id: 'cog_thunder_cannon',
-            name: 'Thunder Cannon',
+            name: 'Thunder Mage',
             role: 'siege',
             factionId: 'cog_dominion',
             maxHp: 260,
@@ -183,20 +183,20 @@ export const COG_DOMINION_STARTER: IStarterData = {
         }
     },
     deck: [
-        { id: 'card_soldier_1', name: 'Cog Soldier', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
-        { id: 'card_soldier_2', name: 'Cog Soldier', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
-        { id: 'card_soldier_3', name: 'Cog Soldier', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
+        { id: 'card_soldier_1', name: 'Feral Warrior', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
+        { id: 'card_soldier_2', name: 'Feral Warrior', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
+        { id: 'card_soldier_3', name: 'Feral Warrior', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_soldier', portraitKey: 'card_soldier', description: 'Deploy a sturdy frontline soldier.' },
         { id: 'card_railgunner_1', name: 'Railgunner', type: CardType.UNIT, cost: 3, resourceType: ResourceType.PROFIT, unitId: 'cog_railgunner', portraitKey: 'card_railgunner', description: 'Deploy a long-range marksman.' },
         { id: 'card_railgunner_2', name: 'Railgunner', type: CardType.UNIT, cost: 3, resourceType: ResourceType.PROFIT, unitId: 'cog_railgunner', portraitKey: 'card_railgunner', description: 'Deploy a long-range marksman.' },
         { id: 'card_railgunner_3', name: 'Railgunner', type: CardType.UNIT, cost: 3, resourceType: ResourceType.PROFIT, unitId: 'cog_railgunner', portraitKey: 'card_railgunner', description: 'Deploy a long-range marksman.' },
         { id: 'card_aegis_tank_1', name: 'Aegis Tank', type: CardType.UNIT, cost: 4, resourceType: ResourceType.PROFIT, unitId: 'cog_aegis_tank', portraitKey: 'card_tank', description: 'Deploy a defensive tank.' },
         { id: 'card_aegis_tank_2', name: 'Aegis Tank', type: CardType.UNIT, cost: 4, resourceType: ResourceType.PROFIT, unitId: 'cog_aegis_tank', portraitKey: 'card_tank', description: 'Deploy a defensive tank.' },
-        { id: 'card_medic_drone_1', name: 'Medic Drone', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
-        { id: 'card_medic_drone_2', name: 'Medic Drone', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
-        { id: 'card_medic_drone_3', name: 'Medic Drone', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
-        { id: 'card_thunder_cannon_1', name: 'Thunder Cannon', type: CardType.UNIT, cost: 5, resourceType: ResourceType.PROFIT, unitId: 'cog_thunder_cannon', portraitKey: 'card_cannon', description: 'Deploy a heavy artillery cannon.' },
-        { id: 'card_thunder_cannon_2', name: 'Thunder Cannon', type: CardType.UNIT, cost: 5, resourceType: ResourceType.PROFIT, unitId: 'cog_thunder_cannon', portraitKey: 'card_cannon', description: 'Deploy a heavy artillery cannon.' },
-        { id: 'card_cannon_tower_1', name: 'Cannon Tower', type: CardType.SPELL, cost: 4, resourceType: ResourceType.PROFIT, spellEffectId: 'cannon_tower', portraitKey: 'card_cannon', description: 'Build a stationary cannon tower on the fortress grid.' },
+        { id: 'card_medic_drone_1', name: 'Medic Druid', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
+        { id: 'card_medic_drone_2', name: 'Medic Druid', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
+        { id: 'card_medic_drone_3', name: 'Medic Druid', type: CardType.UNIT, cost: 2, resourceType: ResourceType.PROFIT, unitId: 'cog_medic_drone', portraitKey: 'card_medic', description: 'Deploy a drone that heals nearby allies.' },
+        { id: 'card_thunder_cannon_1', name: 'Thunder Mage', type: CardType.UNIT, cost: 5, resourceType: ResourceType.PROFIT, unitId: 'cog_thunder_cannon', portraitKey: 'card_thunder_mage', description: 'Deploy a heavy artillery cannon.' },
+        { id: 'card_thunder_cannon_2', name: 'Thunder Mage', type: CardType.UNIT, cost: 5, resourceType: ResourceType.PROFIT, unitId: 'cog_thunder_cannon', portraitKey: 'card_thunder_mage', description: 'Deploy a heavy artillery cannon.' },
+        { id: 'card_cannon_tower_1', name: 'Cannon Tower', type: CardType.SPELL, cost: 4, resourceType: ResourceType.PROFIT, spellEffectId: 'cannon_tower', portraitKey: 'card_cannon_tower', description: 'Build a stationary cannon tower on the fortress grid.' },
         { id: 'card_barrier_field', name: 'Armor Shop', type: CardType.SPELL, cost: 3, resourceType: ResourceType.PROFIT, spellEffectId: 'barrier_field', portraitKey: 'card_spell_barrier', description: 'Construct an armor shop that grants shields to units on this tile.' },
         { id: 'card_overclock', name: 'Overclock', type: CardType.SPELL, cost: 2, resourceType: ResourceType.PROFIT, spellEffectId: 'overclock', portraitKey: 'card_spell_overclock', description: 'Increase attack speed briefly.' }
     ],

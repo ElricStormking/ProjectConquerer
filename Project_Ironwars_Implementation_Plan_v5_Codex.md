@@ -313,25 +313,50 @@ export interface ICommanderConfig {
 
 ---
 
+## Implementation Status (as of 2025-11-23)
+
+### Phase 0: Foundation
+- ✅ `src/types/ironwars.ts` created with all core interfaces.
+- ✅ Starter data `src/data/ironwars/cog_dominion_starter.ts` implemented (fortress, 5 units, starter deck, multi-wave config).
+- ✅ `GameStateManager` singleton integrated for fortress HP and resources.
+
+### Phase 1: Prototype Battle Loop
+- ✅ 1.1 Fortress grid rendered isometrically with hover/placement highlights at fortress center-top.
+- ✅ 1.2 CardSprite + HandManager display the bottom card hand with rarity borders and hover.
+- ✅ 1.3 Drag & drop card placement with green/red placement feedback and fortress cell occupancy.
+- ✅ 1.4 PREPARATION ⇄ BATTLE ⇄ WAVE_COMPLETE phases wired with Start button + UI updates.
+- ✅ 1.5 WaveManager spawns enemies in 3 lanes across multiple waves, ending in a boss wave.
+- ✅ 1.6 CommanderSystem Space-activated skill implemented as a multi-strike thunderstorm.
+- ✅ 1.7 Win/loss overlays and restart path hooked to fortress HP and wave completion.
+
+### Additional polish implemented
+- ✅ Thunder Mage (formerly Thunder Cannon) reworked into AoE lightning artillery with dedicated card art.
+- ✅ Building sprites (fortress core, cannon tower, armor shop) replaced placeholder graphics and auto-scale to fortress grid cells.
+- ✅ Card portraits loaded via `portraitKey` from `assets/cards/*.png` with graceful colored fallback when art is missing.
+- ✅ Background music (`bgm_01_dragonbattle.mp3`) loops in BattleScene; `victory.mp3` plays when the boss is defeated.
+- ✅ Boss mass tuned to reduce knockback/bouncing during combat.
+
+---
+
 ## Testing Checklist
 
 ### Visual Match
-- [ ] Building Phase: grid, cards, resources, HP numbers
-- [ ] Fighting Phase: large armies, fortress top-left, enemies bottom-right
+- [x] Building Phase: grid, cards, resources, HP numbers
+- [x] Fighting Phase: large armies, fortress top-left, enemies bottom-right
 
 ### Functional
-- [ ] Drag 5 unit types onto grid
-- [ ] Units spawn at correct positions
-- [ ] Phase transition works
-- [ ] Enemies spawn 3 lanes at intervals
-- [ ] Combat: player vs enemy
-- [ ] Commander skill (Space key)
-- [ ] Win after 1 wave
-- [ ] Lose if fortress HP = 0
+- [x] Drag 5 unit types onto grid
+- [x] Units spawn at correct positions
+- [x] Phase transition works
+- [x] Enemies spawn 3 lanes at intervals
+- [x] Combat: player vs enemy
+- [x] Commander skill (Space key)
+- [x] Win after all waves (5-wave node including boss)
+- [x] Lose if fortress HP = 0
 
 ### Technical
-- [ ] `npm run typecheck` - 0 errors
-- [ ] `npm run lint` - 0 errors
+- [x] `npm run typecheck` - 0 errors
+- [x] `npm run lint` - 0 errors
 - [ ] 30 FPS with 50 units
 
 ---
@@ -472,6 +497,6 @@ src/
 
 ---
 
-**Status**: Plan approved, ready for Phase 0 implementation
+**Status**: Phase 0 and Phase 1 prototype features implemented; battle loop playable end-to-end (5 waves + boss).
 **Created**: 2025-11-20
-**Version**: 5.0
+**Version**: 5.1 (updated 2025-11-23)

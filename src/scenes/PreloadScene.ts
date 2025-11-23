@@ -58,7 +58,26 @@ export class PreloadScene extends Phaser.Scene {
 
     private loadAssets() {
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
-        this.load.image('world_bg', 'assets/gamemap_01.jpg');
+        this.load.image('world_bg', 'assets/gamemap_02.png');
+        // Cog Dominion buildings
+        this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');
+        this.load.image('building_armor_shop', 'assets/buildings/cog_buildings/Building_ArmorShop.png');
+        this.load.image('building_fortress_core', 'assets/buildings/cog_buildings/Building_FortressCore.png');
+        // Card portraits (unit and spell cards)
+        this.load.image('card_soldier', 'assets/cards/card_soldier.png');
+        this.load.image('card_railgunner', 'assets/cards/card_railgunner.png');
+        this.load.image('card_tank', 'assets/cards/card_tank.png');
+        this.load.image('card_medic', 'assets/cards/card_medic.png');
+        this.load.image('card_cannon', 'assets/cards/card_cannon.png');
+        this.load.image('card_cannon_tower', 'assets/cards/card_cannon_tower.png');
+        this.load.image('card_thunder_mage', 'assets/cards/card_thunder_mage.png');
+        this.load.image('card_spell_barrier', 'assets/cards/card_spell_barrier.png');
+        this.load.image('card_spell_overclock', 'assets/cards/card_spell_overclock.png');
+
+        // Victory / SFX
+        this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
+        // Prototype background music
+        this.load.audio('bgm_dragonbattle', 'assets/audio/bgm/bgm_01_dragonbattle.mp3');
         this.load.spritesheet('chronotemporal', 'assets/characters/Chronotemporal.png', { frameWidth: 96, frameHeight: 96 });
         this.load.json('chronotemporal_anim', 'assets/characters/Chronotemporal.json');
         

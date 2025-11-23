@@ -36,12 +36,13 @@ export class BattleScene extends Phaser.Scene {
     private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
     private currentDraggedCard?: ICard;
     private fortressCoreWorld = { x: 0, y: 0 };
-    private fortressCoreGraphic?: Phaser.GameObjects.Graphics;
+    private fortressCoreGraphic?: Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
     private startButton!: Phaser.GameObjects.Container;
     private startButtonLabel!: Phaser.GameObjects.Text;
     private overlayContainer?: Phaser.GameObjects.Container;
     private battleState: 'preparation' | 'running' | 'victory' | 'defeat' = 'preparation';
     private hasStartedFirstWave = false;
+    private bgm?: Phaser.Sound.BaseSound;
     private medicLastHeal: Map<string, number> = new Map();
 
     constructor() {
@@ -55,6 +56,19 @@ export class BattleScene extends Phaser.Scene {
         this.createEnvironment();
         this.initializeIronwarsPrototype();
         this.setupPointerBridge();
+        this.startBackgroundMusic();
+    }
+
+    private startBackgroundMusic() {
+        const key = 'bgm_dragonbattle';
+        // Avoid stacking multiple instances if scene is restarted.
+        const existing = this.sound.get(key);
+        if (existing && existing.isPlaying) {
+            this.bgm = existing;
+            return;
+        }
+        this.bgm = this.sound.add(key, { loop: true, volume: 0.4 });
+        this.bgm.play();
     }
 
     public update(_time: number, delta: number) {
@@ -68,7 +82,6 @@ export class BattleScene extends Phaser.Scene {
         if (this.battleState === 'running') {
             this.updateUnitAI();
             this.checkCombat();
-            this.checkFortressCollisions();
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
         }
@@ -179,7 +192,7 @@ export class BattleScene extends Phaser.Scene {
             this.unitManager
         );
 
-        this.waveManager = new WaveManager(this, this.unitManager, this.gameState, this.fortressSystem);
+        this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
         this.waveManager.loadWaves(this.starterData.waves);
 
         this.commanderSystem = new CommanderSystem(this, this.unitManager);
@@ -236,6 +249,7 @@ export class BattleScene extends Phaser.Scene {
                 // start of this preparation.
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
+                this.resetAlliedUnitsToSpawnPositions();
                 this.deckSystem.draw(1);
                 this.showStartButton('Start Next Wave');
             } else {
@@ -300,11 +314,19 @@ export class BattleScene extends Phaser.Scene {
 
         this.events.on('ui:card-drag-start', (card: ICard) => {
             this.currentDraggedCard = card;
+            if (this.gameState.getState().phase === 'PREPARATION') {
+                this.fortressSystem.showPlacementHints();
+            }
         });
 
         this.events.on('ui:card-drag-end', () => {
             this.currentDraggedCard = undefined;
             this.fortressSystem.clearHover();
+            this.fortressSystem.clearPlacementHints();
+        });
+
+        this.events.on('ui:card-drag', (payload: { screenX: number; screenY: number }) => {
+            this.handleCardDragMove(payload.screenX, payload.screenY);
         });
 
         this.events.on('ui:card-play', (payload: CardPlayPayload) => {
@@ -320,11 +342,15 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private handlePointerMove(pointer: Phaser.Input.Pointer) {
+        this.handleCardDragMove(pointer.x, pointer.y);
+    }
+
+    private handleCardDragMove(screenX: number, screenY: number) {
         if (!this.currentDraggedCard) {
             this.fortressSystem.clearHover();
             return;
         }
-        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        const worldPoint = this.cameras.main.getWorldPoint(screenX, screenY);
         const grid = this.fortressSystem.worldToGrid(worldPoint.x, worldPoint.y);
         const isValid = this.gameState.getState().phase === 'PREPARATION' && this.fortressSystem.isValidCell(grid.x, grid.y);
         this.fortressSystem.setHoverCell(grid.x, grid.y, isValid);
@@ -349,19 +375,6 @@ export class BattleScene extends Phaser.Scene {
         this.events.emit('card-placement-result', { cardId: payload.card.id, success });
     }
 
-    private checkFortressCollisions() {
-        const enemies = this.unitManager.getUnitsByTeam(2);
-        enemies.forEach(unit => {
-            if (unit.isDead()) return;
-            const pos = unit.getPosition();
-            const dist = Phaser.Math.Distance.Between(pos.x, pos.y, this.fortressCoreWorld.x, this.fortressCoreWorld.y);
-            if (dist <= 90) {
-                this.gameState.takeFortressDamage(25);
-                unit.takeDamage(9999);
-            }
-        });
-    }
-
     private createFortressCorePlaceholder() {
         const x = this.fortressCoreWorld.x;
         const y = this.fortressCoreWorld.y;
@@ -369,79 +382,21 @@ export class BattleScene extends Phaser.Scene {
         if (this.fortressCoreGraphic) {
             this.fortressCoreGraphic.destroy();
         }
-
-        const g = this.add.graphics();
-        this.fortressCoreGraphic = g;
-
-        // Draw a tower base diamond on the core cell.
-        const baseHalfW = 64;
-        const baseHalfH = 32;
-        g.fillStyle(0x1f2229, 0.95);
-        g.lineStyle(2, 0xffcc66, 0.9);
-        g.beginPath();
-        g.moveTo(x, y - baseHalfH);
-        g.lineTo(x + baseHalfW, y);
-        g.lineTo(x, y + baseHalfH);
-        g.lineTo(x - baseHalfW, y);
-        g.closePath();
-        g.fillPath();
-        g.strokePath();
-
-        // Vertical tower body rising from the core.
-        const towerWidth = 46;
-        const towerHeight = 90;
-        const towerBottomY = y - 8;
-        const towerTopY = towerBottomY - towerHeight;
-
-        g.fillStyle(0x343b4a, 1);
-        g.fillRect(x - towerWidth / 2, towerTopY, towerWidth, towerHeight);
-
-        // Subtle vertical edge highlights.
-        g.lineStyle(1.5, 0x6b7a92, 0.8);
-        g.beginPath();
-        g.moveTo(x - towerWidth / 4, towerTopY + 4);
-        g.lineTo(x - towerWidth / 4, towerBottomY - 4);
-        g.moveTo(x + towerWidth / 4, towerTopY + 4);
-        g.lineTo(x + towerWidth / 4, towerBottomY - 4);
-        g.strokePath();
-
-        // Eye on top of the tower.
-        const eyeY = towerTopY - 14;
-        g.fillStyle(0xfff3a8, 1);
-        g.fillCircle(x, eyeY, 13);
-        g.lineStyle(2, 0xffe06b, 0.9);
-        g.strokeCircle(x, eyeY, 13);
-
-        // Pupil / slit.
-        g.fillStyle(0x3b2308, 1);
-        g.fillCircle(x, eyeY, 5);
-        g.lineStyle(2, 0xffe06b, 0.9);
-        g.beginPath();
-        g.moveTo(x, eyeY - 6);
-        g.lineTo(x, eyeY + 6);
-        g.strokePath();
-
-        // Subtle glow rays from the eye.
-        g.lineStyle(1.5, 0xfff3a8, 0.7);
-        const rayLen = 20;
-        g.beginPath();
-        g.moveTo(x - rayLen, eyeY);
-        g.lineTo(x - rayLen / 2, eyeY);
-        g.moveTo(x + rayLen, eyeY);
-        g.lineTo(x + rayLen / 2, eyeY);
-        g.moveTo(x, eyeY - rayLen);
-        g.lineTo(x, eyeY - rayLen / 2);
-        g.moveTo(x, eyeY + rayLen);
-        g.lineTo(x, eyeY + rayLen / 2);
-        g.strokePath();
+        const core = this.add.image(x, y, 'building_fortress_core');
+        core.setOrigin(0.5, 0.8);
+        const { width } = this.fortressSystem.getCellDimensions();
+        const baseScale = (width * 1.0) / (core.width || 1);
+        core.setScale(baseScale);
 
         // Depth: keep tower in front of units standing near the core.
-        g.setDepth(y + 4000);
+        core.setDepth(y + 4000);
+        this.fortressCoreGraphic = core;
 
         // Gentle breathing animation so the eye feels alive.
         this.tweens.add({
-            targets: g,
-            scale: { from: 1, to: 1.03 },
+            targets: core,
+            scaleX: baseScale * 1.03,
+            scaleY: baseScale * 1.03,
             duration: 900,
             yoyo: true,
             repeat: -1
@@ -451,6 +406,10 @@ export class BattleScene extends Phaser.Scene {
     private handleVictory() {
         if (this.battleState === 'victory') return;
         this.battleState = 'victory';
+        // Play victory stinger when final wave (boss) is defeated.
+        if (this.sound && this.sound.get('sfx_victory')?.isPlaying !== true) {
+            this.sound.play('sfx_victory', { volume: 0.7 });
+        }
         this.showOverlay('Victory!', 'Prototype wave cleared. Ready for playtest.', 0x44ff88);
         this.events.emit('battle-victory');
     }
@@ -534,63 +493,77 @@ export class BattleScene extends Phaser.Scene {
             }
 
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
-            if (enemies.length === 0) return;
+            let targetPos: { x: number; y: number } | null = null;
 
-            let closestEnemy: any = null;
-            let closestDistance = Infinity;
-            enemies.forEach(enemy => {
-                if (enemy.isDead()) return;
-                const distance = Phaser.Math.Distance.Between(
-                    unit.getPosition().x, unit.getPosition().y,
-                    enemy.getPosition().x, enemy.getPosition().y
-                );
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    closestEnemy = enemy;
+            if (enemies.length > 0) {
+                let closestEnemy: any = null;
+                let closestDistance = Infinity;
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const distance = Phaser.Math.Distance.Between(
+                        unit.getPosition().x, unit.getPosition().y,
+                        enemy.getPosition().x, enemy.getPosition().y
+                    );
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestEnemy = enemy;
+                    }
+                });
+
+                if (closestEnemy) {
+                    targetPos = closestEnemy.getPosition();
                 }
-            });
+            } else if (unit.getTeam() === 2) {
+                // When there are no player units left, enemy units should
+                // advance directly toward the fortress core at full speed.
+                targetPos = this.fortressCoreWorld;
+            }
 
-            if (closestEnemy) {
-                const targetPos = closestEnemy.getPosition();
-                const dxToTarget = targetPos.x - currentPos.x;
-                const dyToTarget = targetPos.y - currentPos.y;
-                const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
+            if (!targetPos) {
+                return;
+            }
 
-                const unitConfig = unit.getConfig();
-                if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
+            const dxToTarget = targetPos.x - currentPos.x;
+            const dyToTarget = targetPos.y - currentPos.y;
+            const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
+
+            const unitConfig = unit.getConfig();
+            if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
+                return;
+            }
+
+            if (unitConfig.unitType === UnitType.NINJA && targetPos !== this.fortressCoreWorld) {
+                const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
+                if (jumped) {
                     return;
                 }
+            }
 
-                if (unitConfig.unitType === UnitType.NINJA) {
-                    const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
-                    if (jumped) {
-                        return;
-                    }
-                }
+            const direction = { x: dxToTarget, y: dyToTarget };
+            const nextX = currentPos.x + direction.x * 0.1;
+            const nextY = currentPos.y + direction.y * 0.1;
 
-                const direction = { x: dxToTarget, y: dyToTarget };
-                const nextX = currentPos.x + direction.x * 0.1;
-                const nextY = currentPos.y + direction.y * 0.1;
+            if (nextX < bounds.minX || nextX > bounds.maxX || nextY < bounds.minY || nextY > bounds.maxY) {
+                if (nextX < bounds.minX) direction.x = Math.max(0, direction.x);
+                if (nextX > bounds.maxX) direction.x = Math.min(0, direction.x);
+                if (nextY < bounds.minY) direction.y = Math.max(0, direction.y);
+                if (nextY > bounds.maxY) direction.y = Math.min(0, direction.y);
+            }
 
-                if (nextX < bounds.minX || nextX > bounds.maxX || nextY < bounds.minY || nextY > bounds.maxY) {
-                    if (nextX < bounds.minX) direction.x = Math.max(0, direction.x);
-                    if (nextX > bounds.maxX) direction.x = Math.min(0, direction.x);
-                    if (nextY < bounds.minY) direction.y = Math.max(0, direction.y);
-                    if (nextY > bounds.maxY) direction.y = Math.min(0, direction.y);
-                }
-
-                const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-                if (magnitude > 0) {
-                    direction.x /= magnitude;
-                    direction.y /= magnitude;
-                    unit.move(direction);
-                }
+            const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+            if (magnitude > 0) {
+                direction.x /= magnitude;
+                direction.y /= magnitude;
+                unit.move(direction);
             }
         });
     }
 
     private checkCombat() {
         const currentTime = this.time.now;
+        const state = this.gameState.getState();
+        const fortressAlive = state.fortressHp > 0;
+        const fortressPos = this.fortressCoreWorld;
         const units = this.unitManager.getAllUnits();
         units.forEach(unit => {
             if (unit.isDead()) return;
@@ -622,7 +595,100 @@ export class BattleScene extends Phaser.Scene {
                     unit.performMeleeAttack(targetEnemy, currentTime, this.unitManager as any, this.combatSystem as any);
                 }
                 unit.setLastAttackTime(currentTime);
+                return;
             }
+
+            // If this is an enemy unit and there are no player units in
+            // range, let it attack the fortress core like a unit target.
+            if (unit.getTeam() === 2 && fortressAlive) {
+                const pos = unit.getPosition();
+                const distToFortress = Phaser.Math.Distance.Between(
+                    pos.x, pos.y,
+                    fortressPos.x, fortressPos.y
+                );
+                if (distToFortress <= unit.getRange()) {
+                    const unitConfig = unit.getConfig();
+                    if (this.isRangedUnit(unitConfig.unitType)) {
+                        this.createProjectileAttackAgainstFortress(unit, unitConfig.unitType);
+                        unit.setLastAttackTime(currentTime);
+                    } else if (this.isMeleeUnit(unitConfig.unitType)) {
+                        const fortressTargetStub = {
+                            getPosition: () => fortressPos,
+                            isDead: () => false,
+                            takeDamage: (_amount: number) => { /* no-op: fortress damage handled separately */ }
+                        };
+                        unit.performMeleeAttack(fortressTargetStub as any, currentTime);
+                        this.attackFortress(unit);
+                        unit.setLastAttackTime(currentTime);
+                    }
+                }
+            }
+        });
+    }
+
+    private createProjectileAttackAgainstFortress(attackerUnit: any, unitType: UnitType) {
+        const attackerPos = attackerUnit.getPosition();
+        const targetPos = this.fortressCoreWorld;
+        let speed = 320;
+        switch (unitType) {
+            case UnitType.SNIPER:
+                speed = 600;
+                break;
+            case UnitType.COG_THUNDER_CANNON:
+                speed = 220;
+                break;
+            case UnitType.DARK_MAGE:
+                speed = 220;
+                break;
+            case UnitType.CHRONOTEMPORAL:
+                speed = 250;
+                break;
+            case UnitType.COG_RAILGUNNER:
+                speed = 420;
+                break;
+            case UnitType.RAIDER_ARCHER:
+                speed = 420;
+                break;
+        }
+
+        this.projectileSystem.createProjectile({
+            startX: attackerPos.x,
+            startY: attackerPos.y,
+            targetX: targetPos.x,
+            targetY: targetPos.y,
+            unitType,
+            damage: attackerUnit.getDamage(),
+            speed,
+            attackerTeam: attackerUnit.getTeam()
+        });
+
+        const distance = Phaser.Math.Distance.Between(attackerPos.x, attackerPos.y, targetPos.x, targetPos.y);
+        const travelTime = (distance / speed) * 1000;
+
+        this.time.delayedCall(travelTime, () => {
+            const latestState = this.gameState.getState();
+            if (latestState.fortressHp > 0) {
+                this.attackFortress(attackerUnit);
+            }
+        });
+    }
+
+    private attackFortress(attacker: any): void {
+        const damage = attacker.getDamage();
+        this.gameState.takeFortressDamage(damage);
+
+        const x = this.fortressCoreWorld.x;
+        const y = this.fortressCoreWorld.y;
+        const g = this.add.graphics();
+        g.setDepth(y + 4500);
+        g.setBlendMode(Phaser.BlendModes.ADD);
+        g.lineStyle(3, 0xff5555, 0.9);
+        g.strokeCircle(x, y, 80);
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            duration: 220,
+            onComplete: () => g.destroy()
         });
     }
 
@@ -758,7 +824,23 @@ export class BattleScene extends Phaser.Scene {
         const travelTime = (distance / speed) * 1000;
 
         this.time.delayedCall(travelTime, () => {
-            if (!targetUnit.isDead()) {
+            if (unitType === UnitType.COG_THUNDER_CANNON) {
+                // Thunder Cannon: area-of-effect blast at the landing point.
+                const explosionCenter = targetPos;
+                const explosionRadius = 110;
+                const enemies = this.unitManager.getUnitsByTeam(attackerUnit.getTeam() === 1 ? 2 : 1);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const pos = enemy.getPosition();
+                    const dist = Phaser.Math.Distance.Between(
+                        explosionCenter.x, explosionCenter.y,
+                        pos.x, pos.y
+                    );
+                    if (dist <= explosionRadius) {
+                        this.combatSystem.dealDamage(attackerUnit, enemy as any, attackerUnit.getDamage());
+                    }
+                });
+            } else if (!targetUnit.isDead()) {
                 this.combatSystem.dealDamage(attackerUnit, targetUnit, attackerUnit.getDamage());
             }
         });
@@ -826,5 +908,17 @@ export class BattleScene extends Phaser.Scene {
         bush.fillStyle(0x006400, 0.5);
         bush.fillCircle(x, y + 4, 5);
         this.isometricRenderer.addToRenderGroup(bush);
+    }
+
+    private resetAlliedUnitsToSpawnPositions(): void {
+        const allies = this.unitManager.getUnitsByTeam(1);
+        allies.forEach(unit => {
+            const config = unit.getConfig();
+            const spawnX = config.x;
+            const spawnY = config.y;
+            if (typeof spawnX === 'number' && typeof spawnY === 'number') {
+                (unit as any).teleportTo(spawnX, spawnY);
+            }
+        });
     }
 }

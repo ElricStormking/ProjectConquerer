@@ -3,11 +3,12 @@ import { ICard } from '../types/ironwars';
 
 export class CardSprite extends Phaser.GameObjects.Container {
     private background: Phaser.GameObjects.Rectangle;
-    private portrait: Phaser.GameObjects.Rectangle;
+    private portrait: Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
     private nameText: Phaser.GameObjects.Text;
     private descText: Phaser.GameObjects.Text;
     private costText: Phaser.GameObjects.Text;
     private rarityBorder: Phaser.GameObjects.Rectangle;
+    private dragHighlight: Phaser.GameObjects.Rectangle;
     private readonly card: ICard;
 
     constructor(scene: Phaser.Scene, card: ICard) {
@@ -18,7 +19,19 @@ export class CardSprite extends Phaser.GameObjects.Container {
         const colors = this.getRarityColors(card.rarity ?? 'common');
         this.background = scene.add.rectangle(0, 0, 220, 320, 0x11131a, 0.95).setOrigin(0.5);
         this.rarityBorder = scene.add.rectangle(0, 0, 220, 320).setStrokeStyle(2, colors.border, 0.8).setOrigin(0.5);
-        this.portrait = scene.add.rectangle(0, -80, 160, 120, colors.portrait).setOrigin(0.5);
+
+        // Card portrait artwork: use texture if available, otherwise fallback to a colored panel.
+        const portraitBounds = { width: 160, height: 120 };
+        if (scene.textures.exists(card.portraitKey)) {
+            const portraitImage = scene.add.image(0, -80, card.portraitKey).setOrigin(0.5);
+            const texWidth = portraitImage.width || portraitBounds.width;
+            const texHeight = portraitImage.height || portraitBounds.height;
+            const scale = Math.min(portraitBounds.width / texWidth, portraitBounds.height / texHeight);
+            portraitImage.setScale(scale);
+            this.portrait = portraitImage;
+        } else {
+            this.portrait = scene.add.rectangle(0, -80, portraitBounds.width, portraitBounds.height, colors.portrait).setOrigin(0.5);
+        }
         this.nameText = scene.add.text(0, 20, card.name, {
             fontSize: '20px',
             color: '#ffffff',
@@ -38,7 +51,21 @@ export class CardSprite extends Phaser.GameObjects.Container {
         costBadge.setStrokeStyle(2, 0xffffff, 0.8);
         this.costText.setDepth(2);
 
-        this.add([this.background, this.rarityBorder, this.portrait, costBadge, this.costText, this.nameText, this.descText]);
+        this.dragHighlight = scene.add.rectangle(0, 0, 228, 328)
+            .setOrigin(0.5)
+            .setStrokeStyle(3, 0x4fc3f7, 1.0);
+        this.dragHighlight.setVisible(false);
+
+        this.add([
+            this.background,
+            this.rarityBorder,
+            this.portrait,
+            costBadge,
+            this.costText,
+            this.nameText,
+            this.descText,
+            this.dragHighlight
+        ]);
 
         this.setInteractive(new Phaser.Geom.Rectangle(-110, -160, 220, 320), Phaser.Geom.Rectangle.Contains);
         this.scene.input.setDraggable(this);
@@ -47,6 +74,10 @@ export class CardSprite extends Phaser.GameObjects.Container {
 
     public getCard(): ICard {
         return this.card;
+    }
+
+    public setDragHighlight(active: boolean): void {
+        this.dragHighlight.setVisible(active);
     }
 
     private setupHover() {

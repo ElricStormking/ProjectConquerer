@@ -15,7 +15,7 @@ export class CardSystem {
         maxHp: number;
         lastShotTime: number;
         range: number;
-        body: Phaser.GameObjects.Graphics;
+        body: Phaser.GameObjects.Image;
         hpBg: Phaser.GameObjects.Graphics;
         hpBar: Phaser.GameObjects.Graphics;
     }> = [];
@@ -126,58 +126,15 @@ export class CardSystem {
     }
 
     private createBarrierField(x: number, y: number) {
-        // Armor Shop building (formerly "Barrier Field") – visible structure on
-        // the fortress diamond plus a subtle protective aura.
-        const shop = this.scene.add.graphics();
-        shop.setDepth(4020);
-
-        const baseHalfW = 64;
-        const baseHalfH = 32;
-        shop.fillStyle(0x444444, 0.28);
-        shop.lineStyle(2, 0x888888, 0.9);
-        shop.beginPath();
-        shop.moveTo(x, y - baseHalfH);
-        shop.lineTo(x + baseHalfW, y);
-        shop.lineTo(x, y + baseHalfH);
-        shop.lineTo(x - baseHalfW, y);
-        shop.closePath();
-        shop.fillPath();
-        shop.strokePath();
-
-        const bodyWidth = 72;
-        const bodyHeight = 30;
-        const wallBottomY = y - 6;
-        const wallTopY = wallBottomY - bodyHeight;
-
-        shop.fillStyle(0x555555, 0.98);
-        shop.fillRect(x - bodyWidth / 2, wallTopY, bodyWidth, bodyHeight);
-
-        shop.fillStyle(0x777777, 1);
-        shop.beginPath();
-        shop.moveTo(x - bodyWidth / 2 - 4, wallTopY);
-        shop.lineTo(x, wallTopY - 18);
-        shop.lineTo(x + bodyWidth / 2 + 4, wallTopY);
-        shop.closePath();
-        shop.fillPath();
-
-        shop.fillStyle(0xc0c0c0, 1);
-        const signRadius = 9;
-        const signY = wallTopY + bodyHeight / 2;
-        shop.fillCircle(x, signY, signRadius);
-        shop.lineStyle(2, 0xffffff, 0.9);
-        shop.strokeCircle(x, signY, signRadius);
-
-        shop.lineStyle(2, 0x294f7d, 0.9);
-        shop.beginPath();
-        shop.moveTo(x - 4, signY - 5);
-        shop.lineTo(x - 4, signY + 5);
-        shop.moveTo(x + 4, signY - 5);
-        shop.lineTo(x + 4, signY + 5);
-        shop.strokePath();
+        // Armor Shop building – use dedicated artwork scaled to fortress grid size.
+        const shop = this.scene.add.image(x, y, 'building_armor_shop');
+        shop.setOrigin(0.5, 0.8);
+        this.fitBuildingToFortressCell(shop);
+        shop.setDepth(y + 3600);
 
         this.scene.tweens.add({
             targets: shop,
-            alpha: { from: 1, to: 0.7 },
+            alpha: { from: 1, to: 0.9 },
             duration: 900,
             yoyo: true,
             repeat: -1
@@ -264,47 +221,11 @@ export class CardSystem {
         const occupantId = `cannon_tower_${this.cannonTowers.length}`;
         this.fortressSystem.occupyCell(gridX, gridY, occupantId);
 
-        const body = this.scene.add.graphics();
+        const body = this.scene.add.image(x, y, 'building_cannon_tower');
+        body.setOrigin(0.5, 0.8);
+        this.fitBuildingToFortressCell(body);
         const hpBg = this.scene.add.graphics();
         const hpBar = this.scene.add.graphics();
-
-        // Draw stone tower base diamond.
-        const baseHalfW = 64;
-        const baseHalfH = 32;
-        body.fillStyle(0x22252e, 0.95);
-        body.lineStyle(2, 0xa0a8b8, 0.9);
-        body.beginPath();
-        body.moveTo(x, y - baseHalfH);
-        body.lineTo(x + baseHalfW, y);
-        body.lineTo(x, y + baseHalfH);
-        body.lineTo(x - baseHalfW, y);
-        body.closePath();
-        body.fillPath();
-        body.strokePath();
-
-        // Tower shaft.
-        const towerWidth = 40;
-        const towerHeight = 70;
-        const towerBottomY = y - 6;
-        const towerTopY = towerBottomY - towerHeight;
-        body.fillStyle(0x3a4252, 1);
-        body.fillRect(x - towerWidth / 2, towerTopY, towerWidth, towerHeight);
-
-        // Cannon housing and barrel on top.
-        const turretY = towerTopY - 10;
-        body.fillStyle(0x4b5568, 1);
-        body.fillRoundedRect(x - 24, turretY - 10, 48, 20, 6);
-
-        // Barrel pointing toward the battlefield center (to the right).
-        body.lineStyle(5, 0xc7cedd, 1);
-        body.beginPath();
-        body.moveTo(x + 8, turretY - 2);
-        body.lineTo(x + 40, turretY - 2);
-        body.strokePath();
-
-        body.fillStyle(0x1c222c, 1);
-        body.fillCircle(x - 10, turretY - 2, 5);
-
         // Depth so the tower appears above nearby units.
         body.setDepth(y + 3600);
 
@@ -312,7 +233,7 @@ export class CardSystem {
         const maxHp = 200;
         const hpWidth = 50;
         const hpHeight = 4;
-        const hpY = towerTopY - 16;
+        const hpY = y - body.displayHeight * 0.9;
         hpBg.clear();
         hpBg.fillStyle(0x000000, 0.7);
         hpBg.fillRect(x - hpWidth / 2, hpY, hpWidth, hpHeight);
@@ -334,6 +255,13 @@ export class CardSystem {
             hpBg,
             hpBar
         });
+    }
+
+    private fitBuildingToFortressCell(sprite: Phaser.GameObjects.Image): void {
+        const { width } = this.fortressSystem.getCellDimensions();
+        const textureWidth = sprite.width || 1;
+        const scale = (width * 1.0) / textureWidth;
+        sprite.setScale(scale);
     }
 
     private getAdjacentFortressCells(gridX: number, gridY: number): Array<{ x: number; y: number }> {

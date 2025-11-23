@@ -8,6 +8,7 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
     private config: IFortressConfig;
     private cellMap: Map<string, IFortressCell> = new Map();
     private gridGraphics!: Phaser.GameObjects.Graphics;
+    private placementGraphics!: Phaser.GameObjects.Graphics;
     private hoverGraphics!: Phaser.GameObjects.Graphics;
     private originX: number;
     private originY: number;
@@ -38,8 +39,10 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
 
     public initialize(): void {
         this.gridGraphics = this.scene.add.graphics();
+        this.placementGraphics = this.scene.add.graphics();
         this.hoverGraphics = this.scene.add.graphics();
         this.renderer.addToRenderGroup(this.gridGraphics);
+        this.renderer.addToRenderGroup(this.placementGraphics);
         this.renderer.addToRenderGroup(this.hoverGraphics);
         this.drawGrid();
     }
@@ -90,12 +93,42 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         if (!cell) return;
         const color = isValid ? 0xa6ff00 : 0xff4d4d;
         const points = this.getDiamondPoints(gridX, gridY);
-        this.hoverGraphics.lineStyle(3, color, 0.9);
+        this.hoverGraphics.lineStyle(3, color, 0.95);
         this.hoverGraphics.strokePoints(points, true);
+        this.hoverGraphics.fillStyle(color, 0.14);
+        this.hoverGraphics.fillPoints(points, true);
     }
 
     public clearHover(): void {
         this.hoverGraphics.clear();
+    }
+
+    public showPlacementHints(): void {
+        this.placementGraphics.clear();
+        this.config.cells.forEach(cell => {
+            if (cell.type === 'blocked' || cell.type === 'core') {
+                this.drawInvalidCellMarker(cell.x, cell.y);
+                return;
+            }
+            const valid = this.isValidCell(cell.x, cell.y);
+            if (valid) {
+                const points = this.getDiamondPoints(cell.x, cell.y);
+                this.placementGraphics.lineStyle(2, 0x66ff99, 0.8);
+                this.placementGraphics.strokePoints(points, true);
+                this.placementGraphics.fillStyle(0x33ff66, 0.08);
+                this.placementGraphics.fillPoints(points, true);
+            } else {
+                this.drawInvalidCellMarker(cell.x, cell.y);
+            }
+        });
+    }
+
+    public clearPlacementHints(): void {
+        this.placementGraphics.clear();
+    }
+
+    public getCellDimensions(): { width: number; height: number } {
+        return { width: this.cellWidth, height: this.cellHeight };
     }
 
     private drawGrid(): void {
@@ -122,6 +155,14 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
             new Phaser.Geom.Point(x, y + halfH),
             new Phaser.Geom.Point(x - halfW, y)
         ];
+    }
+
+    private drawInvalidCellMarker(gridX: number, gridY: number): void {
+        const points = this.getDiamondPoints(gridX, gridY);
+        this.placementGraphics.lineStyle(2, 0xff4d4d, 0.8);
+        this.placementGraphics.strokePoints(points, true);
+        this.placementGraphics.fillStyle(0xff4d4d, 0.12);
+        this.placementGraphics.fillPoints(points, true);
     }
 
     private key(x: number, y: number): string {

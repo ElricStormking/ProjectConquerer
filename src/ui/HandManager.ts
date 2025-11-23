@@ -36,15 +36,21 @@ export class HandManager {
         sprite.on('dragstart', (_pointer: Phaser.Input.Pointer) => {
             this.draggingCardId = card.id;
             sprite.setDepth(9000);
+            sprite.setDragHighlight(true);
             this.battleEvents.emit('ui:card-drag-start', card);
         });
 
         sprite.on('drag', (pointer: Phaser.Input.Pointer) => {
             sprite.x = pointer.x;
             sprite.y = pointer.y;
+            this.battleEvents.emit('ui:card-drag', {
+                screenX: pointer.x,
+                screenY: pointer.y
+            });
         });
 
         sprite.on('dragend', (pointer: Phaser.Input.Pointer) => {
+            sprite.setDragHighlight(false);
             this.battleEvents.emit('ui:card-drag-end');
             this.battleEvents.emit('ui:card-play', {
                 card,

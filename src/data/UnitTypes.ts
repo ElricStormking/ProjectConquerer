@@ -148,7 +148,7 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
 
     [UnitType.COG_SOLDIER]: {
         type: UnitType.COG_SOLDIER,
-        name: 'Cog Soldier',
+        name: 'Feral Warrior',
         description: 'Disciplined frontline infantry of the Cog Dominion',
         unitClass: 'frontline',
         size: 'normal',
@@ -202,7 +202,7 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
 
     [UnitType.COG_MEDIC_DRONE]: {
         type: UnitType.COG_MEDIC_DRONE,
-        name: 'Medic Drone',
+        name: 'Medic Druid',
         description: 'Support unit that restores allied durability',
         unitClass: 'support',
         size: 'small',
@@ -220,7 +220,7 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
 
     [UnitType.COG_THUNDER_CANNON]: {
         type: UnitType.COG_THUNDER_CANNON,
-        name: 'Thunder Cannon',
+        name: 'Thunder Mage',
         description: 'Heavy siege artillery of the Cog Dominion',
         unitClass: 'siege',
         size: 'large',
@@ -286,7 +286,7 @@ export const UNIT_TEMPLATES: Record<UnitType, UnitTemplate> = {
             moveSpeed: 30,
             attackSpeed: 0.33, // ~3s cooldown via canAttack()
             range: 120,        // short range; AoE around itself
-            mass: 180
+            mass: 900
         }
     },
 

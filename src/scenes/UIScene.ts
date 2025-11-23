@@ -125,6 +125,13 @@ export class UIScene extends Phaser.Scene {
         this.battleScene.events.on('commander-cast', (payload: { cooldown: number; lastCast: number }) => {
             this.commanderCooldown = payload.cooldown;
             this.lastCommanderCast = payload.lastCast;
+            this.tweens.add({
+                targets: this.commanderText,
+                alpha: { from: 1, to: 0.2 },
+                yoyo: true,
+                repeat: 1,
+                duration: 80
+            });
         });
 
         this.battleScene.events.on('battle-victory', () => {
