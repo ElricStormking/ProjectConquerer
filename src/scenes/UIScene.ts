@@ -83,20 +83,27 @@ export class UIScene extends Phaser.Scene {
 
     private createStartButton() {
         const cx = this.cameras.main.width / 2;
-        const cy = this.cameras.main.height - 80;
+        // Move to middle-top area of the screen so it doesn't overlap the hand.
+        const cy = 140;
 
-        const button = this.add.rectangle(cx, cy, 260, 60, 0x1d1f2c, 0.9)
-            .setStrokeStyle(2, 0xffffff, 0.4)
+        const button = this.add.rectangle(cx, cy, 320, 70, 0x2563eb, 0.96)
+            .setStrokeStyle(3, 0xffffff, 0.9)
             .setOrigin(0.5);
         const label = this.add.text(cx, cy, 'Start Battle', {
-            fontSize: '24px',
+            fontSize: '26px',
             color: '#ffffff',
             fontStyle: 'bold'
-        }).setOrigin(0.5);
+        })
+            .setOrigin(0.5)
+            .setShadow(0, 3, '#000000', 6, true, true);
+
+        // Ensure the button sits above other HUD elements.
+        button.setDepth(8000);
+        label.setDepth(8001);
 
         button.setInteractive({ useHandCursor: true });
-        button.on('pointerover', () => button.setFillStyle(0x262a40, 0.95));
-        button.on('pointerout', () => button.setFillStyle(0x1d1f2c, 0.9));
+        button.on('pointerover', () => button.setFillStyle(0x1d4ed8, 0.98));
+        button.on('pointerout', () => button.setFillStyle(0x2563eb, 0.96));
         button.on('pointerdown', () => {
             this.battleScene.events.emit('ui:start-wave');
         });
