@@ -58,7 +58,7 @@ export class PreloadScene extends Phaser.Scene {
 
     private loadAssets() {
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
-        this.load.image('world_bg', 'assets/gamemap_02.png');
+        this.load.image('world_bg', 'assets/gamemap_01.png');
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');
         this.load.image('building_armor_shop', 'assets/buildings/cog_buildings/Building_ArmorShop.png');
