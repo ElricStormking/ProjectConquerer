@@ -242,17 +242,28 @@ export class BattleScene extends Phaser.Scene {
         });
 
         this.waveManager.on('wave-cleared', () => {
+            console.log('[BattleScene] Wave cleared, checking for next wave...');
             if (this.waveManager.hasNextWave()) {
+                console.log('[BattleScene] Next wave available, showing card reward');
                 // Between waves, return to a full building phase so the
                 // player can adjust their fortress and play additional
-                // cards before the next fight, and draw one new card at the
-                // start of this preparation.
+                // cards before the next fight.
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
                 this.resetAlliedUnitsToSpawnPositions();
-                this.deckSystem.draw(1);
-                this.showStartButton('Start Next Wave');
+                
+                // Grant resources between waves (scales with wave progression)
+                const currentWave = this.gameState.getState().currentWave;
+                const baseIncome = 8;
+                const bonusIncome = Math.floor(currentWave / 3) * 2; // +2 every 3 waves
+                const totalIncome = baseIncome + bonusIncome;
+                this.gameState.gainResource(totalIncome);
+                console.log(`[BattleScene] Granted ${totalIncome} resources (wave ${currentWave})`);
+                
+                // Show card reward selection UI
+                this.showCardRewardScreen();
             } else {
+                console.log('[BattleScene] No more waves, triggering victory');
                 this.handleVictory();
             }
         });
@@ -290,6 +301,27 @@ export class BattleScene extends Phaser.Scene {
 
     private hideStartButton() {
         this.startButton.setVisible(false);
+    }
+
+    private showCardRewardScreen(): void {
+        // Launch CardRewardScene as an overlay
+        if (!this.scene.isActive('CardRewardScene')) {
+            this.scene.launch('CardRewardScene');
+        }
+        
+        const rewardScene = this.scene.get('CardRewardScene') as any;
+        rewardScene.showCardReward((selectedCard: ICard) => {
+            console.log(`[BattleScene] Card selected: ${selectedCard.name}`);
+            
+            // Add the selected card to the deck
+            this.deckSystem.addCard(selectedCard);
+            
+            // Close the reward scene
+            this.scene.stop('CardRewardScene');
+            
+            // Show the start button for next wave
+            this.showStartButton('Start Next Wave');
+        });
     }
 
     private tryStartWave() {
@@ -410,7 +442,7 @@ export class BattleScene extends Phaser.Scene {
         if (this.sound && this.sound.get('sfx_victory')?.isPlaying !== true) {
             this.sound.play('sfx_victory', { volume: 0.7 });
         }
-        this.showOverlay('Victory!', 'Prototype wave cleared. Ready for playtest.', 0x44ff88);
+        this.showOverlay('Victory!', 'All 10 waves cleared! Iron Juggernaut defeated!', 0x44ff88);
         this.events.emit('battle-victory');
     }
 

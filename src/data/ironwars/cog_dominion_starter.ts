@@ -201,31 +201,114 @@ export const COG_DOMINION_STARTER: IStarterData = {
         { id: 'card_overclock', name: 'Overclock', type: CardType.SPELL, cost: 2, resourceType: ResourceType.PROFIT, spellEffectId: 'overclock', portraitKey: 'card_spell_overclock', description: 'Increase attack speed briefly.' }
     ],
     waves: [
+        // Wave 1: "First Contact" (Easy)
         {
             id: 'wave_1',
             index: 1,
             spawns: [
                 { unitId: 'raider_grunt', count: 8, spawnTime: 0, lane: 'north' },
-                { unitId: 'raider_grunt', count: 8, spawnTime: 10, lane: 'center' },
-                { unitId: 'raider_bomber', count: 4, spawnTime: 18, lane: 'south' }
+                { unitId: 'raider_grunt', count: 6, spawnTime: 8, lane: 'center' }
             ]
         },
+        // Wave 2: "Learning Curve" (Easy-Medium)
         {
             id: 'wave_2',
             index: 2,
             spawns: [
                 { unitId: 'raider_grunt', count: 10, spawnTime: 0, lane: 'north' },
-                { unitId: 'raider_grunt', count: 10, spawnTime: 8, lane: 'center' },
-                { unitId: 'raider_bomber', count: 6, spawnTime: 16, lane: 'south' }
+                { unitId: 'raider_grunt', count: 8, spawnTime: 6, lane: 'south' },
+                { unitId: 'raider_bomber', count: 4, spawnTime: 12, lane: 'center' }
             ]
         },
+        // Wave 3: "Combined Arms" (Medium)
         {
             id: 'wave_3',
             index: 3,
             spawns: [
-                { unitId: 'raider_boss',   count: 1, spawnTime: 0, lane: 'center' },
-                { unitId: 'raider_rogue',  count: 6, spawnTime: 0, lane: 'north' },
-                { unitId: 'raider_archer', count: 6, spawnTime: 0, lane: 'south' }
+                { unitId: 'raider_grunt', count: 8, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_archer', count: 6, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_grunt', count: 8, spawnTime: 8, lane: 'south' },
+                { unitId: 'raider_bomber', count: 5, spawnTime: 14, lane: 'center' }
+            ]
+        },
+        // Wave 4: "Speed Raid" (Medium)
+        {
+            id: 'wave_4',
+            index: 4,
+            spawns: [
+                { unitId: 'raider_rogue', count: 10, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_grunt', count: 12, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_rogue', count: 8, spawnTime: 10, lane: 'south' }
+            ]
+        },
+        // Wave 5: "ARTILLERY BARRAGE" (Hard - SPIKE)
+        {
+            id: 'wave_5',
+            index: 5,
+            spawns: [
+                { unitId: 'raider_grunt', count: 14, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_bomber', count: 10, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_archer', count: 8, spawnTime: 0, lane: 'south' },
+                { unitId: 'raider_grunt', count: 12, spawnTime: 12, lane: 'center' },
+                { unitId: 'raider_bomber', count: 8, spawnTime: 18, lane: 'center' }
+            ]
+        },
+        // Wave 6: "Rogue Rush" (Easy - BREATHER)
+        {
+            id: 'wave_6',
+            index: 6,
+            spawns: [
+                { unitId: 'raider_rogue', count: 12, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_rogue', count: 10, spawnTime: 8, lane: 'south' },
+                { unitId: 'raider_rogue', count: 8, spawnTime: 14, lane: 'center' }
+            ]
+        },
+        // Wave 7: "Sustained Assault" (Hard)
+        {
+            id: 'wave_7',
+            index: 7,
+            spawns: [
+                { unitId: 'raider_grunt', count: 12, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_bomber', count: 8, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_grunt', count: 10, spawnTime: 6, lane: 'south' },
+                { unitId: 'raider_archer', count: 8, spawnTime: 10, lane: 'north' },
+                { unitId: 'raider_rogue', count: 10, spawnTime: 16, lane: 'center' }
+            ]
+        },
+        // Wave 8: "Three-Pronged Siege" (Hard)
+        {
+            id: 'wave_8',
+            index: 8,
+            spawns: [
+                { unitId: 'raider_grunt', count: 14, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_grunt', count: 14, spawnTime: 0, lane: 'south' },
+                { unitId: 'raider_bomber', count: 10, spawnTime: 5, lane: 'center' },
+                { unitId: 'raider_archer', count: 8, spawnTime: 10, lane: 'north' },
+                { unitId: 'raider_archer', count: 8, spawnTime: 10, lane: 'south' }
+            ]
+        },
+        // Wave 9: "ELITE VANGUARD" (Very Hard - MINI-BOSS)
+        {
+            id: 'wave_9',
+            index: 9,
+            spawns: [
+                { unitId: 'raider_boss', count: 1, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_bomber', count: 10, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_bomber', count: 10, spawnTime: 0, lane: 'south' },
+                { unitId: 'raider_rogue', count: 12, spawnTime: 8, lane: 'center' }
+            ]
+        },
+        // Wave 10: "IRON JUGGERNAUT" (Boss - FINAL)
+        {
+            id: 'wave_10',
+            index: 10,
+            spawns: [
+                { unitId: 'raider_boss', count: 1, spawnTime: 0, lane: 'center' },
+                { unitId: 'raider_grunt', count: 8, spawnTime: 0, lane: 'north' },
+                { unitId: 'raider_grunt', count: 8, spawnTime: 0, lane: 'south' },
+                { unitId: 'raider_bomber', count: 6, spawnTime: 5, lane: 'center' },
+                { unitId: 'raider_archer', count: 10, spawnTime: 10, lane: 'north' },
+                { unitId: 'raider_archer', count: 10, spawnTime: 10, lane: 'south' }
             ]
         }
     ]

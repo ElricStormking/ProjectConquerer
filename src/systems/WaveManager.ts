@@ -20,7 +20,10 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         super();
         this.scene.events.on('unit-death', (unit: any) => {
             if (unit.getTeam && unit.getTeam() === 2) {
-                this.activeEnemyIds.delete(unit.getId());
+                const unitId = unit.getId();
+                const unitType = unit.getConfig?.()?.unitType || 'unknown';
+                console.log(`[WaveManager] Enemy death: ${unitType} (ID: ${unitId})`);
+                this.activeEnemyIds.delete(unitId);
                 this.tryCompleteWave();
             }
         });
@@ -35,10 +38,14 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     }
 
     public startWave(index: number): void {
-        if (!this.waves[index]) return;
+        if (!this.waves[index]) {
+            console.log(`[WaveManager] No wave at index ${index}`);
+            return;
+        }
         this.clearTimers();
         this.activeWaveIndex = index;
         const wave = this.waves[index];
+        console.log(`[WaveManager] Starting wave ${wave.index} (array index ${index}) with ${wave.spawns.length} spawn events`);
         this.pendingSpawnEvents = wave.spawns.length;
         wave.spawns.forEach(spawn => {
             const timer = this.scene.time.delayedCall(spawn.spawnTime * 1000, () => {
@@ -107,7 +114,9 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     }
 
     private tryCompleteWave(): void {
+        console.log(`[WaveManager] Checking wave completion - Wave ${this.activeWaveIndex + 1}, Pending spawns: ${this.pendingSpawnEvents}, Active enemies: ${this.activeEnemyIds.size}`);
         if (this.isWaveComplete()) {
+            console.log(`[WaveManager] Wave ${this.activeWaveIndex + 1} cleared!`);
             this.emit('wave-cleared', this.activeWaveIndex);
         }
     }

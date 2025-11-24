@@ -83,6 +83,17 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
         this.emitState();
     }
 
+    public addCard(card: ICard): void {
+        // Add card directly to hand if there's space, otherwise to draw pile
+        if (this.hand.length < this.maxHandSize) {
+            this.hand.push(card);
+            this.emit('card-drawn', card);
+        } else {
+            this.drawPile.push(card);
+        }
+        this.emitState();
+    }
+
     private emitState(): void {
         this.emit('deck-state-changed', this.getState());
         this.emit('hand-updated', { hand: [...this.hand] });

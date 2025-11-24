@@ -18,6 +18,7 @@ export class CardSystem {
         body: Phaser.GameObjects.Image;
         hpBg: Phaser.GameObjects.Graphics;
         hpBar: Phaser.GameObjects.Graphics;
+        occupantId: string;
     }> = [];
 
     constructor(
@@ -26,7 +27,18 @@ export class CardSystem {
         private gameState: GameStateManager,
         private fortressSystem: FortressSystem,
         private unitManager: UnitManager
-    ) {}
+    ) {
+        // Listen to unit death events to release fortress cells
+        this.scene.events.on('unit-death', (unit: any) => {
+            if (unit.getTeam && unit.getTeam() === 1) {
+                // Only release cells for player team units
+                const unitId = unit.getId();
+                const unitType = unit.getConfig?.()?.unitType || 'unknown';
+                console.log(`[CardSystem] Player unit died: ${unitType} (ID: ${unitId}), releasing fortress cell`);
+                this.fortressSystem.releaseCellByOccupant(unitId);
+            }
+        });
+    }
 
     public update(now: number, _deltaSeconds: number): void {
         this.updateCannonTowers(now);
@@ -35,16 +47,33 @@ export class CardSystem {
     public resolveCardPlacement(payload: ICardPlacementPayload): boolean {
         const { card, gridX, gridY } = payload;
         const state = this.gameState.getState();
+        console.log(`[CardSystem] Attempting to place card ${card.name} at (${gridX}, ${gridY}), Phase: ${state.phase}`);
+        
         if (state.phase !== 'PREPARATION') {
+            console.log('[CardSystem] ❌ Cannot place card - not in PREPARATION phase');
             return false;
         }
 
         const cell = this.fortressSystem.getCell(gridX, gridY);
-        if (!cell || cell.type === 'blocked' || cell.type === 'core' || cell.occupantId) {
+        if (!cell) {
+            console.log(`[CardSystem] ❌ No cell at (${gridX}, ${gridY})`);
+            return false;
+        }
+        if (cell.type === 'blocked') {
+            console.log(`[CardSystem] ❌ Cell is blocked`);
+            return false;
+        }
+        if (cell.type === 'core') {
+            console.log(`[CardSystem] ❌ Cell is core`);
+            return false;
+        }
+        if (cell.occupantId) {
+            console.log(`[CardSystem] ❌ Cell is occupied by ${cell.occupantId}`);
             return false;
         }
 
         if (!this.gameState.spendResource(card.cost)) {
+            console.log('[CardSystem] ❌ Not enough resources');
             return false;
         }
 
@@ -253,7 +282,8 @@ export class CardSystem {
             range: (this.scene.cameras.main.width || 1920) * (2 / 3),
             body,
             hpBg,
-            hpBar
+            hpBar,
+            occupantId
         });
     }
 
@@ -313,6 +343,32 @@ export class CardSystem {
         const COOLDOWN_MS = 2000;
         const DAMAGE = 40;
 
+        // Check for enemies attacking towers and apply damage
+        this.cannonTowers.forEach(tower => {
+            enemies.forEach(enemy => {
+                if (enemy.isDead()) return;
+                const pos = enemy.getPosition();
+                const dist = Phaser.Math.Distance.Between(tower.x, tower.y, pos.x, pos.y);
+                // If enemy is very close to tower, they attack it
+                if (dist <= 80) {
+                    // Enemies deal damage to tower over time
+                    const enemyDamage = (enemy as any).getDamage?.() || 10;
+                    this.damageTower(tower, enemyDamage * 0.016); // rough DPS per frame at 60fps
+                }
+            });
+        });
+
+        // Update tower HP bars and remove destroyed towers
+        this.cannonTowers = this.cannonTowers.filter(tower => {
+            if (tower.hp <= 0) {
+                this.destroyTower(tower);
+                return false; // Remove from array
+            }
+            this.updateTowerHPBar(tower);
+            return true; // Keep in array
+        });
+
+        // Towers shoot at enemies
         this.cannonTowers.forEach(tower => {
             if (now - tower.lastShotTime < COOLDOWN_MS) {
                 return;
@@ -358,6 +414,70 @@ export class CardSystem {
             });
 
             (closest as any).takeDamage(DAMAGE);
+        });
+    }
+
+    private damageTower(tower: { hp: number; maxHp: number }, damage: number): void {
+        tower.hp = Math.max(0, tower.hp - damage);
+    }
+
+    private updateTowerHPBar(tower: {
+        x: number;
+        y: number;
+        hp: number;
+        maxHp: number;
+        body: Phaser.GameObjects.Image;
+        hpBar: Phaser.GameObjects.Graphics;
+    }): void {
+        const hpWidth = 50;
+        const hpHeight = 4;
+        const hpY = tower.y - tower.body.displayHeight * 0.9;
+        const hpPercent = tower.hp / tower.maxHp;
+
+        tower.hpBar.clear();
+        // Color based on HP: green > yellow > red
+        let color = 0x00ff00;
+        if (hpPercent < 0.3) {
+            color = 0xff0000;
+        } else if (hpPercent < 0.6) {
+            color = 0xffaa00;
+        }
+        tower.hpBar.fillStyle(color, 1);
+        tower.hpBar.fillRect(tower.x - hpWidth / 2, hpY, hpWidth * hpPercent, hpHeight);
+    }
+
+    private destroyTower(tower: {
+        x: number;
+        y: number;
+        body: Phaser.GameObjects.Image;
+        hpBg: Phaser.GameObjects.Graphics;
+        hpBar: Phaser.GameObjects.Graphics;
+        occupantId: string;
+    }): void {
+        // Release the fortress cell
+        this.fortressSystem.releaseCellByOccupant(tower.occupantId);
+
+        // Store position before destroying
+        const x = tower.x;
+        const y = tower.y;
+
+        // Destroy visual elements
+        tower.body.destroy();
+        tower.hpBg.destroy();
+        tower.hpBar.destroy();
+
+        // Optional: create destruction effect
+        const explosion = this.scene.add.graphics();
+        explosion.setDepth(8000);
+        explosion.fillStyle(0xff6600, 0.8);
+        explosion.fillCircle(x, y, 30);
+        this.scene.tweens.add({
+            targets: explosion,
+            alpha: 0,
+            scaleX: 2,
+            scaleY: 2,
+            duration: 300,
+            onComplete: () => explosion.destroy()
         });
     }
 }

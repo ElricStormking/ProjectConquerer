@@ -4,6 +4,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { BattleScene } from './scenes/BattleScene';
 import { UIScene } from './scenes/UIScene';
 import { SkillSelectionScene } from './scenes/SkillSelectionScene';
+import { CardRewardScene } from './scenes/CardRewardScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
@@ -37,7 +38,7 @@ const config: Phaser.Types.Core.GameConfig = {
         batchSize: 2048,
         maxLights: 8
     },
-    scene: [BootScene, PreloadScene, BattleScene, UIScene, SkillSelectionScene]
+    scene: [BootScene, PreloadScene, BattleScene, UIScene, SkillSelectionScene, CardRewardScene]
 };
 
 new Phaser.Game(config);

@@ -63,10 +63,16 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
     }
 
     public releaseCellByOccupant(occupantId: string): void {
+        let released = false;
         for (const cell of this.cellMap.values()) {
             if (cell.occupantId === occupantId) {
+                console.log(`[FortressSystem] Releasing cell (${cell.x}, ${cell.y}) from occupant ${occupantId}`);
                 cell.occupantId = undefined;
+                released = true;
             }
+        }
+        if (!released) {
+            console.log(`[FortressSystem] No cell found for occupant ${occupantId}`);
         }
     }
 
