@@ -1,0 +1,17 @@
+id,name,type,cost,resource_type,target_id,portrait_key,description,rarity
+card_soldier_1,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
+card_soldier_2,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
+card_soldier_3,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
+card_railgunner_1,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
+card_railgunner_2,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
+card_railgunner_3,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
+card_aegis_tank_1,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare
+card_aegis_tank_2,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare
+card_medic_drone_1,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
+card_medic_drone_2,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
+card_medic_drone_3,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
+card_thunder_cannon_1,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic
+card_thunder_cannon_2,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic
+card_cannon_tower_1,Cannon Tower,spell,4,profit,cannon_tower,card_cannon_tower,Build a stationary cannon tower on the fortress grid.,common
+card_barrier_field,Armor Shop,spell,3,profit,barrier_field,card_spell_barrier,Construct an armor shop that grants shields to units on this tile.,common
+card_overclock,Overclock,spell,2,profit,overclock,card_spell_overclock,Increase attack speed briefly.,common

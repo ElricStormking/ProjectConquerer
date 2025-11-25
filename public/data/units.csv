@@ -1,0 +1,17 @@
+id,name,role,faction_id,rarity,max_hp,damage,armor,move_speed,attack_speed,range,mass,size,sprite_key,description
+chronotemporal,Chronotemporal,support,player,legendary,80,18,3,45,1.2,100,40,normal,chronotemporal,Time-manipulating support mage
+sniper,Sniper,ranged,player,rare,55,25,1,40,0.8,500,48,small,sniper,Elite long-range marksman
+dark_mage,Dark Mage,ranged,player,epic,65,22,2,35,0.9,300,36,normal,dark_mage,Master of dark magic and curses
+warrior,Warrior,frontline,player,common,200,16,6,50,1.0,30,100,normal,warrior,Stalwart frontline fighter
+ninja,Ninja,frontline,player,rare,70,28,2,80,2.0,35,30,small,ninja,Swift assassin with stealth abilities
+shotgunner,Shotgunner,ranged,player,epic,90,35,4,45,0.6,200,64,normal,shotgunner,Close-range specialist with devastating firepower
+cog_soldier,Feral Warrior,frontline,cog_dominion,common,160,18,5,70,0.66,60,85,normal,warrior,Disciplined frontline infantry of the Cog Dominion
+cog_railgunner,Railgunner,ranged,cog_dominion,rare,110,32,2,55,0.7,420,60,normal,sniper,Precision long-range specialist
+cog_aegis_tank,Aegis Tank,frontline,cog_dominion,rare,420,24,9,40,0.5,90,100,large,shotgunner,Slow but indestructible bastion tank
+cog_medic_drone,Medic Druid,support,cog_dominion,rare,90,5,1,40,0.6,120,140,small,chronotemporal,Support unit that restores allied durability
+cog_thunder_cannon,Thunder Mage,siege,cog_dominion,epic,260,55,4,30,0.45,520,120,large,dark_mage,Heavy siege artillery of the Cog Dominion
+raider_grunt,Iron Raider,frontline,iron_raiders,common,130,16,3,65,0.7,50,70,normal,warrior,Aggressive melee attacker
+raider_bomber,Siege Bomber,siege,iron_raiders,rare,200,40,2,45,0.55,380,110,large,shotgunner,Launches explosives at fortresses
+raider_boss,Iron Juggernaut,frontline,iron_raiders,legendary,1260,72,10,30,0.33,120,900,large,shotgunner,Massive raider tank with crushing area attacks
+raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,22,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield
+raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,50,0.9,420,58,normal,sniper,Long-range raider marksman supporting the boss

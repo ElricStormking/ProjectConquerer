@@ -1,0 +1,13 @@
+id,name,description,max_rank,rarity,icon,effects_json
+damage_boost,Battle Fury,Increases damage dealt by all units,5,common,⚔️,"[{""stat"":""damage"",""baseValue"":10,""perRank"":5,""isMultiplier"":false}]"
+health_boost,Fortitude,Increases maximum health of all units,5,common,❤️,"[{""stat"":""maxHealth"",""baseValue"":20,""perRank"":10,""isMultiplier"":false}]"
+speed_boost,Swift Advance,Increases movement speed of all units,5,common,💨,"[{""stat"":""moveSpeed"",""baseValue"":15,""perRank"":10,""isMultiplier"":true}]"
+armor_boost,Iron Will,Increases armor of all units,5,common,🛡️,"[{""stat"":""armor"",""baseValue"":2,""perRank"":1,""isMultiplier"":false}]"
+attack_speed,Berserker Rage,Increases attack speed of all units,5,rare,🗡️,"[{""stat"":""attackSpeed"",""baseValue"":20,""perRank"":15,""isMultiplier"":true}]"
+range_boost,Eagle Eye,Increases attack range of all units,5,rare,🎯,"[{""stat"":""range"",""baseValue"":20,""perRank"":15,""isMultiplier"":true}]"
+critical_strike,Deadly Precision,"Increases critical hit chance and damage",5,rare,💥,"[{""stat"":""critChance"",""baseValue"":5,""perRank"":3,""isMultiplier"":false},{""stat"":""critMultiplier"",""baseValue"":0.2,""perRank"":0.1,""isMultiplier"":false}]"
+regeneration,Healing Aura,Units slowly regenerate health over time,5,epic,✨,"[{""stat"":""healthRegen"",""baseValue"":2,""perRank"":1,""isMultiplier"":false}]"
+thorns,Retribution,Units reflect damage back to attackers,3,epic,🌹,"[{""stat"":""thornsDamage"",""baseValue"":20,""perRank"":10,""isMultiplier"":true}]"
+explosive_death,Final Vengeance,"Units explode when they die, damaging enemies",3,epic,💣,"[{""stat"":""deathExplosion"",""baseValue"":50,""perRank"":25,""isMultiplier"":false}]"
+multi_shot,Volley Fire,Ranged units have a chance to shoot multiple projectiles,3,legendary,🏹,"[{""stat"":""multiShotChance"",""baseValue"":25,""perRank"":15,""isMultiplier"":false},{""stat"":""extraProjectiles"",""baseValue"":1,""perRank"":1,""isMultiplier"":false}]"
+piercing_shot,Armor Breaker,Attacks have a chance to ignore armor completely,3,legendary,⚡,"[{""stat"":""armorPierceChance"",""baseValue"":15,""perRank"":10,""isMultiplier"":false}]"

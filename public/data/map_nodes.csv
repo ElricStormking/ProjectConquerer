@@ -1,0 +1,5 @@
+id,type,tier,encounter_id,next_nodes_json
+node_1,battle,1,wave_1,"[""node_2"",""node_3""]"
+node_2,event,1,mystery_event,"[""node_4""]"
+node_3,shop,1,merchant_1,"[""node_4""]"
+node_4,elite,2,elite_wave_1,"[]"

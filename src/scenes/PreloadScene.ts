@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DataManager } from '../systems/DataManager';
 
 export class PreloadScene extends Phaser.Scene {
     constructor() {
@@ -57,6 +58,15 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     private loadAssets() {
+        // Load Data CSVs
+        this.load.text('units_data', 'data/units.csv');
+        this.load.text('cards_data', 'data/cards.csv');
+        this.load.text('waves_data', 'data/waves.csv');
+        this.load.text('skills_data', 'data/skills.csv');
+        this.load.text('buildings_data', 'data/buildings.csv');
+        this.load.text('relics_data', 'data/relics.csv');
+        this.load.text('map_nodes_data', 'data/map_nodes.csv');
+
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
         this.load.image('world_bg', 'assets/gamemap_01.png');
         // Cog Dominion buildings
@@ -98,6 +108,9 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     create() {
+        // Initialize DataManager with loaded CSVs
+        DataManager.getInstance().parse(this.cache);
+
         this.scene.start('BattleScene');
         this.scene.start('UIScene');
     }

@@ -5,6 +5,7 @@ import { GameStateManager } from './GameStateManager';
 import { FortressSystem } from './FortressSystem';
 import { UnitManager } from './UnitManager';
 import { toUnitConfig } from '../data/ironwars/unitAdapter';
+import { DataManager } from './DataManager';
 
 export class CardSystem {
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number }> = [];
@@ -100,14 +101,58 @@ export class CardSystem {
 
     private spawnUnitCard(unitId: string | undefined, gridX: number, gridY: number): boolean {
         if (!unitId) return false;
-        const starter = this.gameState.getStarterData();
-        if (!starter) return false;
-        const unitConfig = starter.units[unitId];
-        if (!unitConfig) return false;
 
+        // Use DataManager to get unit template directly
+        const unitTemplate = DataManager.getInstance().getUnitTemplate(unitId);
+        if (!unitTemplate) {
+            console.error(`[CardSystem] Unit template not found for ID: ${unitId}`);
+            // Fallback to starter data if possible, or fail
+            const starter = this.gameState.getStarterData();
+            if (starter && starter.units[unitId]) {
+                // Existing fallback path
+                const unitConfig = starter.units[unitId];
+                return this.spawnUnitFromLegacyConfig(unitConfig, gridX, gridY);
+            }
+            return false;
+        }
+
+        // Spawn logic using unit template
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
-        // Summon three units of this type in a small formation within the
-        // same fortress grid, with minimal overlap.
+        const offsets = [
+            { x: -20, y: -10 },
+            { x:  20, y: -10 },
+            { x:   0, y:  12 }
+        ];
+
+        const spawned: any[] = [];
+        offsets.forEach(offset => {
+            // Create unit directly via UnitManager which now uses UnitFactory that uses DataManager
+            // We need to bridge the gap: UnitManager expects a config, but we have a template ID.
+            // Let's construct a config compatible with UnitFactory.createUnit
+            
+            const config = this.unitManager.createUnitConfig(
+                unitTemplate.type, 
+                1, // team 1 (player)
+                worldPos.x + offset.x, 
+                worldPos.y + offset.y
+            );
+            
+            const unit = this.unitManager.spawnUnit(config);
+            if (unit) {
+                spawned.push(unit);
+            }
+        });
+
+        if (spawned.length === 0) {
+            return false;
+        }
+
+        this.fortressSystem.occupyCell(gridX, gridY, spawned[0].getId());
+        return true;
+    }
+
+    private spawnUnitFromLegacyConfig(unitConfig: any, gridX: number, gridY: number): boolean {
+         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
         const offsets = [
             { x: -20, y: -10 },
             { x:  20, y: -10 },
@@ -127,8 +172,6 @@ export class CardSystem {
             return false;
         }
 
-        // Mark the cell as occupied using the first unit; all three share
-        // this fortress grid tile.
         this.fortressSystem.occupyCell(gridX, gridY, spawned[0].getId());
         return true;
     }

@@ -19,6 +19,8 @@ import { UnitType } from '../data/UnitTypes';
 
 const STARTING_HAND = 5;
 
+import { DataManager } from '../systems/DataManager';
+
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
     private physicsManager!: PhysicsManager;
@@ -31,6 +33,8 @@ export class BattleScene extends Phaser.Scene {
     private waveManager!: WaveManager;
     private commanderSystem!: CommanderSystem;
     private readonly gameState = GameStateManager.getInstance();
+    // COG_DOMINION_STARTER is now only used for Fortress/Commander layout fallback, 
+    // data should come from DataManager
     private readonly starterData = COG_DOMINION_STARTER;
 
     private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
@@ -182,8 +186,12 @@ export class BattleScene extends Phaser.Scene {
         this.createFortressCorePlaceholder();
 
         this.deckSystem = new DeckSystem(7);
-        this.deckSystem.reset(this.starterData.deck);
+        
+        // Use DataManager to load the cards instead of hardcoded starterData.deck
+        const cards = DataManager.getInstance().getAllCards();
+        this.deckSystem.reset(cards);
         this.deckSystem.draw(STARTING_HAND);
+        
         this.cardSystem = new CardSystem(
             this,
             this.deckSystem,
@@ -193,7 +201,10 @@ export class BattleScene extends Phaser.Scene {
         );
 
         this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
-        this.waveManager.loadWaves(this.starterData.waves);
+        
+        // Use DataManager to load waves instead of hardcoded starterData.waves
+        const waves = DataManager.getInstance().getAllWaves();
+        this.waveManager.loadWaves(waves);
 
         this.commanderSystem = new CommanderSystem(this, this.unitManager);
         this.commanderSystem.initialize(this.starterData.commander);

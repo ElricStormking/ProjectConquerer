@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ICard, IDeckState } from '../types/ironwars';
+import { DataManager } from './DataManager';
 
 export class DeckSystem extends Phaser.Events.EventEmitter {
     private drawPile: ICard[] = [];
@@ -13,11 +14,38 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
     }
 
     public reset(deck: ICard[]): void {
-        this.drawPile = [...deck];
+        // If deck is empty, try loading from DataManager for testing/defaults
+        let initialDeck = [...deck];
+        if (initialDeck.length === 0) {
+             const allCards = DataManager.getInstance().getAllCards();
+             if (allCards.length > 0) {
+                 initialDeck = allCards.filter(c => c.rarity === 'common' || c.id.startsWith('card_soldier'));
+                 // If still empty or too few, just take everything for now
+                 if (initialDeck.length < 10) initialDeck = allCards;
+             }
+        }
+
+        this.drawPile = [...initialDeck];
         this.discardPile = [];
         this.hand = [];
         this.shuffle();
         this.emitState();
+    }
+    
+    public loadStarterDeck(cardIds: string[]): void {
+        const cards: ICard[] = [];
+        const dataManager = DataManager.getInstance();
+        
+        cardIds.forEach(id => {
+            const card = dataManager.getCard(id);
+            if (card) {
+                cards.push(card);
+            } else {
+                console.warn(`DeckSystem: Card ID '${id}' not found in DataManager.`);
+            }
+        });
+        
+        this.reset(cards);
     }
 
     public getState(): IDeckState {

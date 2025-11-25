@@ -313,12 +313,13 @@ export interface ICommanderConfig {
 
 ---
 
-## Implementation Status (as of 2025-11-23)
+## Implementation Status (as of 2025-11-25)
 
 ### Phase 0: Foundation
 - ✅ `src/types/ironwars.ts` created with all core interfaces.
 - ✅ Starter data `src/data/ironwars/cog_dominion_starter.ts` implemented (fortress, 5 units, starter deck, multi-wave config).
 - ✅ `GameStateManager` singleton integrated for fortress HP and resources.
+- ✅ Data externalization to CSV format (Phase 2) completed.
 
 ### Phase 1: Prototype Battle Loop
 - ✅ 1.1 Fortress grid rendered isometrically with hover/placement highlights at fortress center-top.
@@ -328,6 +329,20 @@ export interface ICommanderConfig {
 - ✅ 1.5 WaveManager spawns enemies in 3 lanes across multiple waves, ending in a boss wave.
 - ✅ 1.6 CommanderSystem Space-activated skill implemented as a multi-strike thunderstorm.
 - ✅ 1.7 Win/loss overlays and restart path hooked to fortress HP and wave completion.
+
+### Phase 2: Data Management (Completed)
+- ✅ **Data Externalization**: Core game balance data moved to `public/data/*.csv` for designer-friendly editing.
+  - `units.csv`: Unit stats, roles, and sprite keys.
+  - `cards.csv`: Deck definitions, costs, and types.
+  - `waves.csv`: Enemy spawn configurations per wave.
+  - `skills.csv`: Skill definitions and effects.
+- ✅ **DataManager System**: Implemented `src/systems/DataManager.ts` to parse and serve CSV data.
+- ✅ **System Refactoring**:
+  - `UnitFactory`: Now builds units from `DataManager` templates instead of hardcoded TypeScript objects.
+  - `DeckSystem`: Loads starter deck from `DataManager` (cards.csv).
+  - `WaveManager`: Loads wave configurations from `DataManager` (waves.csv).
+  - `SkillManager`: Generates skill choices from `DataManager` (skills.csv).
+- ✅ **Designer Workflow**: Designers can edit CSVs in `public/data/` and reload the game to see changes instantly.
 
 ### Additional polish implemented
 - ✅ Thunder Mage (formerly Thunder Cannon) reworked into AoE lightning artillery with dedicated card art.
@@ -353,6 +368,7 @@ export interface ICommanderConfig {
 - [x] Commander skill (Space key)
 - [x] Win after all waves (5-wave node including boss)
 - [x] Lose if fortress HP = 0
+- [x] **Data Driven**: Edit `units.csv` HP/Damage -> Reflects in-game
 
 ### Technical
 - [x] `npm run typecheck` - 0 errors
@@ -361,10 +377,10 @@ export interface ICommanderConfig {
 
 ---
 
-## Phase 2-3 (Future)
+## Phase 3 (Next Steps)
 
-**Phase 2** (Week 3-4): Stage map, nodes, rewards, save/load
-**Phase 3** (Week 5-8): 9 factions, 50+ cards, bosses, meta progression
+**Phase 3** (Week 3-4): Stage map, nodes, rewards, save/load
+**Phase 4** (Week 5-8): 9 factions, 50+ cards, bosses, meta progression
 
 ---
 
@@ -477,6 +493,7 @@ src/
 │   └── ironwars.ts          # [NEW] All interfaces
 ├── systems/
 │   ├── GameStateManager.ts  # [NEW] Singleton state
+│   ├── DataManager.ts       # [NEW] CSV Data loader
 │   ├── FortressSystem.ts    # [NEW] Grid logic
 │   ├── DeckSystem.ts        # [NEW] Card management
 │   ├── CardSystem.ts        # [NEW] Card resolution
@@ -492,11 +509,20 @@ src/
 │   └── HandManager.ts       # [NEW] Hand layout
 └── data/
     └── ironwars/
-        └── cog_dominion_starter.ts  # [NEW] Sample data
+        └── cog_dominion_starter.ts  # [NEW] Sample data (Fallback/Layout)
+
+## Data Directory (`public/data/`)
+- `units.csv`: Unit stats
+- `cards.csv`: Deck definitions
+- `waves.csv`: Wave configs
+- `skills.csv`: Skill definitions
+- `buildings.csv`: Building stats (placeholder)
+- `relics.csv`: Relic stats (placeholder)
+- `map_nodes.csv`: Campaign map (placeholder)
 ```
 
 ---
 
-**Status**: Phase 0 and Phase 1 prototype features implemented; battle loop playable end-to-end (5 waves + boss).
+**Status**: Phase 0, 1, and 2 features implemented; battle loop playable end-to-end (5 waves + boss) and fully data-driven.
 **Created**: 2025-11-20
-**Version**: 5.1 (updated 2025-11-23)
+**Version**: 5.2 (updated 2025-11-25)

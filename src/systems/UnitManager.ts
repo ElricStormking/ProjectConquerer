@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PhysicsManager } from './PhysicsManager';
 import { Unit, UnitConfig } from '../entities/Unit';
+import { UnitType, UnitFactory } from '../data/UnitTypes';
 
 export class UnitManager {
     private scene: Phaser.Scene;
@@ -15,6 +16,10 @@ export class UnitManager {
         this.unitIdCounter = 0;
     }
     
+    public createUnitConfig(type: UnitType, team: number, x: number, y: number, starRank: number = 1): UnitConfig {
+        return UnitFactory.createUnit(type, team, x, y, starRank);
+    }
+
     public spawnUnit(config: UnitConfig): Unit | null {
         const unitCount = this.units.size;
         if (unitCount >= 160) {

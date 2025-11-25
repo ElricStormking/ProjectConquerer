@@ -1,0 +1,3 @@
+id,name,description,rarity,effect_id,icon
+ancient_sword,Ancient Sword,Increases damage by 10%,rare,dmg_up_10,sword_icon
+golden_coin,Golden Coin,Start with +5 gold,common,gold_start,coin_icon
