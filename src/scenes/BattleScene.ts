@@ -252,6 +252,22 @@ export class BattleScene extends Phaser.Scene {
             this.battleState = 'running';
         });
 
+        this.waveManager.on('relic-wave-start', (context: { cardDrawBonus?: number; resourceBonus?: number; fortressHealBonus?: number }) => {
+            console.log(`[BattleScene] Received relic-wave-start event, context:`, context);
+            if (context.cardDrawBonus && context.cardDrawBonus > 0) {
+                console.log(`[BattleScene] Relic bonus: Drawing ${context.cardDrawBonus} extra card(s)`);
+                this.deckSystem.draw(context.cardDrawBonus);
+            }
+            if (context.resourceBonus && context.resourceBonus > 0) {
+                console.log(`[BattleScene] Relic bonus: Gaining ${context.resourceBonus} extra resources`);
+                this.gameState.gainResource(context.resourceBonus);
+            }
+            if (context.fortressHealBonus && context.fortressHealBonus > 0) {
+                console.log(`[BattleScene] Relic bonus: Healing fortress for ${context.fortressHealBonus}`);
+                this.gameState.healFortress(context.fortressHealBonus);
+            }
+        });
+
         this.waveManager.on('wave-cleared', () => {
             console.log('[BattleScene] Wave cleared, checking for next wave...');
             if (this.waveManager.hasNextWave()) {

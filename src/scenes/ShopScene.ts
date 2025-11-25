@@ -7,7 +7,9 @@ interface ShopSceneData {
         relic?: { relic: IRelicConfig; cost: number };
     };
     currentGold: number;
-    onComplete?: (result: { purchasedCards: ICard[]; purchasedRelic?: IRelicConfig; goldSpent: number }) => void;
+    curses?: IRelicConfig[];
+    curseRemovalCost?: number;
+    onComplete?: (result: { purchasedCards: ICard[]; purchasedRelic?: IRelicConfig; removedCurses: string[]; goldSpent: number }) => void;
 }
 
 export class ShopScene extends Phaser.Scene {
@@ -16,6 +18,7 @@ export class ShopScene extends Phaser.Scene {
     private remainingGold = 0;
     private purchasedCards: ICard[] = [];
     private purchasedRelic?: IRelicConfig;
+    private removedCurses: string[] = [];
 
     constructor() {
         super({ key: 'ShopScene' });
@@ -24,6 +27,9 @@ export class ShopScene extends Phaser.Scene {
     init(data: ShopSceneData): void {
         this.payload = data;
         this.remainingGold = data.currentGold;
+        this.purchasedCards = [];
+        this.purchasedRelic = undefined;
+        this.removedCurses = [];
     }
 
     create(): void {
@@ -47,10 +53,15 @@ export class ShopScene extends Phaser.Scene {
         });
 
         if (this.payload.inventory.relic) {
-            this.createRelicListing(960, 700, this.payload.inventory.relic.relic, this.payload.inventory.relic.cost);
+            this.createRelicListing(960, 650, this.payload.inventory.relic.relic, this.payload.inventory.relic.cost);
         }
 
-        this.createButton(1720, 900, 'Leave Shop', () => this.finish());
+        const curses = this.payload.curses || [];
+        if (curses.length > 0) {
+            this.createCurseRemovalSection(960, 850, curses, this.payload.curseRemovalCost || 100);
+        }
+
+        this.createButton(1720, 960, 'Leave Shop', () => this.finish());
     }
 
     private createCardListing(x: number, y: number, card: ICard, cost: number): void {
@@ -119,6 +130,59 @@ export class ShopScene extends Phaser.Scene {
         });
     }
 
+    private createCurseRemovalSection(x: number, y: number, curses: IRelicConfig[], cost: number): void {
+        this.add.text(x, y - 50, 'Remove a Curse', {
+            fontSize: '24px',
+            color: '#ff8888',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const spacing = 200;
+        const startX = x - ((curses.length - 1) * spacing) / 2;
+
+        curses.forEach((curse, index) => {
+            const cx = startX + index * spacing;
+            this.createCurseRemovalListing(cx, y + 30, curse, cost);
+        });
+    }
+
+    private createCurseRemovalListing(x: number, y: number, curse: IRelicConfig, cost: number): void {
+        const container = this.add.container(x, y);
+        const bg = this.add.rectangle(0, 0, 180, 120, 0x3a1e1e, 0.92)
+            .setStrokeStyle(2, 0xff6666)
+            .setOrigin(0.5);
+        const title = this.add.text(0, -30, curse.name, {
+            fontSize: '16px',
+            color: '#ff8888',
+            align: 'center',
+            wordWrap: { width: 160 }
+        }).setOrigin(0.5);
+        const costText = this.add.text(0, 10, `Remove: ${cost}g`, {
+            fontSize: '16px',
+            color: '#ffcccc'
+        }).setOrigin(0.5);
+        const removeLabel = this.add.text(0, 40, '[REMOVE]', {
+            fontSize: '14px',
+            color: '#66ff66'
+        }).setOrigin(0.5);
+        container.add([bg, title, costText, removeLabel]);
+        container.setSize(180, 120);
+        container.setInteractive(new Phaser.Geom.Rectangle(-90, -60, 180, 120), Phaser.Geom.Rectangle.Contains);
+        container.on('pointerover', () => container.setScale(1.05));
+        container.on('pointerout', () => container.setScale(1));
+        container.on('pointerdown', () => {
+            if (this.remainingGold < cost) return;
+            if (this.removedCurses.includes(curse.id)) return;
+            this.remainingGold -= cost;
+            this.removedCurses.push(curse.id);
+            this.goldText?.setText(`Gold: ${this.remainingGold}`);
+            container.disableInteractive();
+            container.setAlpha(0.4);
+            removeLabel.setText('[REMOVED]');
+            removeLabel.setColor('#888888');
+        });
+    }
+
     private createButton(x: number, y: number, label: string, onClick: () => void): void {
         const bg = this.add.rectangle(x, y, 220, 72, 0x233040, 0.95)
             .setStrokeStyle(3, 0xf6d75c)
@@ -136,6 +200,7 @@ export class ShopScene extends Phaser.Scene {
         this.payload.onComplete?.({
             purchasedCards: this.purchasedCards,
             purchasedRelic: this.purchasedRelic,
+            removedCurses: this.removedCurses,
             goldSpent: Math.max(0, spent)
         });
     }

@@ -10,6 +10,7 @@ import { EventScene } from './scenes/EventScene';
 import { ShopScene } from './scenes/ShopScene';
 import { RestScene } from './scenes/RestScene';
 import { RewardScene } from './scenes/RewardScene';
+import { RelicRewardScene } from './scenes/RelicRewardScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
@@ -54,7 +55,8 @@ const config: Phaser.Types.Core.GameConfig = {
         EventScene,
         ShopScene,
         RestScene,
-        RewardScene
+        RewardScene,
+        RelicRewardScene
     ]
 };
 

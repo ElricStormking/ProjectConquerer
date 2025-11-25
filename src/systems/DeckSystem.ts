@@ -65,11 +65,18 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
     }
 
     public draw(count = 1): ICard[] {
+        console.log(`[DeckSystem] draw(${count}) called, hand size: ${this.hand.length}/${this.maxHandSize}, draw pile: ${this.drawPile.length}`);
         const drawn: ICard[] = [];
         for (let i = 0; i < count; i++) {
-            if (this.hand.length >= this.maxHandSize) break;
+            if (this.hand.length >= this.maxHandSize) {
+                console.log(`[DeckSystem] Hand is full, cannot draw more cards`);
+                break;
+            }
             if (this.drawPile.length === 0) {
-                if (this.discardPile.length === 0) break;
+                if (this.discardPile.length === 0) {
+                    console.log(`[DeckSystem] Both draw pile and discard pile are empty`);
+                    break;
+                }
                 this.drawPile = [...this.discardPile];
                 this.discardPile = [];
                 this.shuffle();
@@ -78,11 +85,13 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
             if (!card) break;
             this.hand.push(card);
             drawn.push(card);
+            console.log(`[DeckSystem] Drew card: ${card.name}`);
             this.emit('card-drawn', card);
         }
         if (drawn.length > 0) {
             this.emitState();
         }
+        console.log(`[DeckSystem] draw() complete, drew ${drawn.length} cards, new hand size: ${this.hand.length}`);
         return drawn;
     }
 

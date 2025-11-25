@@ -207,9 +207,41 @@ export interface IEventConfig {
     iconKey?: string;
 }
 
+export enum RelicTrigger {
+    ON_BATTLE_START = 'on_battle_start',
+    ON_WAVE_START = 'on_wave_start',
+    ON_WAVE_END = 'on_wave_end',
+    ON_UNIT_SPAWN = 'on_unit_spawn',
+    ON_UNIT_DEATH = 'on_unit_death',
+    ON_DAMAGE_DEALT = 'on_damage_dealt',
+    ON_DAMAGE_TAKEN = 'on_damage_taken',
+    ON_CARD_DRAW = 'on_card_draw',
+    ON_CARD_PLAY = 'on_card_play',
+    ON_SHOP_ENTER = 'on_shop_enter',
+    ON_REST = 'on_rest',
+    ON_RUN_START = 'on_run_start',
+    ON_NODE_COMPLETE = 'on_node_complete',
+    ON_GOLD_GAIN = 'on_gold_gain',
+    PASSIVE = 'passive'
+}
+
 export interface IRelicEffect {
     type: string;
+    trigger?: RelicTrigger;
     value?: number;
+    percentValue?: number;
+    targetStat?: string;
+    condition?: string;
+    cost?: string;
+    [key: string]: string | number | boolean | undefined;
+}
+
+export interface IRelicContext {
+    amount?: number;
+    unitId?: string;
+    cardId?: string;
+    nodeType?: NodeType;
+    team?: number;
     [key: string]: string | number | boolean | undefined;
 }
 

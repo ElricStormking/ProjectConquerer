@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { ICard, IGameState } from '../types/ironwars';
 import { HandManager } from '../ui/HandManager';
+import { RelicInventoryUI } from '../ui/RelicInventoryUI';
 import { GameStateManager } from '../systems/GameStateManager';
 
 export class UIScene extends Phaser.Scene {
     private handManager!: HandManager;
+    private relicInventoryUI: RelicInventoryUI | null = null;
     private battleScene!: Phaser.Scene;
     private profitText!: Phaser.GameObjects.Text;
     private goldText!: Phaser.GameObjects.Text;
@@ -25,6 +27,7 @@ export class UIScene extends Phaser.Scene {
     public create() {
         this.battleScene = this.scene.get('BattleScene');
         this.handManager = new HandManager(this, this.battleScene.events);
+        this.relicInventoryUI = new RelicInventoryUI(this, 1870, 160);
         this.createTopHud();
         this.createStartButton();
         this.registerBattleEvents();
@@ -169,6 +172,13 @@ export class UIScene extends Phaser.Scene {
             this.commanderText.setText('Commander Ready');
         } else {
             this.commanderText.setText(`Commander ${Math.ceil(remaining / 1000)}s`);
+        }
+    }
+
+    public shutdown(): void {
+        if (this.relicInventoryUI) {
+            this.relicInventoryUI.destroy();
+            this.relicInventoryUI = null;
         }
     }
 }

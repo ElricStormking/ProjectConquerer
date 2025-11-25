@@ -1,13 +1,33 @@
 id,name,description,rarity,effect_json,is_cursed,icon_key,cost
-steam_core,Steam Core,"+1 card draw at the start of each wave.",rare,"{""type"":""card_draw"",""value"":1}",false,relic_steam_core,0
-forged_plating,Forged Plating,"Fortress gains +150 max HP.",common,"{""type"":""fortress_hp"",""value"":150}",false,relic_forged_plating,0
-brass_compass,Brass Compass,"Gain +1 selectable node after elites.",rare,"{""type"":""bonus_path_choice"",""value"":1}",false,relic_brass_compass,0
-molten_heart,Molten Heart,"Units deal +20% damage but take 5% self-burn.",epic,"{""type"":""unit_damage_pct"",""value"":20,""cost"":""self_burn_5""}",false,relic_molten_heart,0
-emberstone_charm,Emberstone Charm,"Heal 40 HP after every battle.",rare,"{""type"":""post_battle_heal"",""value"":40}",false,relic_emberstone,0
-skywhisper_feather,Skywhisper Feather,"Fortress movement speed +25%.",epic,"{""type"":""map_speed_pct"",""value"":25}",false,relic_skywhisper,0
-storm_reservoir,Storm Reservoir,"Gain +1 random rare card after bosses.",legendary,"{""type"":""boss_reward_bonus"",""value"":1}",false,relic_storm_reservoir,0
-portable_workshop,Portable Workshop,"Shops cost 15% less gold.",rare,"{""type"":""shop_discount_pct"",""value"":15}",false,relic_workshop,0
-gilded_token,Gilded Token,"Gain 50 gold when acquiring a relic.",common,"{""type"":""relic_gold_bonus"",""value"":50}",false,relic_gilded_token,0
-adaptive_matrix,Adaptive Matrix,"First card reward each stage is upgraded.",legendary,"{""type"":""auto_upgrade_reward""}",false,relic_adaptive_matrix,0
-cursed_furnace,Cursed Furnace,"Battle rewards give +1 card choice but fortress loses 10 HP.",cursed,"{""type"":""reward_choice_bonus"",""value"":1,""cost"":""fortress_damage_10""}",true,relic_cursed_furnace,0
-ashen_contract,Ashen Contract,"Gain +150 gold but shops cost +25%.",cursed,"{""type"":""gain_gold_flat"",""value"":150,""cost"":""shop_cost_increase_25""}",true,relic_ashen_contract,0
+steam_core,Steam Core,"+1 card draw at the start of each wave.",rare,"{""type"":""card_draw"",""trigger"":""on_wave_start"",""value"":1}",false,relic_steam_core,0
+forged_plating,Forged Plating,"Fortress gains +150 max HP.",common,"{""type"":""fortress_hp"",""trigger"":""passive"",""value"":150}",false,relic_forged_plating,0
+brass_compass,Brass Compass,"Gain +1 selectable node after elite battles.",rare,"{""type"":""bonus_path_choice"",""trigger"":""on_node_complete"",""value"":1,""condition"":""elite""}",false,relic_brass_compass,0
+molten_heart,Molten Heart,"Units deal +20% damage but take 5% self-burn per attack.",epic,"{""type"":""unit_damage_pct"",""trigger"":""on_damage_dealt"",""percentValue"":20,""cost"":""self_burn_5""}",false,relic_molten_heart,0
+emberstone_charm,Emberstone Charm,"Heal 40 fortress HP after every battle.",rare,"{""type"":""post_battle_heal"",""trigger"":""on_node_complete"",""value"":40}",false,relic_emberstone,0
+skywhisper_feather,Skywhisper Feather,"Units gain +15% move speed.",epic,"{""type"":""unit_move_speed_pct"",""trigger"":""passive"",""percentValue"":15}",false,relic_skywhisper,0
+storm_reservoir,Storm Reservoir,"Gain +1 random rare card after defeating bosses.",legendary,"{""type"":""boss_reward_bonus"",""trigger"":""on_node_complete"",""value"":1,""condition"":""boss""}",false,relic_storm_reservoir,0
+portable_workshop,Portable Workshop,"Shop items cost 15% less gold.",rare,"{""type"":""shop_discount_pct"",""trigger"":""on_shop_enter"",""percentValue"":15}",false,relic_workshop,0
+gilded_token,Gilded Token,"Gain 50 gold when acquiring any relic.",common,"{""type"":""relic_gold_bonus"",""trigger"":""on_run_start"",""value"":50}",false,relic_gilded_token,0
+adaptive_matrix,Adaptive Matrix,"First card reward each stage is upgraded to rare or better.",legendary,"{""type"":""auto_upgrade_reward"",""trigger"":""passive""}",false,relic_adaptive_matrix,0
+iron_resolve,Iron Resolve,"Units gain +10 armor.",common,"{""type"":""unit_armor"",""trigger"":""passive"",""value"":10}",false,relic_iron_resolve,0
+battle_standard,Battle Standard,"Units deal +10% damage when fortress HP is above 75%.",rare,"{""type"":""unit_damage_pct"",""trigger"":""passive"",""percentValue"":10,""condition"":""fortress_hp_above_75""}",false,relic_battle_standard,0
+veteran_medal,Veteran Medal,"Start each wave with +3 resources.",common,"{""type"":""resource_gain"",""trigger"":""on_wave_start"",""value"":3}",false,relic_veteran_medal,0
+arcane_lens,Arcane Lens,"Ranged units gain +50 range.",rare,"{""type"":""unit_range"",""trigger"":""passive"",""value"":50,""condition"":""ranged""}",false,relic_arcane_lens,0
+berserker_tooth,Berserker Tooth,"Units deal +30% damage when below 50% HP.",epic,"{""type"":""unit_damage_pct"",""trigger"":""passive"",""percentValue"":30,""condition"":""unit_hp_below_50""}",false,relic_berserker_tooth,0
+clockwork_heart,Clockwork Heart,"Units attack 15% faster.",epic,"{""type"":""unit_attack_speed_pct"",""trigger"":""passive"",""percentValue"":15}",false,relic_clockwork_heart,0
+phoenix_feather,Phoenix Feather,"Once per battle: prevent fortress from being destroyed and restore 100 HP.",legendary,"{""type"":""fortress_revive"",""trigger"":""on_damage_taken"",""value"":100,""condition"":""fortress_lethal""}",false,relic_phoenix_feather,0
+merchant_seal,Merchant Seal,"Gain +25% more gold from all sources.",rare,"{""type"":""gold_gain_pct"",""trigger"":""on_gold_gain"",""percentValue"":25}",false,relic_merchant_seal,0
+warhorn,Warhorn,"At battle start all units gain +20% damage for the first wave.",rare,"{""type"":""unit_damage_pct"",""trigger"":""on_battle_start"",""percentValue"":20,""duration"":""first_wave""}",false,relic_warhorn,0
+ancient_tome,Ancient Tome,"Start each battle with +2 cards drawn.",epic,"{""type"":""card_draw"",""trigger"":""on_battle_start"",""value"":2}",false,relic_ancient_tome,0
+lucky_coin,Lucky Coin,"10% chance to gain double gold from battles.",common,"{""type"":""gold_double_chance"",""trigger"":""on_node_complete"",""percentValue"":10}",false,relic_lucky_coin,0
+healing_salve,Healing Salve,"Heal 15 fortress HP at the start of each wave.",common,"{""type"":""fortress_heal"",""trigger"":""on_wave_start"",""value"":15}",false,relic_healing_salve,0
+commanders_signet,Commander's Signet,"Commander skill cooldown reduced by 20%.",epic,"{""type"":""commander_cooldown_pct"",""trigger"":""passive"",""percentValue"":-20}",false,relic_commanders_signet,0
+soul_anchor,Soul Anchor,"When a unit dies there is a 15% chance to spawn a ghost ally.",legendary,"{""type"":""unit_death_spawn"",""trigger"":""on_unit_death"",""percentValue"":15,""spawnId"":""ghost_ally""}",false,relic_soul_anchor,0
+cursed_furnace,Cursed Furnace,"Battle rewards give +1 card choice but fortress loses 15 HP per wave.",cursed,"{""type"":""reward_choice_bonus"",""trigger"":""on_wave_end"",""value"":1,""cost"":""fortress_damage_15""}",true,relic_cursed_furnace,0
+ashen_contract,Ashen Contract,"Gain +200 gold immediately but shop prices increase by 25%.",cursed,"{""type"":""gain_gold_flat"",""trigger"":""on_run_start"",""value"":200,""cost"":""shop_cost_increase_25""}",true,relic_ashen_contract,0
+blood_pact,Blood Pact,"Units deal +25% damage but healing effects are halved.",cursed,"{""type"":""unit_damage_pct"",""trigger"":""passive"",""percentValue"":25,""cost"":""healing_halved""}",true,relic_blood_pact,0
+weighted_chains,Weighted Chains,"Gain +2 cards drawn per wave but units move 20% slower.",cursed,"{""type"":""card_draw"",""trigger"":""on_wave_start"",""value"":2,""cost"":""unit_speed_reduce_20""}",true,relic_weighted_chains,0
+cracked_shield,Cracked Shield,"Start with +300 fortress HP but lose 5 HP per wave.",cursed,"{""type"":""fortress_hp"",""trigger"":""passive"",""value"":300,""cost"":""fortress_damage_per_wave_5""}",true,relic_cracked_shield,0
+gamblers_dice,Gambler's Dice,"50% chance for double gold or no gold from battles.",cursed,"{""type"":""gold_gamble"",""trigger"":""on_node_complete"",""percentValue"":50}",true,relic_gamblers_dice,0
+hollow_crown,Hollow Crown,"+50% commander skill damage but cooldown increased by 50%.",cursed,"{""type"":""commander_damage_pct"",""trigger"":""passive"",""percentValue"":50,""cost"":""commander_cooldown_increase_50""}",true,relic_hollow_crown,0
+fragile_hourglass,Fragile Hourglass,"Draw 3 extra cards at battle start but max hand size reduced by 2.",cursed,"{""type"":""card_draw"",""trigger"":""on_battle_start"",""value"":3,""cost"":""hand_size_reduce_2""}",true,relic_fragile_hourglass,0

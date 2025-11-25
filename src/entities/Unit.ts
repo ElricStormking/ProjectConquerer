@@ -4,6 +4,9 @@ import { StatusEffect } from '../systems/CombatSystem';
 import type { UnitManager } from '../systems/UnitManager';
 import type { CombatSystem } from '../systems/CombatSystem';
 import { UnitType, UNIT_TEMPLATES } from '../data/UnitTypes';
+import { RelicManager } from '../systems/RelicManager';
+import { GameStateManager } from '../systems/GameStateManager';
+import { IRelicContext, NodeType } from '../types/ironwars';
 
 export interface UnitConfig {
     x: number;
@@ -316,7 +319,7 @@ export class Unit extends Phaser.Events.EventEmitter {
             if (unitManager && combatSystem) {
                 const center = this.getPosition();
                 const swingAngle = Phaser.Math.DegToRad(120); // narrower cone so it feels forward
-                const radius = Math.max(this.range, 60);
+                const radius = Math.max(this.getRange(), 60);
                 const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
@@ -368,7 +371,7 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         
         // Draw 160-degree filled sector (fan) using Shapes Arc for reliability
-        const swingRadius = Math.max(this.range, 60);
+        const swingRadius = Math.max(this.getRange(), 60);
         const swingArc = Phaser.Math.DegToRad(120);
         const startDeg = Phaser.Math.RadToDeg(directionAngle - swingArc / 2);
         const endDeg = Phaser.Math.RadToDeg(directionAngle + swingArc / 2);
@@ -491,7 +494,8 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.facing = Math.atan2(ny, nx);
         }
 
-        const speed = this.moveSpeed * this.moveSpeedMultiplier;
+        const moveSpeed = this.getMoveSpeed();
+        const speed = moveSpeed * this.moveSpeedMultiplier;
         const force = {
             x: nx * speed * 0.002, // Reduced to 20% of original speed
             y: ny * speed * 0.002
@@ -688,14 +692,38 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getDeathTimer(): number { return this.deathTimer; }
     public getHealth(): number { return this.health; }
     public getMaxHealth(): number { return this.maxHealth; }
-    public getDamage(): number { return this.damage; }
-    public getArmor(): number { return this.armor; }
+    
+    public getDamage(): number { 
+        const baseDamage = this.damage;
+        return RelicManager.getInstance().applyDamageModifier(baseDamage, this.getRelicContext());
+    }
+    
+    public getArmor(): number { 
+        const baseArmor = this.armor;
+        return RelicManager.getInstance().applyArmorModifier(baseArmor, this.getRelicContext());
+    }
+    
     public getMass(): number { return this.mass; }
     public getCritChance(): number { return this.critChance; }
     public getCritMultiplier(): number { return this.critMultiplier; }
     public getAccuracy(): number { return this.accuracy; }
-    public getRange(): number { return this.range; }
-    public getAttackSpeed(): number { return this.attackSpeed * this.attackSpeedMultiplier; }
+    
+    public getRange(): number { 
+        const baseRange = this.range;
+        return RelicManager.getInstance().applyRangeModifier(baseRange, this.getRelicContext());
+    }
+    
+    public getMoveSpeed(): number {
+        const baseSpeed = this.moveSpeed;
+        return RelicManager.getInstance().applyMoveSpeedModifier(baseSpeed, this.getRelicContext());
+    }
+
+    public getAttackSpeed(): number { 
+        const baseSpeed = this.attackSpeed;
+        const relicMod = RelicManager.getInstance().applyAttackSpeedModifier(baseSpeed, this.getRelicContext());
+        return relicMod * this.attackSpeedMultiplier; 
+    }
+    
     public canAttack(currentTime: number): boolean {
         const cooldown = 1000 / this.getAttackSpeed();
         return currentTime - this.lastAttackTime >= cooldown;
@@ -708,6 +736,17 @@ export class Unit extends Phaser.Events.EventEmitter {
     public setAccuracy(value: number): void { this.accuracy = value; }
     public getConfig(): UnitConfig { return this.config; }
     
+    private getRelicContext(): IRelicContext {
+        const gameState = GameStateManager.getInstance().getState();
+        return {
+            unitType: this.config.type,
+            unitHpPercent: (this.health / this.maxHealth) * 100,
+            fortressHpPercent: gameState.fortressMaxHp > 0 ? (gameState.fortressHp / gameState.fortressMaxHp) * 100 : 0,
+            nodeType: NodeType.BATTLE,
+            team: this.team
+        };
+    }
+
     private getSpriteKey(): string {
         switch (this.config.unitType) {
             case UnitType.CHRONOTEMPORAL: return 'chronotemporal';

@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { DataManager } from './DataManager';
+import { RelicManager } from './RelicManager';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
 import {
     IRunState,
     IStageConfig,
     IMapNode,
     ICard,
-    NodeType
+    NodeType,
+    RelicTrigger
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -15,11 +17,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     private static instance: RunProgressionManager;
 
     private readonly dataManager = DataManager.getInstance();
+    private readonly relicManager = RelicManager.getInstance();
     private runState: IRunState | null = null;
     private stageGraph: Map<number, IStageConfig> = new Map();
     private stageGraphById: Map<string, IStageConfig> = new Map();
     private nodeGraph: Map<string, IMapNode> = new Map();
     private inboundEdges: Map<string, string[]> = new Map();
+    private difficultyLevel = 0;
 
     private constructor() {
         super();
@@ -63,22 +67,44 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return { ...node, nextNodeIds: [...node.nextNodeIds] };
     }
 
-    public startNewRun(): void {
+    public startNewRun(difficulty = 0): void {
+        this.difficultyLevel = difficulty;
         this.buildStageGraph();
         const starter = COG_DOMINION_STARTER;
         const startingStageIndex = 0;
         const entryNodeId = this.findEntryNodeId(startingStageIndex);
 
+        this.relicManager.reset();
+
+        const startingRelicIds = this.relicManager.generateStartingRelics(2);
+        startingRelicIds.forEach(id => this.relicManager.addRelic(id));
+
+        if (this.difficultyLevel >= 3) {
+            const curse = this.relicManager.generateRandomCurse();
+            if (curse) {
+                this.relicManager.addRelic(curse.id);
+            }
+        }
+
+        const baseFortressHp = starter.fortress.maxHp;
+        const modifiedFortressHp = this.relicManager.applyFortressHpModifier(baseFortressHp);
+
+        let startingGold = 120;
+        const runStartContext = this.relicManager.applyTrigger(RelicTrigger.ON_RUN_START, {});
+        if (runStartContext.goldBonus) {
+            startingGold += runStartContext.goldBonus as number;
+        }
+
         this.runState = {
             currentStageIndex: startingStageIndex,
             currentNodeId: entryNodeId,
             completedNodeIds: [],
-            fortressHp: starter.fortress.maxHp,
-            fortressMaxHp: starter.fortress.maxHp,
-            gold: 120,
+            fortressHp: modifiedFortressHp,
+            fortressMaxHp: modifiedFortressHp,
+            gold: startingGold,
             deck: [...starter.deck],
-            relics: [],
-            curses: [],
+            relics: this.relicManager.getActiveRelicIds(),
+            curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [starter.commander.id]
         };
 
@@ -131,21 +157,48 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public addRelic(relicId: string): void {
         if (!this.runState) return;
-        if (!this.runState.relics.includes(relicId)) {
-            this.runState.relics.push(relicId);
+        if (this.relicManager.addRelic(relicId)) {
+            this.runState.relics = this.relicManager.getActiveRelicIds();
+            this.runState.curses = this.relicManager.getCurses().map(c => c.id);
             this.emit('relics-updated', [...this.runState.relics]);
+            if (this.relicManager.hasRelic(relicId)) {
+                const config = this.dataManager.getRelicConfig(relicId);
+                if (config?.isCursed) {
+                    this.emit('curses-updated', [...this.runState.curses]);
+                }
+            }
         }
     }
 
     public addCurse(curseId: string): void {
         if (!this.runState) return;
-        this.runState.curses.push(curseId);
-        this.emit('curses-updated', [...this.runState.curses]);
+        this.addRelic(curseId);
+    }
+
+    public removeRelic(relicId: string): boolean {
+        if (!this.runState) return false;
+        if (this.relicManager.removeRelic(relicId)) {
+            this.runState.relics = this.relicManager.getActiveRelicIds();
+            this.runState.curses = this.relicManager.getCurses().map(c => c.id);
+            this.emit('relics-updated', [...this.runState.relics]);
+            this.emit('curses-updated', [...this.runState.curses]);
+            return true;
+        }
+        return false;
+    }
+
+    public removeCurse(curseId: string): boolean {
+        return this.removeRelic(curseId);
+    }
+
+    public getRelicManager(): RelicManager {
+        return this.relicManager;
     }
 
     public healFortress(amount: number): void {
         if (!this.runState) return;
-        const nextHp = Math.min(this.runState.fortressHp + amount, this.runState.fortressMaxHp);
+        const modifiedAmount = this.relicManager.applyHealingModifier(amount);
+        const nextHp = Math.min(this.runState.fortressHp + modifiedAmount, this.runState.fortressMaxHp);
         this.runState.fortressHp = nextHp;
         this.emit('fortress-updated', { hp: nextHp, max: this.runState.fortressMaxHp });
     }
@@ -162,7 +215,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public gainGold(amount: number): void {
         if (!this.runState) return;
-        this.runState.gold += amount;
+        const modifiedAmount = this.relicManager.applyGoldModifier(amount);
+        this.runState.gold += modifiedAmount;
         this.emit('gold-updated', this.runState.gold);
     }
 

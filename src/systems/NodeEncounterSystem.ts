@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
-import { IMapNode, NodeType, ICard, IRelicConfig, IEventOption } from '../types/ironwars';
+import { RelicManager } from './RelicManager';
+import { IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger } from '../types/ironwars';
 
 type RewardSceneResult = {
     card?: ICard;
@@ -16,6 +17,7 @@ type EventResolution = {
 export class NodeEncounterSystem {
     private readonly runManager = RunProgressionManager.getInstance();
     private readonly dataManager = DataManager.getInstance();
+    private readonly relicManager = RelicManager.getInstance();
     private resolving = false;
 
     constructor(private readonly hostScene: Phaser.Scene) {}
@@ -98,8 +100,18 @@ export class NodeEncounterSystem {
     }
 
     private presentBattleRewards(node: IMapNode): void {
+        const nodeCompleteContext = this.relicManager.applyTrigger(RelicTrigger.ON_NODE_COMPLETE, {
+            nodeType: node.type
+        });
+
+        if (nodeCompleteContext.fortressHealBonus) {
+            this.runManager.healFortress(nodeCompleteContext.fortressHealBonus as number);
+        }
+
         const cardChoices = this.generateCardChoices(node.rewardTier);
-        const goldReward = node.rewardTier * 50;
+        let goldReward = node.rewardTier * 50;
+        goldReward = this.relicManager.applyGoldModifier(goldReward);
+
         const rewardSceneKey = 'RewardScene';
 
         this.hostScene.scene.launch(rewardSceneKey, {
@@ -113,6 +125,34 @@ export class NodeEncounterSystem {
                 }
                 if (result.goldAwarded) {
                     this.runManager.gainGold(result.goldAwarded);
+                }
+
+                if (node.type === NodeType.ELITE || node.type === NodeType.BOSS) {
+                    this.presentRelicReward(node);
+                } else {
+                    this.finishEncounter(node);
+                }
+            }
+        });
+    }
+
+    private presentRelicReward(node: IMapNode): void {
+        const relicChoices = this.relicManager.generateRelicReward(node.rewardTier, []);
+        if (relicChoices.length === 0) {
+            this.finishEncounter(node);
+            return;
+        }
+
+        const relicRewardSceneKey = 'RelicRewardScene';
+        this.hostScene.scene.launch(relicRewardSceneKey, {
+            title: node.type === NodeType.BOSS ? 'Boss Defeated!' : 'Elite Conquered!',
+            subtitle: 'Choose a relic to aid your journey',
+            relicChoices,
+            allowSkip: true,
+            onComplete: (selectedRelic: IRelicConfig | null) => {
+                this.hostScene.scene.stop(relicRewardSceneKey);
+                if (selectedRelic) {
+                    this.runManager.addRelic(selectedRelic.id);
                 }
                 this.finishEncounter(node);
             }
@@ -134,12 +174,19 @@ export class NodeEncounterSystem {
     }
 
     private startShopEncounter(node: IMapNode): void {
+        this.relicManager.applyTrigger(RelicTrigger.ON_SHOP_ENTER, {});
+
         const shopSceneKey = 'ShopScene';
         const inventory = this.buildShopInventory(node.rewardTier);
+        const curses = this.relicManager.getCurses();
+        const curseRemovalCost = 100 + (node.rewardTier * 25);
+
         this.hostScene.scene.launch(shopSceneKey, {
             inventory,
             currentGold: this.runManager.getGold(),
-            onComplete: (result: { purchasedCards: ICard[]; purchasedRelic?: IRelicConfig; goldSpent: number }) => {
+            curses,
+            curseRemovalCost,
+            onComplete: (result: { purchasedCards: ICard[]; purchasedRelic?: IRelicConfig; removedCurses: string[]; goldSpent: number }) => {
                 this.hostScene.scene.stop(shopSceneKey);
                 if (result.goldSpent > 0) {
                     this.runManager.spendGold(result.goldSpent);
@@ -148,6 +195,7 @@ export class NodeEncounterSystem {
                 if (result.purchasedRelic) {
                     this.runManager.addRelic(result.purchasedRelic.id);
                 }
+                result.removedCurses.forEach(curseId => this.runManager.removeCurse(curseId));
                 this.finishEncounter(node);
             }
         });

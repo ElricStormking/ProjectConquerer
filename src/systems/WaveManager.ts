@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { IEnemySpawn, IWaveConfig } from '../types/ironwars';
+import { IEnemySpawn, IWaveConfig, RelicTrigger, IRelicContext } from '../types/ironwars';
 import { UnitManager } from './UnitManager';
 import { GameStateManager } from './GameStateManager';
+import { RelicManager } from './RelicManager';
 import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { UnitType } from '../data/UnitTypes';
 
@@ -11,6 +12,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     private pendingSpawnEvents = 0;
     private activeEnemyIds: Set<string> = new Set();
     private timers: Phaser.Time.TimerEvent[] = [];
+    private readonly relicManager = RelicManager.getInstance();
 
     constructor(
         private scene: Phaser.Scene,
@@ -56,6 +58,13 @@ export class WaveManager extends Phaser.Events.EventEmitter {
             this.timers.push(timer);
         });
         this.emit('wave-started', wave.index);
+
+        const waveStartContext = this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_START, {});
+        this.emit('relic-wave-start', waveStartContext);
+    }
+
+    public getWaveStartContext(): IRelicContext {
+        return this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_START, {});
     }
 
     public hasNextWave(): boolean {
@@ -117,8 +126,23 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         console.log(`[WaveManager] Checking wave completion - Wave ${this.activeWaveIndex + 1}, Pending spawns: ${this.pendingSpawnEvents}, Active enemies: ${this.activeEnemyIds.size}`);
         if (this.isWaveComplete()) {
             console.log(`[WaveManager] Wave ${this.activeWaveIndex + 1} cleared!`);
+
+            const waveEndContext = this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_END, {});
+            this.emit('relic-wave-end', waveEndContext);
+
+            if (waveEndContext.fortressDamage) {
+                this.gameState.takeFortressDamage(waveEndContext.fortressDamage as number);
+            }
+            if (waveEndContext.fortressHealBonus) {
+                this.gameState.healFortress(waveEndContext.fortressHealBonus as number);
+            }
+
             this.emit('wave-cleared', this.activeWaveIndex);
         }
+    }
+
+    public getWaveEndContext(): IRelicContext {
+        return this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_END, {});
     }
 
     private clearTimers(): void {
