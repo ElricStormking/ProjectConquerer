@@ -15,6 +15,7 @@ export class CardRewardScene extends Phaser.Scene {
     }
 
     public showCardReward(onCardSelected: (card: ICard) => void): void {
+        console.log('[CardRewardScene] showCardReward called');
         // Generate 3 random card options from the deck
         this.cardOptions = this.generateCardOptions(3);
         this.createRewardUI(onCardSelected);
@@ -36,6 +37,7 @@ export class CardRewardScene extends Phaser.Scene {
     }
 
     private createRewardUI(onCardSelected: (card: ICard) => void): void {
+        console.log('[CardRewardScene] createRewardUI - options:', this.cardOptions.length);
         // Semi-transparent overlay
         this.overlay = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.85);
         this.overlay.setDepth(9000);

@@ -1,3 +1,13 @@
-id,name,description,rarity,effect_id,icon
-ancient_sword,Ancient Sword,Increases damage by 10%,rare,dmg_up_10,sword_icon
-golden_coin,Golden Coin,Start with +5 gold,common,gold_start,coin_icon
+id,name,description,rarity,effect_json,is_cursed,icon_key,cost
+steam_core,Steam Core,"+1 card draw at the start of each wave.",rare,"{""type"":""card_draw"",""value"":1}",false,relic_steam_core,0
+forged_plating,Forged Plating,"Fortress gains +150 max HP.",common,"{""type"":""fortress_hp"",""value"":150}",false,relic_forged_plating,0
+brass_compass,Brass Compass,"Gain +1 selectable node after elites.",rare,"{""type"":""bonus_path_choice"",""value"":1}",false,relic_brass_compass,0
+molten_heart,Molten Heart,"Units deal +20% damage but take 5% self-burn.",epic,"{""type"":""unit_damage_pct"",""value"":20,""cost"":""self_burn_5""}",false,relic_molten_heart,0
+emberstone_charm,Emberstone Charm,"Heal 40 HP after every battle.",rare,"{""type"":""post_battle_heal"",""value"":40}",false,relic_emberstone,0
+skywhisper_feather,Skywhisper Feather,"Fortress movement speed +25%.",epic,"{""type"":""map_speed_pct"",""value"":25}",false,relic_skywhisper,0
+storm_reservoir,Storm Reservoir,"Gain +1 random rare card after bosses.",legendary,"{""type"":""boss_reward_bonus"",""value"":1}",false,relic_storm_reservoir,0
+portable_workshop,Portable Workshop,"Shops cost 15% less gold.",rare,"{""type"":""shop_discount_pct"",""value"":15}",false,relic_workshop,0
+gilded_token,Gilded Token,"Gain 50 gold when acquiring a relic.",common,"{""type"":""relic_gold_bonus"",""value"":50}",false,relic_gilded_token,0
+adaptive_matrix,Adaptive Matrix,"First card reward each stage is upgraded.",legendary,"{""type"":""auto_upgrade_reward""}",false,relic_adaptive_matrix,0
+cursed_furnace,Cursed Furnace,"Battle rewards give +1 card choice but fortress loses 10 HP.",cursed,"{""type"":""reward_choice_bonus"",""value"":1,""cost"":""fortress_damage_10""}",true,relic_cursed_furnace,0
+ashen_contract,Ashen Contract,"Gain +150 gold but shops cost +25%.",cursed,"{""type"":""gain_gold_flat"",""value"":150,""cost"":""shop_cost_increase_25""}",true,relic_ashen_contract,0

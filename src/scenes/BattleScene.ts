@@ -315,22 +315,22 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private showCardRewardScreen(): void {
-        // Launch CardRewardScene as an overlay
         if (!this.scene.isActive('CardRewardScene')) {
+            console.log('[BattleScene] Launching CardRewardScene');
             this.scene.launch('CardRewardScene');
         }
-        
+
+        this.scene.bringToTop('CardRewardScene');
+
         const rewardScene = this.scene.get('CardRewardScene') as any;
+        console.log('[BattleScene] Calling CardRewardScene.showCardReward');
         rewardScene.showCardReward((selectedCard: ICard) => {
             console.log(`[BattleScene] Card selected: ${selectedCard.name}`);
-            
-            // Add the selected card to the deck
+
             this.deckSystem.addCard(selectedCard);
-            
-            // Close the reward scene
+
             this.scene.stop('CardRewardScene');
-            
-            // Show the start button for next wave
+
             this.showStartButton('Start Next Wave');
         });
     }

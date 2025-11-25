@@ -153,3 +153,88 @@ export interface IDeckSystem {
 export interface ICardSystem {
     resolveCardPlacement(payload: ICardPlacementPayload): void;
 }
+
+export enum NodeType {
+    BATTLE = 'battle',
+    ELITE = 'elite',
+    BOSS = 'boss',
+    EVENT = 'event',
+    SHOP = 'shop',
+    RECRUITMENT = 'recruitment',
+    REST = 'rest'
+}
+
+export interface IMapNode {
+    id: string;
+    type: NodeType;
+    stageIndex: number;
+    tier: number;
+    encounterId?: string;
+    nextNodeIds: string[];
+    posX: number;
+    posY: number;
+    iconKey: string;
+    rewardTier: number;
+    isCompleted: boolean;
+    isAccessible: boolean;
+}
+
+export interface IStageConfig {
+    id: string;
+    index: number;
+    name: string;
+    theme?: string;
+    musicKey?: string;
+    nodes: IMapNode[];
+    backgroundKey: string;
+    bossNodeId: string;
+    nextStageId?: string;
+}
+
+export interface IEventOption {
+    id: string;
+    label: string;
+    effectId: string;
+    successChance?: number;
+    description?: string;
+}
+
+export interface IEventConfig {
+    id: string;
+    name: string;
+    description: string;
+    options: IEventOption[];
+    iconKey?: string;
+}
+
+export interface IRelicEffect {
+    type: string;
+    value?: number;
+    [key: string]: string | number | boolean | undefined;
+}
+
+export type RelicRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'cursed';
+
+export interface IRelicConfig {
+    id: string;
+    name: string;
+    description: string;
+    rarity: RelicRarity;
+    effect: IRelicEffect;
+    isCursed?: boolean;
+    iconKey?: string;
+    cost?: number;
+}
+
+export interface IRunState {
+    currentStageIndex: number;
+    currentNodeId: string;
+    completedNodeIds: string[];
+    fortressHp: number;
+    fortressMaxHp: number;
+    gold: number;
+    deck: ICard[];
+    relics: string[];
+    curses: string[];
+    commanderRoster: string[];
+}

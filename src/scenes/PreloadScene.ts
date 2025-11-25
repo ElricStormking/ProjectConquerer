@@ -64,7 +64,9 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('waves_data', 'data/waves.csv');
         this.load.text('skills_data', 'data/skills.csv');
         this.load.text('buildings_data', 'data/buildings.csv');
+        this.load.text('stages_data', 'data/stages.csv');
         this.load.text('relics_data', 'data/relics.csv');
+        this.load.text('events_data', 'data/events.csv');
         this.load.text('map_nodes_data', 'data/map_nodes.csv');
 
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
@@ -111,7 +113,6 @@ export class PreloadScene extends Phaser.Scene {
         // Initialize DataManager with loaded CSVs
         DataManager.getInstance().parse(this.cache);
 
-        this.scene.start('BattleScene');
-        this.scene.start('UIScene');
+        this.scene.start('StageMapScene');
     }
 }
