@@ -1,0 +1,718 @@
+import Phaser from 'phaser';
+import { RunProgressionManager } from '../systems/RunProgressionManager';
+import { CommanderManager } from '../systems/CommanderManager';
+import { FactionRegistry } from '../systems/FactionRegistry';
+import { ICard } from '../types/ironwars';
+
+const MAX_DECK_SIZE = 40;
+const CARD_WIDTH = 100;
+const CARD_HEIGHT = 140;
+const CARD_GAP = 12;
+const CARDS_PER_ROW = 6;
+
+interface DeckBuildingSceneData {
+    factionId?: string;
+    isNewRun?: boolean;
+}
+
+export class DeckBuildingScene extends Phaser.Scene {
+    private readonly runManager = RunProgressionManager.getInstance();
+    private readonly commanderManager = CommanderManager.getInstance();
+    private readonly factionRegistry = FactionRegistry.getInstance();
+    
+    private factionId = 'cog_dominion';
+    private isNewRun = false;
+    private commanderRoster: string[] = [];
+    private currentDeck: ICard[] = [];
+    private availableCards: ICard[] = [];
+    private selectedCommander: string | null = null;
+    
+    // UI containers
+    private commanderPanel!: Phaser.GameObjects.Container;
+    private cardGridPanel!: Phaser.GameObjects.Container;
+    private deckPanel!: Phaser.GameObjects.Container;
+    private cardGridContainer!: Phaser.GameObjects.Container;
+    private deckListContainer!: Phaser.GameObjects.Container;
+    private deckCountText!: Phaser.GameObjects.Text;
+    
+    private cardGridScrollY = 0;
+    private deckScrollY = 0;
+
+    constructor() {
+        super({ key: 'DeckBuildingScene' });
+    }
+
+    init(data: DeckBuildingSceneData): void {
+        this.factionId = data.factionId ?? 'cog_dominion';
+        this.isNewRun = data.isNewRun ?? false;
+    }
+
+    create(): void {
+        const { width, height } = this.cameras.main;
+        
+        // Initialize data
+        this.initializeData();
+        
+        // Create UI
+        this.createBackground(width, height);
+        this.createHeader(width);
+        this.createCommanderPanel();
+        this.createCardGridPanel();
+        this.createDeckPanel();
+        this.createBottomButtons(width, height);
+        
+        // Initial render
+        this.renderCommanders();
+        this.renderAvailableCards();
+        this.renderDeck();
+        
+        this.cameras.main.fadeIn(400, 0, 0, 0);
+    }
+
+    private initializeData(): void {
+        if (this.isNewRun) {
+            // Starting a new run - get starter commander
+            const starterCommander = this.commanderManager.getStarterCommander(this.factionId);
+            if (starterCommander) {
+                this.commanderRoster = [starterCommander.id];
+                this.currentDeck = [...this.commanderManager.getCardsForCommander(starterCommander.id)];
+                this.selectedCommander = starterCommander.id;
+            }
+        } else {
+            // Existing run - load from run state
+            const runState = this.runManager.getRunState();
+            if (runState) {
+                this.factionId = runState.factionId;
+                this.commanderRoster = [...runState.commanderRoster];
+                this.currentDeck = [...runState.deck];
+                this.selectedCommander = this.commanderRoster[0] || null;
+            }
+        }
+        
+        // Build available cards from commander roster
+        this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
+    }
+
+    private createBackground(width: number, height: number): void {
+        const bg = this.add.graphics();
+        bg.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x151820, 0x151820, 1);
+        bg.fillRect(0, 0, width, height);
+    }
+
+    private createHeader(width: number): void {
+        const factionColor = this.factionRegistry.getFactionColor(this.factionId);
+        const faction = this.factionRegistry.getFaction(this.factionId);
+        
+        // Header bar
+        const headerBg = this.add.graphics();
+        headerBg.fillStyle(0x1a1d2e, 0.95);
+        headerBg.fillRect(0, 0, width, 70);
+        headerBg.lineStyle(2, factionColor, 0.8);
+        headerBg.lineBetween(0, 70, width, 70);
+        
+        // Title
+        this.add.text(width / 2, 35, 'DECK BUILDING', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '32px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        
+        // Faction indicator
+        this.add.text(100, 35, faction?.name ?? this.factionId, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: '#8a9cc5'
+        }).setOrigin(0, 0.5);
+    }
+
+    private createCommanderPanel(): void {
+        const panelX = 30;
+        const panelY = 90;
+        const panelWidth = 250;
+        const panelHeight = 700;
+        
+        this.commanderPanel = this.add.container(panelX, panelY);
+        
+        // Panel background
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1d2e, 0.9);
+        bg.fillRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        bg.lineStyle(2, 0x3d4663, 1);
+        bg.strokeRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        this.commanderPanel.add(bg);
+        
+        // Title
+        const title = this.add.text(panelWidth / 2, 25, 'COMMANDERS', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.commanderPanel.add(title);
+        
+        // Divider
+        const divider = this.add.graphics();
+        divider.lineStyle(1, 0x3d4663, 0.5);
+        divider.lineBetween(20, 50, panelWidth - 20, 50);
+        this.commanderPanel.add(divider);
+    }
+
+    private createCardGridPanel(): void {
+        const panelX = 300;
+        const panelY = 90;
+        const panelWidth = 850;
+        const panelHeight = 700;
+        
+        this.cardGridPanel = this.add.container(panelX, panelY);
+        
+        // Panel background
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1d2e, 0.9);
+        bg.fillRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        bg.lineStyle(2, 0x3d4663, 1);
+        bg.strokeRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        this.cardGridPanel.add(bg);
+        
+        // Title
+        const title = this.add.text(panelWidth / 2, 25, 'AVAILABLE CARDS', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.cardGridPanel.add(title);
+        
+        // Card count
+        const countText = this.add.text(panelWidth - 30, 25, `${this.availableCards.length} cards`, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: '#8a9cc5'
+        }).setOrigin(1, 0.5);
+        this.cardGridPanel.add(countText);
+        
+        // Divider
+        const divider = this.add.graphics();
+        divider.lineStyle(1, 0x3d4663, 0.5);
+        divider.lineBetween(20, 50, panelWidth - 20, 50);
+        this.cardGridPanel.add(divider);
+        
+        // Scrollable card container
+        this.cardGridContainer = this.add.container(20, 60);
+        this.cardGridPanel.add(this.cardGridContainer);
+        
+        // Create mask for scrolling
+        const maskShape = this.make.graphics({});
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(panelX + 10, panelY + 55, panelWidth - 20, panelHeight - 65);
+        const mask = maskShape.createGeometryMask();
+        this.cardGridContainer.setMask(mask);
+        
+        // Enable scrolling
+        this.input.on('wheel', (pointer: Phaser.Input.Pointer, _gameObjects: any[], _deltaX: number, deltaY: number) => {
+            if (pointer.x >= panelX && pointer.x <= panelX + panelWidth &&
+                pointer.y >= panelY && pointer.y <= panelY + panelHeight) {
+                this.scrollCardGrid(deltaY);
+            }
+        });
+    }
+
+    private createDeckPanel(): void {
+        const panelX = 1170;
+        const panelY = 90;
+        const panelWidth = 320;
+        const panelHeight = 700;
+        
+        this.deckPanel = this.add.container(panelX, panelY);
+        
+        // Panel background
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1d2e, 0.9);
+        bg.fillRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        bg.lineStyle(2, 0x3d4663, 1);
+        bg.strokeRoundedRect(0, 0, panelWidth, panelHeight, 10);
+        this.deckPanel.add(bg);
+        
+        // Title
+        const title = this.add.text(panelWidth / 2, 25, 'YOUR DECK', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.deckPanel.add(title);
+        
+        // Deck count
+        this.deckCountText = this.add.text(panelWidth - 30, 25, `${this.currentDeck.length}/${MAX_DECK_SIZE}`, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: this.currentDeck.length <= MAX_DECK_SIZE ? '#8a9cc5' : '#e74c3c'
+        }).setOrigin(1, 0.5);
+        this.deckPanel.add(this.deckCountText);
+        
+        // Divider
+        const divider = this.add.graphics();
+        divider.lineStyle(1, 0x3d4663, 0.5);
+        divider.lineBetween(20, 50, panelWidth - 20, 50);
+        this.deckPanel.add(divider);
+        
+        // Scrollable deck list container
+        this.deckListContainer = this.add.container(10, 60);
+        this.deckPanel.add(this.deckListContainer);
+        
+        // Create mask for scrolling
+        const maskShape = this.make.graphics({});
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(panelX + 5, panelY + 55, panelWidth - 10, panelHeight - 120);
+        const mask = maskShape.createGeometryMask();
+        this.deckListContainer.setMask(mask);
+        
+        // Enable scrolling
+        this.input.on('wheel', (pointer: Phaser.Input.Pointer, _gameObjects: any[], _deltaX: number, deltaY: number) => {
+            if (pointer.x >= panelX && pointer.x <= panelX + panelWidth &&
+                pointer.y >= panelY && pointer.y <= panelY + panelHeight) {
+                this.scrollDeck(deltaY);
+            }
+        });
+    }
+
+    private createBottomButtons(width: number, height: number): void {
+        const buttonY = height - 60;
+        
+        // Back button
+        this.createButton(150, buttonY, '← Back', () => this.onBack());
+        
+        // Start/Continue button
+        const startLabel = this.isNewRun ? 'START RUN' : 'SAVE & RETURN';
+        this.createButton(width - 150, buttonY, startLabel, () => this.onStart(), true);
+    }
+
+    private createButton(x: number, y: number, label: string, callback: () => void, isPrimary = false): void {
+        const container = this.add.container(x, y);
+        const buttonWidth = 180;
+        const buttonHeight = 50;
+        
+        const bg = this.add.graphics();
+        const fillColor = isPrimary ? 0xd4a017 : 0x3d4663;
+        const textColor = isPrimary ? '#1a1a1a' : '#f0dba5';
+        
+        bg.fillStyle(fillColor, 1);
+        bg.fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 8);
+        container.add(bg);
+        
+        const text = this.add.text(0, 0, label, {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: textColor,
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(text);
+        
+        container.setSize(buttonWidth, buttonHeight);
+        container.setInteractive({ useHandCursor: true });
+        
+        container.on('pointerover', () => {
+            container.setScale(1.05);
+            bg.clear();
+            bg.fillStyle(isPrimary ? 0xf0dba5 : 0x4d5673, 1);
+            bg.fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 8);
+        });
+        
+        container.on('pointerout', () => {
+            container.setScale(1);
+            bg.clear();
+            bg.fillStyle(fillColor, 1);
+            bg.fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 8);
+        });
+        
+        container.on('pointerup', callback);
+    }
+
+    private renderCommanders(): void {
+        // Clear existing
+        this.commanderPanel.list.slice(3).forEach(obj => obj.destroy()); // Keep bg, title, divider
+        
+        const startY = 70;
+        const itemHeight = 80;
+        
+        this.commanderRoster.forEach((commanderId, index) => {
+            const commander = this.commanderManager.getCommander(commanderId);
+            if (!commander) return;
+            
+            const y = startY + index * itemHeight;
+            const isSelected = commanderId === this.selectedCommander;
+            
+            // Commander item container
+            const itemContainer = this.add.container(10, y);
+            
+            // Background
+            const itemBg = this.add.graphics();
+            itemBg.fillStyle(isSelected ? 0x3d4663 : 0x252836, 0.9);
+            itemBg.fillRoundedRect(0, 0, 230, 70, 6);
+            if (isSelected) {
+                const factionColor = this.factionRegistry.getFactionColor(this.factionId);
+                itemBg.lineStyle(2, factionColor, 1);
+                itemBg.strokeRoundedRect(0, 0, 230, 70, 6);
+            }
+            itemContainer.add(itemBg);
+            
+            // Portrait placeholder
+            const portrait = this.add.rectangle(40, 35, 50, 60, 
+                this.factionRegistry.getFactionColor(this.factionId), 0.4);
+            portrait.setStrokeStyle(1, 0xffffff, 0.3);
+            itemContainer.add(portrait);
+            
+            // Commander name
+            const nameText = this.add.text(75, 20, commander.name, {
+                fontFamily: 'Georgia, serif',
+                fontSize: '16px',
+                color: isSelected ? '#f0dba5' : '#c0c0c0',
+                fontStyle: isSelected ? 'bold' : 'normal'
+            }).setOrigin(0, 0);
+            itemContainer.add(nameText);
+            
+            // Card count
+            const cardCount = commander.cardIds.length;
+            const cardText = this.add.text(75, 42, `${cardCount} cards`, {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '12px',
+                color: '#8a9cc5'
+            }).setOrigin(0, 0);
+            itemContainer.add(cardText);
+            
+            // Make interactive
+            itemContainer.setSize(230, 70);
+            itemContainer.setInteractive({ useHandCursor: true });
+            
+            itemContainer.on('pointerup', () => {
+                this.selectedCommander = commanderId;
+                this.renderCommanders();
+                this.filterCardsByCommander(commanderId);
+            });
+            
+            this.commanderPanel.add(itemContainer);
+        });
+        
+        // "Show All" button
+        const showAllY = startY + this.commanderRoster.length * itemHeight + 10;
+        const showAllBtn = this.add.container(10, showAllY);
+        
+        const showAllBg = this.add.graphics();
+        showAllBg.fillStyle(0x2a2d3a, 0.8);
+        showAllBg.fillRoundedRect(0, 0, 230, 40, 6);
+        showAllBtn.add(showAllBg);
+        
+        const showAllText = this.add.text(115, 20, 'Show All Cards', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: '#8a9cc5'
+        }).setOrigin(0.5);
+        showAllBtn.add(showAllText);
+        
+        showAllBtn.setSize(230, 40);
+        showAllBtn.setInteractive({ useHandCursor: true });
+        
+        showAllBtn.on('pointerup', () => {
+            this.selectedCommander = null;
+            this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
+            this.renderCommanders();
+            this.renderAvailableCards();
+        });
+        
+        this.commanderPanel.add(showAllBtn);
+    }
+
+    private filterCardsByCommander(commanderId: string): void {
+        this.availableCards = this.commanderManager.getCardsForCommander(commanderId);
+        this.cardGridScrollY = 0;
+        this.renderAvailableCards();
+    }
+
+    private renderAvailableCards(): void {
+        // Clear existing
+        this.cardGridContainer.removeAll(true);
+        
+        const startX = 10;
+        const startY = 10;
+        
+        this.availableCards.forEach((card, index) => {
+            const col = index % CARDS_PER_ROW;
+            const row = Math.floor(index / CARDS_PER_ROW);
+            
+            const x = startX + col * (CARD_WIDTH + CARD_GAP);
+            const y = startY + row * (CARD_HEIGHT + CARD_GAP) + this.cardGridScrollY;
+            
+            const cardContainer = this.createCardDisplay(card, x, y, true);
+            this.cardGridContainer.add(cardContainer);
+        });
+    }
+
+    private renderDeck(): void {
+        // Clear existing
+        this.deckListContainer.removeAll(true);
+        
+        // Update count text
+        this.deckCountText.setText(`${this.currentDeck.length}/${MAX_DECK_SIZE}`);
+        this.deckCountText.setColor(this.currentDeck.length <= MAX_DECK_SIZE ? '#8a9cc5' : '#e74c3c');
+        
+        // Group cards by name for stacking
+        const cardGroups = new Map<string, { card: ICard; count: number }>();
+        this.currentDeck.forEach(card => {
+            const key = card.name;
+            if (cardGroups.has(key)) {
+                cardGroups.get(key)!.count++;
+            } else {
+                cardGroups.set(key, { card, count: 1 });
+            }
+        });
+        
+        const startY = 5;
+        const itemHeight = 45;
+        let index = 0;
+        
+        cardGroups.forEach(({ card, count }) => {
+            const y = startY + index * itemHeight + this.deckScrollY;
+            
+            const itemContainer = this.add.container(5, y);
+            
+            // Background
+            const itemBg = this.add.graphics();
+            itemBg.fillStyle(0x252836, 0.9);
+            itemBg.fillRoundedRect(0, 0, 290, 40, 4);
+            itemContainer.add(itemBg);
+            
+            // Cost circle
+            const costCircle = this.add.circle(25, 20, 14, this.getRarityColor(card.rarity));
+            itemContainer.add(costCircle);
+            
+            const costText = this.add.text(25, 20, String(card.cost), {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '14px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            itemContainer.add(costText);
+            
+            // Card name
+            const nameText = this.add.text(50, 12, card.name, {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '14px',
+                color: '#c0c0c0'
+            }).setOrigin(0, 0);
+            itemContainer.add(nameText);
+            
+            // Count badge
+            if (count > 1) {
+                const countBadge = this.add.text(240, 20, `×${count}`, {
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '16px',
+                    color: '#f0dba5',
+                    fontStyle: 'bold'
+                }).setOrigin(0.5);
+                itemContainer.add(countBadge);
+            }
+            
+            // Remove button
+            const removeBtn = this.add.text(275, 20, '×', {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '20px',
+                color: '#e74c3c'
+            }).setOrigin(0.5);
+            removeBtn.setInteractive({ useHandCursor: true });
+            removeBtn.on('pointerup', () => this.removeCardFromDeck(card.id));
+            itemContainer.add(removeBtn);
+            
+            this.deckListContainer.add(itemContainer);
+            index++;
+        });
+    }
+
+    private createCardDisplay(card: ICard, x: number, y: number, isClickable: boolean): Phaser.GameObjects.Container {
+        const container = this.add.container(x, y);
+        
+        // Card background
+        const bg = this.add.graphics();
+        bg.fillStyle(0x2a2d3a, 1);
+        bg.fillRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 6);
+        bg.lineStyle(2, this.getRarityColor(card.rarity), 1);
+        bg.strokeRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 6);
+        container.add(bg);
+        
+        // Cost circle
+        const costCircle = this.add.circle(18, 18, 14, 0x3d4663);
+        costCircle.setStrokeStyle(2, this.getRarityColor(card.rarity));
+        container.add(costCircle);
+        
+        const costText = this.add.text(18, 18, String(card.cost), {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(costText);
+        
+        // Card type indicator
+        const typeColors: Record<string, number> = {
+            unit: 0x3498db,
+            spell: 0x9b59b6,
+            structure: 0xe67e22,
+            module: 0x2ecc71
+        };
+        const typeColor = typeColors[card.type] ?? 0x888888;
+        const typeIndicator = this.add.rectangle(CARD_WIDTH - 15, 15, 20, 20, typeColor, 0.8);
+        typeIndicator.setStrokeStyle(1, 0xffffff, 0.3);
+        container.add(typeIndicator);
+        
+        // Card portrait area
+        const portraitBg = this.add.rectangle(CARD_WIDTH / 2, 60, CARD_WIDTH - 16, 55, 0x1a1d2e);
+        container.add(portraitBg);
+        
+        // Card name
+        const displayName = card.name.length > 12 ? card.name.slice(0, 11) + '...' : card.name;
+        const nameText = this.add.text(CARD_WIDTH / 2, 105, displayName, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '11px',
+            color: '#c0c0c0',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        container.add(nameText);
+        
+        // Card rarity indicator
+        const rarityText = card.rarity?.charAt(0).toUpperCase() ?? 'C';
+        const rarityLabel = this.add.text(CARD_WIDTH / 2, 125, rarityText, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '10px',
+            color: '#8a9cc5'
+        }).setOrigin(0.5, 0);
+        container.add(rarityLabel);
+        
+        if (isClickable) {
+            container.setSize(CARD_WIDTH, CARD_HEIGHT);
+            container.setInteractive({ useHandCursor: true });
+            
+            container.on('pointerover', () => {
+                container.setScale(1.08);
+                container.setDepth(10);
+            });
+            
+            container.on('pointerout', () => {
+                container.setScale(1);
+                container.setDepth(0);
+            });
+            
+            container.on('pointerup', () => {
+                this.addCardToDeck(card);
+            });
+        }
+        
+        return container;
+    }
+
+    private getRarityColor(rarity?: string): number {
+        const colors: Record<string, number> = {
+            common: 0x888888,
+            rare: 0x3498db,
+            epic: 0x9b59b6,
+            legendary: 0xf1c40f
+        };
+        return colors[rarity ?? 'common'] ?? 0x888888;
+    }
+
+    private addCardToDeck(card: ICard): void {
+        if (this.currentDeck.length >= MAX_DECK_SIZE) {
+            this.showMessage('Deck is full!', '#e74c3c');
+            return;
+        }
+        
+        // Find and add the card (need to add a unique instance)
+        const cardCopy = { ...card, id: `${card.id}_${Date.now()}` };
+        this.currentDeck.push(cardCopy);
+        this.renderDeck();
+        this.showMessage(`Added ${card.name}`, '#2ecc71');
+    }
+
+    private removeCardFromDeck(cardId: string): void {
+        const index = this.currentDeck.findIndex(c => c.id === cardId || c.id.startsWith(cardId.split('_')[0]));
+        if (index !== -1) {
+            const removed = this.currentDeck.splice(index, 1)[0];
+            this.renderDeck();
+            this.showMessage(`Removed ${removed.name}`, '#e74c3c');
+        }
+    }
+
+    private showMessage(text: string, color: string): void {
+        const { width } = this.cameras.main;
+        const msg = this.add.text(width / 2, 820, text, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: color,
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(100);
+        
+        this.tweens.add({
+            targets: msg,
+            alpha: 0,
+            y: 800,
+            duration: 1000,
+            delay: 500,
+            onComplete: () => msg.destroy()
+        });
+    }
+
+    private scrollCardGrid(deltaY: number): void {
+        const maxScroll = Math.max(0, Math.ceil(this.availableCards.length / CARDS_PER_ROW) * (CARD_HEIGHT + CARD_GAP) - 600);
+        this.cardGridScrollY = Phaser.Math.Clamp(this.cardGridScrollY - deltaY * 0.5, -maxScroll, 0);
+        this.renderAvailableCards();
+    }
+
+    private scrollDeck(deltaY: number): void {
+        const cardGroups = new Map<string, number>();
+        this.currentDeck.forEach(card => {
+            cardGroups.set(card.name, (cardGroups.get(card.name) ?? 0) + 1);
+        });
+        const maxScroll = Math.max(0, cardGroups.size * 45 - 550);
+        this.deckScrollY = Phaser.Math.Clamp(this.deckScrollY - deltaY * 0.5, -maxScroll, 0);
+        this.renderDeck();
+    }
+
+    private onBack(): void {
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.time.delayedCall(300, () => {
+            if (this.isNewRun) {
+                this.scene.start('FactionSelectionScene');
+            } else {
+                this.scene.start('StageMapScene');
+            }
+        });
+    }
+
+    private onStart(): void {
+        // Validate deck
+        const validation = this.commanderManager.validateDeck(
+            this.currentDeck, 
+            this.commanderRoster, 
+            MAX_DECK_SIZE
+        );
+        
+        if (!validation.valid) {
+            this.showMessage(validation.errors[0], '#e74c3c');
+            return;
+        }
+        
+        if (this.isNewRun) {
+            // Start new run with selected faction and deck
+            this.runManager.startNewRun(this.factionId);
+            // Override deck with player's customized deck
+            this.runManager.setRunDeck(this.currentDeck);
+        } else {
+            // Save deck changes
+            this.runManager.setRunDeck(this.currentDeck);
+        }
+        
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.time.delayedCall(400, () => {
+            this.scene.start('StageMapScene');
+        });
+    }
+}
+

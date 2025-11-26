@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { DataManager } from './DataManager';
 import { RelicManager } from './RelicManager';
+import { SaveManager } from './SaveManager';
+import { FactionRegistry } from './FactionRegistry';
+import { CommanderManager } from './CommanderManager';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
 import {
     IRunState,
@@ -18,6 +21,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     private readonly dataManager = DataManager.getInstance();
     private readonly relicManager = RelicManager.getInstance();
+    private readonly saveManager = SaveManager.getInstance();
+    private readonly factionRegistry = FactionRegistry.getInstance();
+    private readonly commanderManager = CommanderManager.getInstance();
     private runState: IRunState | null = null;
     private stageGraph: Map<number, IStageConfig> = new Map();
     private stageGraphById: Map<string, IStageConfig> = new Map();
@@ -48,8 +54,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             completedNodeIds: [...this.runState.completedNodeIds],
             relics: [...this.runState.relics],
             curses: [...this.runState.curses],
-            commanderRoster: [...this.runState.commanderRoster]
+            commanderRoster: [...this.runState.commanderRoster],
+            factionId: this.runState.factionId
         };
+    }
+
+    public getFactionId(): string {
+        return this.runState?.factionId ?? 'cog_dominion';
     }
 
     public getStageSnapshot(stageIndex: number): IStageConfig | undefined {
@@ -67,10 +78,21 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return { ...node, nextNodeIds: [...node.nextNodeIds] };
     }
 
-    public startNewRun(difficulty = 0): void {
+    public startNewRun(factionId = 'cog_dominion', difficulty = 0): void {
         this.difficultyLevel = difficulty;
         this.buildStageGraph();
-        const starter = COG_DOMINION_STARTER;
+        
+        // Get faction-specific data
+        const fortress = this.factionRegistry.getFortressForFaction(factionId);
+        const starterCommander = this.commanderManager.getStarterCommander(factionId);
+        const starterDeck = this.commanderManager.getStarterDeck(factionId);
+        
+        // Fallback to COG_DOMINION_STARTER if faction data not found
+        const fallbackStarter = COG_DOMINION_STARTER;
+        const baseFortressHp = fortress?.maxHp ?? fallbackStarter.fortress.maxHp;
+        const commanderId = starterCommander?.id ?? fallbackStarter.commander.id;
+        const deck = starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck];
+        
         const startingStageIndex = 0;
         const entryNodeId = this.findEntryNodeId(startingStageIndex);
 
@@ -86,7 +108,6 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             }
         }
 
-        const baseFortressHp = starter.fortress.maxHp;
         const modifiedFortressHp = this.relicManager.applyFortressHpModifier(baseFortressHp);
 
         let startingGold = 120;
@@ -102,16 +123,52 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             fortressHp: modifiedFortressHp,
             fortressMaxHp: modifiedFortressHp,
             gold: startingGold,
-            deck: [...starter.deck],
+            deck: [...deck],
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
-            commanderRoster: [starter.commander.id]
+            commanderRoster: [commanderId],
+            factionId: factionId
         };
 
         this.updateNodeAccessibility();
+        this.saveRun();
         this.emit('run-started', this.getRunState());
         this.emit('stage-entered', this.getStageSnapshot(startingStageIndex));
         this.emit('node-selected', this.getNodeSnapshot(entryNodeId));
+    }
+
+    public loadSavedRun(): boolean {
+        const savedRun = this.saveManager.loadRun();
+        if (!savedRun) {
+            return false;
+        }
+        
+        this.buildStageGraph();
+        this.runState = savedRun;
+        
+        // Restore relics
+        this.relicManager.reset();
+        savedRun.relics.forEach(id => this.relicManager.addRelic(id));
+        savedRun.curses.forEach(id => this.relicManager.addRelic(id));
+        
+        this.updateNodeAccessibility();
+        this.emit('run-loaded', this.getRunState());
+        this.emit('stage-entered', this.getStageSnapshot(savedRun.currentStageIndex));
+        this.emit('node-selected', this.getNodeSnapshot(savedRun.currentNodeId));
+        
+        return true;
+    }
+
+    public saveRun(): void {
+        if (this.runState) {
+            this.saveManager.saveRun(this.runState);
+        }
+    }
+
+    public abandonRun(): void {
+        this.saveManager.deleteSavedRun();
+        this.runState = null;
+        this.emit('run-abandoned');
     }
 
     public moveToNode(nodeId: string): boolean {
@@ -140,6 +197,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (!this.runState.completedNodeIds.includes(nodeId)) {
             this.runState.completedNodeIds.push(nodeId);
         }
+        this.saveRun();
         this.emit('node-completed', this.getNodeSnapshot(nodeId));
 
         if (node.type === NodeType.BOSS) {
@@ -152,7 +210,38 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     public addCardToRunDeck(card: ICard): void {
         if (!this.runState) return;
         this.runState.deck.push(card);
+        this.saveRun();
         this.emit('deck-updated', [...this.runState.deck]);
+    }
+
+    public removeCardFromRunDeck(cardId: string): ICard | undefined {
+        if (!this.runState) return undefined;
+        const index = this.runState.deck.findIndex(c => c.id === cardId);
+        if (index === -1) return undefined;
+        const [removed] = this.runState.deck.splice(index, 1);
+        this.saveRun();
+        this.emit('deck-updated', [...this.runState.deck]);
+        return removed;
+    }
+
+    public setRunDeck(deck: ICard[]): void {
+        if (!this.runState) return;
+        this.runState.deck = [...deck];
+        this.saveRun();
+        this.emit('deck-updated', [...this.runState.deck]);
+    }
+
+    public addCommanderToRoster(commanderId: string): boolean {
+        if (!this.runState) return false;
+        if (this.runState.commanderRoster.includes(commanderId)) return false;
+        this.runState.commanderRoster.push(commanderId);
+        this.saveRun();
+        this.emit('roster-updated', [...this.runState.commanderRoster]);
+        return true;
+    }
+
+    public getCommanderRoster(): string[] {
+        return this.runState?.commanderRoster ? [...this.runState.commanderRoster] : [];
     }
 
     public addRelic(relicId: string): void {
@@ -200,6 +289,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const modifiedAmount = this.relicManager.applyHealingModifier(amount);
         const nextHp = Math.min(this.runState.fortressHp + modifiedAmount, this.runState.fortressMaxHp);
         this.runState.fortressHp = nextHp;
+        this.saveRun();
         this.emit('fortress-updated', { hp: nextHp, max: this.runState.fortressMaxHp });
     }
 
@@ -209,6 +299,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const nextGold = this.runState.gold - cost;
         if (nextGold < 0) return false;
         this.runState.gold = nextGold;
+        this.saveRun();
         this.emit('gold-updated', nextGold);
         return true;
     }
@@ -217,6 +308,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (!this.runState) return;
         const modifiedAmount = this.relicManager.applyGoldModifier(amount);
         this.runState.gold += modifiedAmount;
+        this.saveRun();
         this.emit('gold-updated', this.runState.gold);
     }
 

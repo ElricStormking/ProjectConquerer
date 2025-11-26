@@ -269,4 +269,38 @@ export interface IRunState {
     relics: string[];
     curses: string[];
     commanderRoster: string[];
+    factionId: string;
+}
+
+// Faction configuration
+export interface IFactionConfig {
+    id: string;
+    name: string;
+    resourceType: ResourceType;
+    fortressId: string;
+    startingCommanderId: string;
+    emblemKey: string;
+    description?: string;
+}
+
+// Extended commander config with starter flag
+export interface ICommanderFullConfig extends ICommanderConfig {
+    isStarter: boolean;
+    cardIds: string[];
+}
+
+// Meta progression - persists across runs
+export interface IMetaProgression {
+    unlockedCommanderIds: string[];
+    unlockedRelicIds: string[];
+    totalRunsCompleted: number;
+    highestStageReached: number;
+}
+
+// Save data structure
+export interface ISaveData {
+    version: string;
+    runState: IRunState | null;
+    metaProgression: IMetaProgression;
+    timestamp: number;
 }

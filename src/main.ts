@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { TitleMenuScene } from './scenes/TitleMenuScene';
+import { OptionsScene } from './scenes/OptionsScene';
+import { FactionSelectionScene } from './scenes/FactionSelectionScene';
+import { DeckBuildingScene } from './scenes/DeckBuildingScene';
 import { BattleScene } from './scenes/BattleScene';
 import { UIScene } from './scenes/UIScene';
 import { SkillSelectionScene } from './scenes/SkillSelectionScene';
@@ -11,6 +15,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { RestScene } from './scenes/RestScene';
 import { RewardScene } from './scenes/RewardScene';
 import { RelicRewardScene } from './scenes/RelicRewardScene';
+import { CommanderUnlockScene } from './scenes/CommanderUnlockScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
@@ -47,6 +52,10 @@ const config: Phaser.Types.Core.GameConfig = {
     scene: [
         BootScene,
         PreloadScene,
+        TitleMenuScene,
+        OptionsScene,
+        FactionSelectionScene,
+        DeckBuildingScene,
         StageMapScene,
         BattleScene,
         UIScene,
@@ -56,7 +65,8 @@ const config: Phaser.Types.Core.GameConfig = {
         ShopScene,
         RestScene,
         RewardScene,
-        RelicRewardScene
+        RelicRewardScene,
+        CommanderUnlockScene
     ]
 };
 

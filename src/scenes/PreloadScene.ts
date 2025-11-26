@@ -68,6 +68,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('relics_data', 'data/relics.csv');
         this.load.text('events_data', 'data/events.csv');
         this.load.text('map_nodes_data', 'data/map_nodes.csv');
+        this.load.text('factions_data', 'data/factions.csv');
+        this.load.text('commanders_data', 'data/commanders.csv');
 
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
         this.load.image('world_bg', 'assets/gamemap_01.png');
@@ -113,6 +115,7 @@ export class PreloadScene extends Phaser.Scene {
         // Initialize DataManager with loaded CSVs
         DataManager.getInstance().parse(this.cache);
 
-        this.scene.start('StageMapScene');
+        // Go to title menu after loading
+        this.scene.start('TitleMenuScene');
     }
 }

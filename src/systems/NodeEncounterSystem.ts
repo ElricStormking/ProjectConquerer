@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
 import { RelicManager } from './RelicManager';
+import { CommanderManager } from './CommanderManager';
 import { IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger } from '../types/ironwars';
 
 type RewardSceneResult = {
@@ -18,6 +19,7 @@ export class NodeEncounterSystem {
     private readonly runManager = RunProgressionManager.getInstance();
     private readonly dataManager = DataManager.getInstance();
     private readonly relicManager = RelicManager.getInstance();
+    private readonly commanderManager = CommanderManager.getInstance();
     private resolving = false;
 
     constructor(private readonly hostScene: Phaser.Scene) {}
@@ -139,7 +141,7 @@ export class NodeEncounterSystem {
     private presentRelicReward(node: IMapNode): void {
         const relicChoices = this.relicManager.generateRelicReward(node.rewardTier, []);
         if (relicChoices.length === 0) {
-            this.finishEncounter(node);
+            this.checkCommanderUnlock(node);
             return;
         }
 
@@ -154,6 +156,44 @@ export class NodeEncounterSystem {
                 if (selectedRelic) {
                     this.runManager.addRelic(selectedRelic.id);
                 }
+                this.checkCommanderUnlock(node);
+            }
+        });
+    }
+
+    private checkCommanderUnlock(node: IMapNode): void {
+        // Only bosses can unlock new commanders
+        if (node.type !== NodeType.BOSS) {
+            this.finishEncounter(node);
+            return;
+        }
+
+        // Get a random locked commander to potentially unlock
+        const lockedCommanders = this.commanderManager.getLockedCommanders();
+        if (lockedCommanders.length === 0) {
+            this.finishEncounter(node);
+            return;
+        }
+
+        // 70% chance to unlock a commander after boss
+        if (Math.random() > 0.7) {
+            this.finishEncounter(node);
+            return;
+        }
+
+        // Pick a random locked commander
+        const commanderToUnlock = Phaser.Utils.Array.GetRandom(lockedCommanders);
+        
+        // Unlock the commander
+        this.commanderManager.unlockCommander(commanderToUnlock.id);
+        
+        // Also add to current run's roster
+        this.runManager.addCommanderToRoster(commanderToUnlock.id);
+        
+        // Show unlock scene
+        this.hostScene.scene.launch('CommanderUnlockScene', {
+            commander: commanderToUnlock,
+            onComplete: () => {
                 this.finishEncounter(node);
             }
         });

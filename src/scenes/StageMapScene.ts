@@ -1,13 +1,19 @@
 import Phaser from 'phaser';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { NodeEncounterSystem } from '../systems/NodeEncounterSystem';
+import { FactionRegistry } from '../systems/FactionRegistry';
 import { IMapNode, IStageConfig } from '../types/ironwars';
 
 const MAP_WIDTH = 2400;
 const MAP_HEIGHT = 1080;
 
+interface StageMapSceneData {
+    loadSavedRun?: boolean;
+}
+
 export class StageMapScene extends Phaser.Scene {
     private readonly runManager = RunProgressionManager.getInstance();
+    private readonly factionRegistry = FactionRegistry.getInstance();
     private encounterSystem!: NodeEncounterSystem;
     private nodeContainers: Map<string, Phaser.GameObjects.Container> = new Map();
     private pathGraphics!: Phaser.GameObjects.Graphics;
@@ -15,15 +21,31 @@ export class StageMapScene extends Phaser.Scene {
     private hudText?: Phaser.GameObjects.Text;
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
+    private loadSavedRun = false;
 
     constructor() {
         super({ key: 'StageMapScene' });
     }
 
+    init(data: StageMapSceneData): void {
+        this.loadSavedRun = data.loadSavedRun ?? false;
+    }
+
     create(): void {
         this.encounterSystem = new NodeEncounterSystem(this);
-        if (!this.runManager.hasActiveRun()) {
-            this.runManager.startNewRun();
+        
+        // Handle saved run loading
+        if (this.loadSavedRun) {
+            const loaded = this.runManager.loadSavedRun();
+            if (!loaded) {
+                // No saved run found, go back to title
+                this.scene.start('TitleMenuScene');
+                return;
+            }
+        } else if (!this.runManager.hasActiveRun()) {
+            // No active run and not loading saved - shouldn't happen, go to title
+            this.scene.start('TitleMenuScene');
+            return;
         }
 
         this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
@@ -33,6 +55,7 @@ export class StageMapScene extends Phaser.Scene {
         this.pathGraphics.setDepth(1);
 
         this.createHud();
+        this.createHudButtons();
         this.registerRunEvents();
         this.renderCurrentStage();
     }
@@ -43,6 +66,187 @@ export class StageMapScene extends Phaser.Scene {
             color: '#f8f8f8'
         }).setScrollFactor(0);
         this.refreshHud();
+    }
+
+    private createHudButtons(): void {
+        const { width } = this.cameras.main;
+        
+        // Deck button
+        this.createHudButton(width - 280, 35, 'DECK', () => this.openDeckBuilding());
+        
+        // Menu button
+        this.createHudButton(width - 120, 35, 'MENU', () => this.openMenu());
+    }
+
+    private createHudButton(x: number, y: number, label: string, callback: () => void): void {
+        const container = this.add.container(x, y);
+        container.setScrollFactor(0);
+        container.setDepth(100);
+        
+        const btnWidth = 120;
+        const btnHeight = 40;
+        
+        const bg = this.add.graphics();
+        bg.fillStyle(0x3d4663, 0.9);
+        bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+        bg.lineStyle(2, 0xd4a017, 1);
+        bg.strokeRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+        container.add(bg);
+        
+        const text = this.add.text(0, 0, label, {
+            fontFamily: 'Georgia, serif',
+            fontSize: '18px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(text);
+        
+        container.setSize(btnWidth, btnHeight);
+        container.setInteractive({ useHandCursor: true });
+        
+        container.on('pointerover', () => {
+            bg.clear();
+            bg.fillStyle(0x4d5673, 0.95);
+            bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+            bg.lineStyle(2, 0xf0dba5, 1);
+            bg.strokeRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+            container.setScale(1.05);
+        });
+        
+        container.on('pointerout', () => {
+            bg.clear();
+            bg.fillStyle(0x3d4663, 0.9);
+            bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+            bg.lineStyle(2, 0xd4a017, 1);
+            bg.strokeRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+            container.setScale(1);
+        });
+        
+        container.on('pointerup', callback);
+    }
+
+    private openDeckBuilding(): void {
+        const state = this.runManager.getRunState();
+        if (!state) return;
+        
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.time.delayedCall(300, () => {
+            this.scene.start('DeckBuildingScene', {
+                factionId: state.factionId,
+                isNewRun: false
+            });
+        });
+    }
+
+    private openMenu(): void {
+        // Create menu overlay
+        const { width, height } = this.cameras.main;
+        
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(200);
+        overlay.setInteractive();
+        
+        const menuContainer = this.add.container(width / 2, height / 2);
+        menuContainer.setScrollFactor(0);
+        menuContainer.setDepth(201);
+        
+        // Menu panel
+        const panelBg = this.add.graphics();
+        panelBg.fillStyle(0x1a1d2e, 0.95);
+        panelBg.fillRoundedRect(-200, -180, 400, 360, 16);
+        panelBg.lineStyle(2, 0xd4a017, 1);
+        panelBg.strokeRoundedRect(-200, -180, 400, 360, 16);
+        menuContainer.add(panelBg);
+        
+        // Title
+        const title = this.add.text(0, -140, 'MENU', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '32px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        menuContainer.add(title);
+        
+        // Resume button
+        this.addMenuButton(menuContainer, 0, -60, 'Resume', () => {
+            overlay.destroy();
+            menuContainer.destroy();
+        });
+        
+        // Options button
+        this.addMenuButton(menuContainer, 0, 0, 'Options', () => {
+            overlay.destroy();
+            menuContainer.destroy();
+            this.scene.launch('OptionsScene');
+            this.scene.pause();
+        });
+        
+        // Save & Quit button
+        this.addMenuButton(menuContainer, 0, 60, 'Save & Quit', () => {
+            this.runManager.saveRun();
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.time.delayedCall(300, () => {
+                this.scene.start('TitleMenuScene');
+            });
+        });
+        
+        // Abandon Run button
+        this.addMenuButton(menuContainer, 0, 120, 'Abandon Run', () => {
+            this.runManager.abandonRun();
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.time.delayedCall(300, () => {
+                this.scene.start('TitleMenuScene');
+            });
+        }, true);
+    }
+
+    private addMenuButton(
+        container: Phaser.GameObjects.Container, 
+        x: number, 
+        y: number, 
+        label: string, 
+        callback: () => void,
+        isDanger = false
+    ): void {
+        const btnContainer = this.add.container(x, y);
+        const btnWidth = 240;
+        const btnHeight = 50;
+        
+        const bg = this.add.graphics();
+        const fillColor = isDanger ? 0x8b0000 : 0x3d4663;
+        bg.fillStyle(fillColor, 0.9);
+        bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
+        btnContainer.add(bg);
+        
+        const text = this.add.text(0, 0, label, {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        btnContainer.add(text);
+        
+        btnContainer.setSize(btnWidth, btnHeight);
+        btnContainer.setInteractive({ useHandCursor: true });
+        
+        btnContainer.on('pointerover', () => {
+            bg.clear();
+            bg.fillStyle(isDanger ? 0xa00000 : 0x4d5673, 0.95);
+            bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
+            btnContainer.setScale(1.05);
+        });
+        
+        btnContainer.on('pointerout', () => {
+            bg.clear();
+            bg.fillStyle(fillColor, 0.9);
+            bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
+            btnContainer.setScale(1);
+        });
+        
+        btnContainer.on('pointerup', callback);
+        
+        container.add(btnContainer);
     }
 
     private registerRunEvents(): void {
@@ -236,8 +440,9 @@ export class StageMapScene extends Phaser.Scene {
             return;
         }
         const stage = this.runManager.getStageSnapshot(state.currentStageIndex);
+        const faction = this.factionRegistry.getFaction(state.factionId);
         this.hudText.setText(
-            `Stage: ${stage?.name ?? '-'}  |  Fortress HP: ${state.fortressHp}/${state.fortressMaxHp}  |  Gold: ${state.gold}`
+            `${faction?.name ?? 'Unknown'}  |  Stage: ${stage?.name ?? '-'}  |  HP: ${state.fortressHp}/${state.fortressMaxHp}  |  Gold: ${state.gold}  |  Deck: ${state.deck.length}`
         );
     }
 

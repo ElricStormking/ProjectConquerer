@@ -1,0 +1,11 @@
+id,name,resource_type,fortress_id,starting_commander_id,emblem_key,description
+cog_dominion,Cog Dominion,profit,iron_citadel,commander_valen,emblem_cog,Masters of steam and steel. Their mechanized forces excel at sustained warfare.
+jade_dynasty,Jade Dynasty,chi_flow,jade_palace,commander_wei,emblem_jade,Ancient warriors channeling inner chi. Swift strikes and flowing combat.
+ember_court,Ember Court,heat,ember_forge,commander_pyra,emblem_ember,Fire-wielding nobles who build power through burning fury.
+republic_virel,Republic of Virel,tactical_orders,virel_bastion,commander_marcus,emblem_virel,Disciplined legions using coordinated tactics and strategic positioning.
+sanctum_order,Sanctum Order,faith,sanctum_cathedral,commander_aria,emblem_sanctum,Holy knights blessed with divine protection and healing light.
+verdant_covenant,Verdant Covenant,lifeforce,grove_heart,commander_sylva,emblem_verdant,Nature's guardians commanding beasts and regenerative magic.
+aetherion_arcana,Aetherion Arcana,aetherstorm,arcane_spire,commander_zephyr,emblem_arcana,Arcane mages wielding unstable but devastating magical storms.
+frost_clan,Eternal Frost Clan,soulfrost,frost_citadel,commander_bjorn,emblem_frost,Northern warriors drawing power from the cold embrace of death.
+bloodfang_warborn,Bloodfang Warborn,blood_frenzy,war_fortress,commander_grok,emblem_bloodfang,Savage berserkers who grow stronger as battle rages on.
+

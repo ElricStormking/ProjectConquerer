@@ -14,7 +14,9 @@ import {
     IEventConfig,
     IEventOption,
     IRelicConfig,
-    IRelicEffect
+    IRelicEffect,
+    IFactionConfig,
+    ICommanderFullConfig
 } from '../types/ironwars';
 
 export class DataManager {
@@ -32,6 +34,10 @@ export class DataManager {
     private events: Map<string, IEventConfig> = new Map();
     private relics: Map<string, IRelicConfig> = new Map();
     private mapNodes: Map<string, IMapNode> = new Map();
+    
+    // Faction and commander data
+    private factions: Map<string, IFactionConfig> = new Map();
+    private commanders: Map<string, ICommanderFullConfig> = new Map();
 
     private constructor() {}
 
@@ -55,8 +61,12 @@ export class DataManager {
         if (cache.text.exists('events_data')) this.parseEvents(cache.text.get('events_data'));
         if (cache.text.exists('map_nodes_data')) this.parseMapNodes(cache.text.get('map_nodes_data'));
         
+        // Faction and commander data
+        if (cache.text.exists('factions_data')) this.parseFactions(cache.text.get('factions_data'));
+        if (cache.text.exists('commanders_data')) this.parseCommanders(cache.text.get('commanders_data'));
+        
         console.log('DataManager: Parsing complete.');
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${this.waves.size} waves, ${this.skills.size} skills.`);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${this.waves.size} waves, ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders.`);
     }
 
     private parseUnits(csv: string): void {
@@ -301,6 +311,46 @@ export class DataManager {
         });
     }
 
+    private parseFactions(csv: string): void {
+        if (!csv) return;
+        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        
+        result.data.forEach((row: any) => {
+            const faction: IFactionConfig = {
+                id: row.id,
+                name: row.name,
+                resourceType: row.resource_type as ResourceType,
+                fortressId: row.fortress_id,
+                startingCommanderId: row.starting_commander_id,
+                emblemKey: row.emblem_key,
+                description: row.description || ''
+            };
+            this.factions.set(faction.id, faction);
+        });
+    }
+
+    private parseCommanders(csv: string): void {
+        if (!csv) return;
+        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        
+        result.data.forEach((row: any) => {
+            const cardIds = row.card_ids ? String(row.card_ids).split('|').filter(Boolean) : [];
+            
+            const commander: ICommanderFullConfig = {
+                id: row.id,
+                name: row.name,
+                factionId: row.faction_id,
+                passiveId: row.passive_id || '',
+                activeSkillId: row.active_skill_id || '',
+                cooldown: Number(row.cooldown) || 2000,
+                portraitKey: row.portrait_key || row.id,
+                isStarter: row.is_starter === true || row.is_starter === 'true',
+                cardIds: cardIds
+            };
+            this.commanders.set(commander.id, commander);
+        });
+    }
+
     // Accessors
     public getUnitTemplate(id: string): UnitTemplate | undefined {
         return this.units.get(id);
@@ -365,5 +415,42 @@ export class DataManager {
 
     public getAllRelics(): IRelicConfig[] {
         return Array.from(this.relics.values());
+    }
+
+    // Faction accessors
+    public getFaction(id: string): IFactionConfig | undefined {
+        return this.factions.get(id);
+    }
+
+    public getAllFactions(): IFactionConfig[] {
+        return Array.from(this.factions.values());
+    }
+
+    // Commander accessors
+    public getCommander(id: string): ICommanderFullConfig | undefined {
+        return this.commanders.get(id);
+    }
+
+    public getAllCommanders(): ICommanderFullConfig[] {
+        return Array.from(this.commanders.values());
+    }
+
+    public getCommandersByFaction(factionId: string): ICommanderFullConfig[] {
+        return Array.from(this.commanders.values()).filter(c => c.factionId === factionId);
+    }
+
+    public getStarterCommander(factionId: string): ICommanderFullConfig | undefined {
+        return Array.from(this.commanders.values()).find(
+            c => c.factionId === factionId && c.isStarter
+        );
+    }
+
+    public getCardsForCommander(commanderId: string): ICard[] {
+        const commander = this.commanders.get(commanderId);
+        if (!commander) return [];
+        
+        return commander.cardIds
+            .map(cardId => this.cards.get(cardId))
+            .filter((card): card is ICard => card !== undefined);
     }
 }

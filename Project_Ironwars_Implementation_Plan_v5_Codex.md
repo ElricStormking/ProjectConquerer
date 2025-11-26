@@ -344,12 +344,84 @@ export interface ICommanderConfig {
   - `SkillManager`: Generates skill choices from `DataManager` (skills.csv).
 - ✅ **Designer Workflow**: Designers can edit CSVs in `public/data/` and reload the game to see changes instantly.
 
+### Phase 3: Relic System (Completed)
+- ✅ **Complete Relic System**: Implemented comprehensive relic system inspired by "Slay the Spire" with 32 relics across 5 rarity tiers.
+- ✅ **RelicManager Singleton**: `src/systems/RelicManager.ts` - Central authority with event-driven trigger system, modifier aggregation, and conditional evaluation.
+  - Support for PASSIVE buffs and event triggers (ON_WAVE_START, ON_DAMAGE_DEALT, ON_NODE_COMPLETE, etc.)
+  - Conditional modifiers (ranged only, HP thresholds, fortress HP %)
+  - Dynamic stat application methods for range, move speed, attack speed, armor, damage
+- ✅ **32 Relics Designed**: Complete roster of BUFFs and curses:
+  - Common: Steam Core (+1 card draw), Forged Plating (+150 fortress HP), Iron Resolve (+10 armor)
+  - Rare: Arcane Lens (+50 range for ranged), Skywhisper Feather (+15% move speed), Emberstone Charm (+40 HP post-battle)
+  - Epic: Molten Heart (+20% damage with self-burn), Battle Standard (+10% damage when fortress HP > 75%)
+  - Legendary: Storm Reservoir (+1 rare card after bosses), Adaptive Matrix (auto-upgrade first reward each stage)
+  - Curses: Cursed Furnace (+1 card choice but fortress -10 HP), Ashen Contract (+150 gold but shops +25% cost)
+- ✅ **UI Components**:
+  - `RelicInventoryUI` (src/ui/RelicInventoryUI.ts) - 4-column grid at top-right with rarity borders and tooltips
+  - `RelicRewardScene` (src/scenes/RelicRewardScene.ts) - Modal for relic selection after Elite/Boss battles
+- ✅ **System Integration**:
+  - `RunProgressionManager`: Random starting relics (2 + optional curse), run start variation
+  - `WaveManager`: ON_WAVE_START/ON_WAVE_END trigger events
+  - `NodeEncounterSystem`: Elite/Boss relic rewards, shop curse removal
+  - `BattleScene`: Wave start bonuses (card draw, resources, fortress healing)
+  - `ShopScene`: Curse removal functionality with gold cost
+- ✅ **Conditional Modifiers**: Advanced evaluation system for:
+  - Unit type conditions (ranged only for Arcane Lens)
+  - Health thresholds (Berserker Tooth: +30% damage when unit HP < 50%)
+  - Fortress HP conditions (Battle Standard: +10% damage when fortress HP > 75%)
+  - Node type conditions (elite rewards, shop effects)
+- ✅ **Data-Driven Design**: `public/data/relics.csv` with designer-friendly JSON effect definitions
+- ✅ **Bug Fixes**: 
+  - Fixed Steam Core not drawing cards (event listener missing in BattleScene)
+  - Fixed relic BUFFs not applying (Unit entities now query RelicManager with context)
+- ✅ **Type Safety**: Comprehensive TypeScript interfaces (IRelicEffect, IRelicContext, RelicTrigger enum)
+- ✅ **Debug Logging**: Extensive logging for relic trigger events and stat applications
+
 ### Additional polish implemented
 - ✅ Thunder Mage (formerly Thunder Cannon) reworked into AoE lightning artillery with dedicated card art.
 - ✅ Building sprites (fortress core, cannon tower, armor shop) replaced placeholder graphics and auto-scale to fortress grid cells.
 - ✅ Card portraits loaded via `portraitKey` from `assets/cards/*.png` with graceful colored fallback when art is missing.
 - ✅ Background music (`bgm_01_dragonbattle.mp3`) loops in BattleScene; `victory.mp3` plays when the boss is defeated.
 - ✅ Boss mass tuned to reduce knockback/bouncing during combat.
+
+### Phase 4: Main Game Loop (Completed)
+- ✅ **Title Menu System**: `src/scenes/TitleMenuScene.ts` with 4 options:
+  - New Game → Faction Selection
+  - Continue → Load saved run from LocalStorage
+  - Options → Volume controls modal
+  - Exit → Thank you message
+- ✅ **Faction Selection**: `src/scenes/FactionSelectionScene.ts`
+  - Horizontal carousel for 9 factions
+  - Each panel shows: faction emblem, fortress preview, starting commander, sample cards
+  - Navigation arrows and "Select Faction" button
+- ✅ **Deck Building System**: `src/scenes/DeckBuildingScene.ts`
+  - Left panel: Commander roster (owned commanders)
+  - Center panel: Available cards grid (9 cards per commander)
+  - Right panel: Current deck with 40-card cap
+  - Click to add/remove cards, scroll support
+  - Accessible from StageMapScene between nodes
+- ✅ **Save/Load System**: `src/systems/SaveManager.ts`
+  - LocalStorage persistence for run state
+  - Meta-progression tracking (unlocked commanders, relics)
+  - Auto-save on state changes
+- ✅ **9 Factions Data**: `public/data/factions.csv` and `public/data/commanders.csv`
+  - Cog Dominion, Jade Dynasty, Ember Court, Republic of Virel
+  - Sanctum Order, Verdant Covenant, Aetherion Arcana
+  - Eternal Frost Clan, Bloodfang Warborn
+  - Each with unique resource type, fortress, and starting commander
+- ✅ **Commander System**: `src/systems/CommanderManager.ts` + `src/systems/FactionRegistry.ts`
+  - Commander unlock system with LocalStorage persistence
+  - Cards tied to commanders (9 per commander, expandable to 12)
+  - Deck validation based on commander roster
+- ✅ **Commander Unlock Rewards**: `src/scenes/CommanderUnlockScene.ts`
+  - 70% chance to unlock new commander after boss battles
+  - Celebratory unlock screen with particle effects
+  - Unlocked commanders added to current run roster
+- ✅ **Stage Map Enhancements**: Updated `src/scenes/StageMapScene.ts`
+  - DECK button for between-node deck management
+  - MENU button with Resume, Options, Save & Quit, Abandon Run
+  - Faction name display in HUD
+  - Save/load integration
 
 ---
 
@@ -370,6 +442,16 @@ export interface ICommanderConfig {
 - [x] Lose if fortress HP = 0
 - [x] **Data Driven**: Edit `units.csv` HP/Damage -> Reflects in-game
 
+### Main Game Loop (Phase 4)
+- [x] Title menu with New Game / Continue / Options / Exit
+- [x] Faction selection carousel (9 factions)
+- [x] Deck building with 40-card cap
+- [x] Commander roster management
+- [x] LocalStorage save/load system
+- [x] Between-node deck access from Stage Map
+- [x] Commander unlock rewards after bosses
+- [x] Meta-progression persistence
+
 ### Technical
 - [x] `npm run typecheck` - 0 errors
 - [x] `npm run lint` - 0 errors
@@ -377,10 +459,9 @@ export interface ICommanderConfig {
 
 ---
 
-## Phase 3 (Next Steps)
+## Phase 5 (Next Steps)
 
-**Phase 3** (Week 3-4): Stage map, nodes, rewards, save/load
-**Phase 4** (Week 5-8): 9 factions, 50+ cards, bosses, meta progression
+**Phase 5** (Week 5-8): 50+ cards per faction, elite/boss variants, balanced encounters, additional node types
 
 ---
 
@@ -394,9 +475,14 @@ export interface ICommanderConfig {
 ✅ 30 FPS performance
 ✅ 0 TypeScript errors
 ✅ 5-min demo video
+✅ Title menu with game flow
+✅ 9 factions selectable
+✅ Deck building (40-card cap)
+✅ Save/load system (LocalStorage)
+✅ Meta-progression (commander unlocks)
 
-**Timeline**: 2 weeks (Phase 0-1)
-**First Demo**: End Week 1
+**Timeline**: 4 weeks (Phase 0-4)
+**Alpha Build**: Complete main game loop
 
 ---
 
@@ -481,6 +567,13 @@ npm run test       # Run Vitest tests
 # Build
 npm run build      # Production build
 npm run preview    # Test production build
+
+# Git (for relic system)
+git log --oneline -5  # Check recent commits
+git status            # View staged changes
+git add .              # Stage all files for commit
+git commit -m "feat: [description]"  # Commit with description
+git push origin main   # Push to remote repository
 ```
 
 ---
@@ -490,26 +583,37 @@ npm run preview    # Test production build
 ```
 src/
 ├── types/
-│   └── ironwars.ts          # [NEW] All interfaces
+│   └── ironwars.ts          # All interfaces (IFactionConfig, IMetaProgression, ISaveData added)
 ├── systems/
-│   ├── GameStateManager.ts  # [NEW] Singleton state
-│   ├── DataManager.ts       # [NEW] CSV Data loader
-│   ├── FortressSystem.ts    # [NEW] Grid logic
-│   ├── DeckSystem.ts        # [NEW] Card management
-│   ├── CardSystem.ts        # [NEW] Card resolution
-│   ├── CommanderSystem.ts   # [NEW] Skills
-│   ├── WaveManager.ts       # [NEW] Enemy spawning
-│   ├── UnitManager.ts       # [REFACTOR] Add faction
-│   └── IsometricRenderer.ts # [EXTEND] Add grid render
+│   ├── GameStateManager.ts  # Singleton state
+│   ├── DataManager.ts       # CSV Data loader (factions, commanders added)
+│   ├── SaveManager.ts       # [NEW] LocalStorage persistence
+│   ├── FactionRegistry.ts   # [NEW] 9 factions with fortress configs
+│   ├── CommanderManager.ts  # [NEW] Commander unlock system
+│   ├── FortressSystem.ts    # Grid logic
+│   ├── DeckSystem.ts        # Card management
+│   ├── CardSystem.ts        # Card resolution
+│   ├── CommanderSystem.ts   # Skills
+│   ├── WaveManager.ts       # Enemy spawning
+│   ├── UnitManager.ts       # Faction-aware units
+│   ├── RunProgressionManager.ts  # [UPDATED] Faction-based runs, save integration
+│   ├── NodeEncounterSystem.ts    # [UPDATED] Commander unlock rewards
+│   └── IsometricRenderer.ts # Grid render
 ├── scenes/
-│   ├── BattleScene.ts       # [MAJOR REFACTOR] Phases
-│   └── UIScene.ts           # [MODIFY] Card hand
+│   ├── TitleMenuScene.ts    # [NEW] Main menu (New Game, Continue, Options, Exit)
+│   ├── OptionsScene.ts      # [NEW] Volume controls placeholder
+│   ├── FactionSelectionScene.ts  # [NEW] 9-faction carousel
+│   ├── DeckBuildingScene.ts # [NEW] 40-card deck editor
+│   ├── CommanderUnlockScene.ts   # [NEW] Unlock celebration
+│   ├── StageMapScene.ts     # [UPDATED] Deck/Menu buttons
+│   ├── BattleScene.ts       # Phases
+│   └── UIScene.ts           # Card hand
 ├── ui/
-│   ├── CardSprite.ts        # [NEW] Card component
-│   └── HandManager.ts       # [NEW] Hand layout
+│   ├── CardSprite.ts        # Card component
+│   └── HandManager.ts       # Hand layout
 └── data/
     └── ironwars/
-        └── cog_dominion_starter.ts  # [NEW] Sample data (Fallback/Layout)
+        └── cog_dominion_starter.ts  # Sample data (Fallback/Layout)
 
 ## Data Directory (`public/data/`)
 - `units.csv`: Unit stats
@@ -517,12 +621,14 @@ src/
 - `waves.csv`: Wave configs
 - `skills.csv`: Skill definitions
 - `buildings.csv`: Building stats (placeholder)
-- `relics.csv`: Relic stats (placeholder)
-- `map_nodes.csv`: Campaign map (placeholder)
+- `relics.csv`: 32 relics with triggers, conditions, and effects
+- `map_nodes.csv`: Campaign map
+- `factions.csv`: [NEW] 9 factions with resource types and fortresses
+- `commanders.csv`: [NEW] 9 starter commanders with card assignments
 ```
 
 ---
 
-**Status**: Phase 0, 1, and 2 features implemented; battle loop playable end-to-end (5 waves + boss) and fully data-driven.
+**Status**: Phase 0-4 complete; full main game loop playable with 9 factions, deck building, save/load, and meta-progression.
 **Created**: 2025-11-20
-**Version**: 5.2 (updated 2025-11-25)
+**Version**: 5.4 (updated 2025-11-25)
