@@ -101,10 +101,13 @@ export class StageMapScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(text);
         
-        container.setSize(btnWidth, btnHeight);
-        container.setInteractive({ useHandCursor: true });
+        // Interactive on the button background instead of the container
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        container.on('pointerover', () => {
+        bg.on('pointerover', () => {
             bg.clear();
             bg.fillStyle(0x4d5673, 0.95);
             bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
@@ -113,7 +116,7 @@ export class StageMapScene extends Phaser.Scene {
             container.setScale(1.05);
         });
         
-        container.on('pointerout', () => {
+        bg.on('pointerout', () => {
             bg.clear();
             bg.fillStyle(0x3d4663, 0.9);
             bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
@@ -122,12 +125,25 @@ export class StageMapScene extends Phaser.Scene {
             container.setScale(1);
         });
         
-        container.on('pointerup', callback);
+        bg.on('pointerup', callback);
     }
 
     private openDeckBuilding(): void {
         const state = this.runManager.getRunState();
         if (!state) return;
+
+        // Do not allow entering Deck Building while any modal reward/shop scenes are active,
+        // otherwise those UIs can end up appearing on top of DeckBuildingScene and feel misplaced.
+        const scenePlugin = this.scene;
+        if (
+            scenePlugin.isActive('RewardScene') ||
+            scenePlugin.isActive('RelicRewardScene') ||
+            scenePlugin.isActive('ShopScene') ||
+            scenePlugin.isActive('RestScene') ||
+            scenePlugin.isActive('CardRewardScene')
+        ) {
+            return;
+        }
         
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.time.delayedCall(300, () => {
@@ -227,24 +243,27 @@ export class StageMapScene extends Phaser.Scene {
         }).setOrigin(0.5);
         btnContainer.add(text);
         
-        btnContainer.setSize(btnWidth, btnHeight);
-        btnContainer.setInteractive({ useHandCursor: true });
+        // Interactive on the button background instead of the container
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        btnContainer.on('pointerover', () => {
+        bg.on('pointerover', () => {
             bg.clear();
             bg.fillStyle(isDanger ? 0xa00000 : 0x4d5673, 0.95);
             bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
             btnContainer.setScale(1.05);
         });
         
-        btnContainer.on('pointerout', () => {
+        bg.on('pointerout', () => {
             bg.clear();
             bg.fillStyle(fillColor, 0.9);
             bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
             btnContainer.setScale(1);
         });
         
-        btnContainer.on('pointerup', callback);
+        bg.on('pointerup', callback);
         
         container.add(btnContainer);
     }
@@ -357,11 +376,12 @@ export class StageMapScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(label);
 
-        container.setSize(80, 80);
-        container.setInteractive(new Phaser.Geom.Circle(0, 0, 32), Phaser.Geom.Circle.Contains);
-        container.on('pointerdown', () => this.handleNodeClick(node.id));
-        container.on('pointerover', () => container.setScale(1.1));
-        container.on('pointerout', () => container.setScale(1));
+        // Interactive on the circle itself instead of the container.
+        // Let Phaser infer the hit area from the circle shape.
+        circle.setInteractive({ useHandCursor: true });
+        circle.on('pointerdown', () => this.handleNodeClick(node.id));
+        circle.on('pointerover', () => container.setScale(1.1));
+        circle.on('pointerout', () => container.setScale(1));
 
         this.nodeContainers.set(node.id, container);
     }

@@ -66,9 +66,12 @@ export class CardSprite extends Phaser.GameObjects.Container {
             this.descText,
             this.dragHighlight
         ]);
-
-        this.setInteractive(new Phaser.Geom.Rectangle(-110, -160, 220, 320), Phaser.Geom.Rectangle.Contains);
-        this.scene.input.setDraggable(this);
+        
+        // Attach input and dragging to the background rectangle instead of the container.
+        // Let Phaser compute the hit area from the rectangle's size/origin so it matches
+        // the visual card bounds exactly.
+        this.background.setInteractive({ useHandCursor: true });
+        this.scene.input.setDraggable(this.background);
         this.setupHover();
     }
 
@@ -80,11 +83,20 @@ export class CardSprite extends Phaser.GameObjects.Container {
         this.dragHighlight.setVisible(active);
     }
 
+    /**
+     * Expose the underlying interactive object used for pointer / drag
+     * events so external systems (HandManager, CardRewardScene) can
+     * subscribe to those events directly.
+     */
+    public getInputTarget(): Phaser.GameObjects.GameObject {
+        return this.background;
+    }
+
     private setupHover() {
-        this.on('pointerover', () => {
+        this.background.on('pointerover', () => {
             this.scene.tweens.add({ targets: this, scale: 1.05, duration: 120 });
         });
-        this.on('pointerout', () => {
+        this.background.on('pointerout', () => {
             this.scene.tweens.add({ targets: this, scale: 1, duration: 120 });
         });
     }

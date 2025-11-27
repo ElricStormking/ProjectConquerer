@@ -356,20 +356,20 @@ export class FactionSelectionScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(arrow);
         
-        container.setSize(80, 80);
-        container.setInteractive({ useHandCursor: true });
+        // Interactive on the circular background
+        bg.setInteractive(new Phaser.Geom.Circle(0, 0, 40), Phaser.Geom.Circle.Contains);
         
-        container.on('pointerover', () => {
+        bg.on('pointerover', () => {
             bg.setFillStyle(0x4d5673, 1);
             container.setScale(1.1);
         });
         
-        container.on('pointerout', () => {
+        bg.on('pointerout', () => {
             bg.setFillStyle(0x3d4663, 0.9);
             container.setScale(1);
         });
         
-        container.on('pointerup', () => {
+        bg.on('pointerup', () => {
             if (this.isAnimating) return;
             if (isLeft) {
                 this.navigateFaction(-1);
@@ -452,24 +452,27 @@ export class FactionSelectionScene extends Phaser.Scene {
         }).setOrigin(0.5);
         this.selectButton.add(text);
         
-        this.selectButton.setSize(240, 60);
-        this.selectButton.setInteractive({ useHandCursor: true });
+        // Interactive on the button background
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-120, -30, 240, 60),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        this.selectButton.on('pointerover', () => {
+        bg.on('pointerover', () => {
             bg.clear();
             bg.fillStyle(0xf0dba5, 1);
             bg.fillRoundedRect(-120, -30, 240, 60, 10);
             this.selectButton.setScale(1.05);
         });
         
-        this.selectButton.on('pointerout', () => {
+        bg.on('pointerout', () => {
             bg.clear();
             bg.fillStyle(0xd4a017, 1);
             bg.fillRoundedRect(-120, -30, 240, 60, 10);
             this.selectButton.setScale(1);
         });
         
-        this.selectButton.on('pointerup', () => {
+        bg.on('pointerup', () => {
             this.selectFaction();
         });
     }
@@ -489,20 +492,23 @@ export class FactionSelectionScene extends Phaser.Scene {
         }).setOrigin(0.5);
         backBtn.add(text);
         
-        backBtn.setSize(120, 40);
-        backBtn.setInteractive({ useHandCursor: true });
+        // Interactive on background rect
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-60, -20, 120, 40),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        backBtn.on('pointerover', () => {
+        bg.on('pointerover', () => {
             text.setColor('#f0dba5');
             backBtn.setScale(1.05);
         });
         
-        backBtn.on('pointerout', () => {
+        bg.on('pointerout', () => {
             text.setColor('#c0c0c0');
             backBtn.setScale(1);
         });
         
-        backBtn.on('pointerup', () => {
+        bg.on('pointerup', () => {
             this.cameras.main.fadeOut(300, 0, 0, 0);
             this.time.delayedCall(300, () => {
                 this.scene.start('TitleMenuScene');

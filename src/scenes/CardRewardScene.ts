@@ -1,7 +1,12 @@
 import Phaser from 'phaser';
 import { ICard } from '../types/ironwars';
 import { CardSprite } from '../ui/CardSprite';
-import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
+import { DataManager } from '../systems/DataManager';
+
+type WeightedCardEntry = {
+    template: ICard;
+    weight: number;
+};
 
 export class CardRewardScene extends Phaser.Scene {
     private cardOptions: ICard[] = [];
@@ -14,26 +19,67 @@ export class CardRewardScene extends Phaser.Scene {
         super({ key: 'CardRewardScene' });
     }
 
-    public showCardReward(onCardSelected: (card: ICard) => void): void {
-        console.log('[CardRewardScene] showCardReward called');
-        // Generate 3 random card options from the deck
-        this.cardOptions = this.generateCardOptions(3);
+    /**
+     * Show a \"New Reinforcement\" selection drawn from the player's deck.
+     * The probability of each card type appearing is proportional to its count in the deck.
+     */
+    public showCardReward(deckPool: ICard[], onCardSelected: (card: ICard) => void): void {
+        console.log('[CardRewardScene] showCardReward (New Reinforcement) called with deck size:', deckPool.length);
+        this.cardOptions = this.generateCardOptionsFromDeck(deckPool, 3);
         this.createRewardUI(onCardSelected);
     }
 
-    private generateCardOptions(count: number): ICard[] {
-        const allCards = COG_DOMINION_STARTER.deck;
-        const options: ICard[] = [];
-        
-        // Create a shuffled copy of all available cards
-        const shuffled = [...allCards].sort(() => Math.random() - 0.5);
-        
-        // Take the first 'count' cards
-        for (let i = 0; i < Math.min(count, shuffled.length); i++) {
-            options.push(shuffled[i]);
+    /**
+     * Generate N card options sampled from the current deck composition.
+     * Distribution: weight of each card type = number of copies of that type in the deck.
+     */
+    private generateCardOptionsFromDeck(deckPool: ICard[], count: number): ICard[] {
+        const dataManager = DataManager.getInstance();
+
+        // Build weighted entries by base card id
+        const weightMap = new Map<string, WeightedCardEntry>();
+
+        deckPool.forEach(card => {
+            const key = this.getCardKey(card.id);
+            const existing = weightMap.get(key);
+            if (existing) {
+                existing.weight += 1;
+            } else {
+                const template = dataManager.getCard(key) ?? card;
+                weightMap.set(key, { template, weight: 1 });
+            }
+        });
+
+        const entries = Array.from(weightMap.values());
+        if (entries.length === 0) {
+            console.warn('[CardRewardScene] Deck pool is empty, no reward options available.');
+            return [];
         }
-        
+
+        const options: ICard[] = [];
+        for (let i = 0; i < count; i++) {
+            options.push({ ...this.weightedPick(entries) });
+        }
         return options;
+    }
+
+    private weightedPick(entries: WeightedCardEntry[]): ICard {
+        const totalWeight = entries.reduce((sum, e) => sum + e.weight, 0);
+        let r = Math.random() * totalWeight;
+        for (const entry of entries) {
+            if (r < entry.weight) {
+                return entry.template;
+            }
+            r -= entry.weight;
+        }
+        return entries[entries.length - 1].template;
+    }
+
+    private getCardKey(id: string): string {
+        // Normalize runtime copies like `card_railgunner_1_1717358234123` back to base id
+        let base = id.replace(/_\d+$/, '');
+        base = base.replace(/_\d+$/, '');
+        return base;
     }
 
     private createRewardUI(onCardSelected: (card: ICard) => void): void {
@@ -43,7 +89,7 @@ export class CardRewardScene extends Phaser.Scene {
         this.overlay.setDepth(9000);
 
         // Title
-        this.titleText = this.add.text(960, 200, 'Choose Your Reward', {
+        this.titleText = this.add.text(960, 200, 'New Reinforcements', {
             fontSize: '48px',
             color: '#ffffff',
             fontStyle: 'bold',
@@ -58,7 +104,7 @@ export class CardRewardScene extends Phaser.Scene {
         this.titleText.setDepth(9001);
 
         // Instruction
-        this.instructionText = this.add.text(960, 270, 'Select one card to add to your deck', {
+        this.instructionText = this.add.text(960, 270, 'Select one reinforcement card from your deck', {
             fontSize: '24px',
             color: '#b8c2d3',
             fontStyle: 'italic'
@@ -82,14 +128,12 @@ export class CardRewardScene extends Phaser.Scene {
             glow.setDepth(9001);
             glow.setVisible(false);
 
-            // Make it interactive
+            // Use the CardSprite's internal input target so hit area matches
+            // the visual card bounds (background rect).
             cardSprite.removeAllListeners();
-            cardSprite.setInteractive(
-                new Phaser.Geom.Rectangle(-110, -160, 220, 320),
-                Phaser.Geom.Rectangle.Contains
-            );
+            const inputTarget = cardSprite.getInputTarget();
 
-            cardSprite.on('pointerover', () => {
+            inputTarget.on('pointerover', () => {
                 this.tweens.add({
                     targets: cardSprite,
                     scale: 1.35,
@@ -104,7 +148,7 @@ export class CardRewardScene extends Phaser.Scene {
                 });
             });
 
-            cardSprite.on('pointerout', () => {
+            inputTarget.on('pointerout', () => {
                 this.tweens.add({
                     targets: cardSprite,
                     scale: 1.2,
@@ -113,7 +157,7 @@ export class CardRewardScene extends Phaser.Scene {
                 glow.setVisible(false);
             });
 
-            cardSprite.on('pointerdown', () => {
+            inputTarget.on('pointerdown', () => {
                 // Flash effect
                 this.cameras.main.flash(200, 255, 255, 255, false);
                 

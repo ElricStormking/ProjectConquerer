@@ -5,7 +5,8 @@ import { UnitManager } from './UnitManager';
 export class CommanderSystem extends Phaser.Events.EventEmitter {
     private commander?: ICommanderConfig;
     private lastCastTime = 0;
-    private keySpace?: Phaser.Input.Keyboard.Key;
+    private pointerListener?: (pointer: Phaser.Input.Pointer) => void;
+    private canCastFn: () => boolean = () => true;
 
     constructor(
         private scene: Phaser.Scene,
@@ -17,9 +18,29 @@ export class CommanderSystem extends Phaser.Events.EventEmitter {
     public initialize(commander: ICommanderConfig): void {
         this.commander = commander;
         this.lastCastTime = -commander.cooldown;
-        this.keySpace = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        this.keySpace?.on('down', () => this.tryCastAtPointer());
+
+        // Ensure we don't register multiple listeners if re-initialized.
+        if (this.pointerListener) {
+            this.scene.input.off('pointerdown', this.pointerListener);
+        }
+
+        // Activate commander skill with left mouse click at pointer position.
+        this.pointerListener = (pointer: Phaser.Input.Pointer) => {
+            if (pointer.leftButtonDown() && this.canCastFn()) {
+                this.tryCast(pointer.worldX, pointer.worldY);
+            }
+        };
+        this.scene.input.on('pointerdown', this.pointerListener);
+
         this.emit('commander-ready', commander);
+    }
+
+    /**
+     * Configure when the commander skill is allowed to be cast.
+     * BattleScene wires this up to only allow casting during BATTLE phase.
+     */
+    public setCanCastPredicate(fn: () => boolean): void {
+        this.canCastFn = fn;
     }
 
     public tryCastAtPointer(): void {
@@ -30,6 +51,7 @@ export class CommanderSystem extends Phaser.Events.EventEmitter {
 
     public tryCast(worldX: number, worldY: number): boolean {
         if (!this.commander) return false;
+        if (!this.canCastFn()) return false;
         const now = this.scene.time.now;
         if (now - this.lastCastTime < this.commander.cooldown) {
             return false;

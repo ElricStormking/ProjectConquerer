@@ -20,6 +20,7 @@ import { UnitType } from '../data/UnitTypes';
 const STARTING_HAND = 5;
 
 import { DataManager } from '../systems/DataManager';
+import { RunProgressionManager } from '../systems/RunProgressionManager';
 
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
@@ -186,10 +187,19 @@ export class BattleScene extends Phaser.Scene {
         this.createFortressCorePlaceholder();
 
         this.deckSystem = new DeckSystem(7);
-        
-        // Use DataManager to load the cards instead of hardcoded starterData.deck
-        const cards = DataManager.getInstance().getAllCards();
-        this.deckSystem.reset(cards);
+
+        // Prefer the player's run deck from RunProgressionManager.
+        const runManager = RunProgressionManager.getInstance();
+        const runDeck = runManager.getDeckSnapshot();
+
+        if (runDeck.length > 0) {
+            // Use the customized run deck built in DeckBuildingScene.
+            this.deckSystem.reset(runDeck);
+        } else {
+            // Fallback: use all cards from DataManager (prototype behavior).
+            const cards = DataManager.getInstance().getAllCards();
+            this.deckSystem.reset(cards);
+        }
         this.deckSystem.draw(STARTING_HAND);
         
         this.cardSystem = new CardSystem(
@@ -207,6 +217,10 @@ export class BattleScene extends Phaser.Scene {
         this.waveManager.loadWaves(waves);
 
         this.commanderSystem = new CommanderSystem(this, this.unitManager);
+        // Only allow commander skill casting during the BATTLE phase.
+        this.commanderSystem.setCanCastPredicate(
+            () => this.gameState.getState().phase === 'BATTLE'
+        );
         this.commanderSystem.initialize(this.starterData.commander);
 
         this.bindStateEvents();
@@ -271,7 +285,7 @@ export class BattleScene extends Phaser.Scene {
         this.waveManager.on('wave-cleared', () => {
             console.log('[BattleScene] Wave cleared, checking for next wave...');
             if (this.waveManager.hasNextWave()) {
-                console.log('[BattleScene] Next wave available, showing card reward');
+                console.log('[BattleScene] Next wave available, returning to preparation phase and showing card reward');
                 // Between waves, return to a full building phase so the
                 // player can adjust their fortress and play additional
                 // cards before the next fight.
@@ -286,8 +300,8 @@ export class BattleScene extends Phaser.Scene {
                 const totalIncome = baseIncome + bonusIncome;
                 this.gameState.gainResource(totalIncome);
                 console.log(`[BattleScene] Granted ${totalIncome} resources (wave ${currentWave})`);
-                
-                // Show card reward selection UI
+
+                // Between waves: offer a card reward drawn from the current deck
                 this.showCardRewardScreen();
             } else {
                 console.log('[BattleScene] No more waves, triggering victory');
@@ -312,11 +326,15 @@ export class BattleScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add([background, label]);
         container.setDepth(5000);
-        container.setSize(260, 66);
-        container.setInteractive(new Phaser.Geom.Rectangle(-130, -33, 260, 66), Phaser.Geom.Rectangle.Contains);
-        container.on('pointerover', () => background.setFillStyle(0x262a40, 0.95));
-        container.on('pointerout', () => background.setFillStyle(0x1d1f2c, 0.85));
-        container.on('pointerdown', () => this.tryStartWave());
+
+        // Interactive on the button background instead of the container
+        background.setInteractive(
+            new Phaser.Geom.Rectangle(-130, -33, 260, 66),
+            Phaser.Geom.Rectangle.Contains
+        );
+        background.on('pointerover', () => background.setFillStyle(0x262a40, 0.95));
+        background.on('pointerout', () => background.setFillStyle(0x1d1f2c, 0.85));
+        background.on('pointerdown', () => this.tryStartWave());
         this.startButton = container;
         this.startButtonLabel = label;
     }
@@ -340,7 +358,17 @@ export class BattleScene extends Phaser.Scene {
 
         const rewardScene = this.scene.get('CardRewardScene') as any;
         console.log('[BattleScene] Calling CardRewardScene.showCardReward');
-        rewardScene.showCardReward((selectedCard: ICard) => {
+
+        // Build current deck pool from DeckSystem state so reward distribution
+        // matches the actual deck composition (drawPile + discard + hand).
+        const deckState = this.deckSystem.getState();
+        const deckPool: ICard[] = [
+            ...deckState.drawPile,
+            ...deckState.discardPile,
+            ...deckState.hand
+        ];
+
+        rewardScene.showCardReward(deckPool, (selectedCard: ICard) => {
             console.log(`[BattleScene] Card selected: ${selectedCard.name}`);
 
             this.deckSystem.addCard(selectedCard);

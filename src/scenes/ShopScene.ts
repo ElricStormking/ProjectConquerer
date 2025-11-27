@@ -84,11 +84,15 @@ export class ShopScene extends Phaser.Scene {
             color: '#ffefad'
         }).setOrigin(0.5);
         container.add([bg, title, rarity, costText]);
-        container.setSize(220, 200);
-        container.setInteractive(new Phaser.Geom.Rectangle(-110, -100, 220, 200), Phaser.Geom.Rectangle.Contains);
-        container.on('pointerover', () => container.setScale(1.05));
-        container.on('pointerout', () => container.setScale(1));
-        container.on('pointerdown', () => {
+
+        // Interactive on the background rect instead of the container
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-110, -100, 220, 200),
+            Phaser.Geom.Rectangle.Contains
+        );
+        bg.on('pointerover', () => container.setScale(1.05));
+        bg.on('pointerout', () => container.setScale(1));
+        bg.on('pointerdown', () => {
             if (this.remainingGold < cost) return;
             this.remainingGold -= cost;
             this.purchasedCards.push(card);
@@ -118,9 +122,13 @@ export class ShopScene extends Phaser.Scene {
             color: '#ffefad'
         }).setOrigin(0.5);
         container.add([bg, title, description, costText]);
-        container.setSize(420, 180);
-        container.setInteractive(new Phaser.Geom.Rectangle(-210, -90, 420, 180), Phaser.Geom.Rectangle.Contains);
-        container.on('pointerdown', () => {
+
+        // Interactive on relic background
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-210, -90, 420, 180),
+            Phaser.Geom.Rectangle.Contains
+        );
+        bg.on('pointerdown', () => {
             if (this.remainingGold < cost || this.purchasedRelic) return;
             this.remainingGold -= cost;
             this.purchasedRelic = relic;
@@ -166,11 +174,15 @@ export class ShopScene extends Phaser.Scene {
             color: '#66ff66'
         }).setOrigin(0.5);
         container.add([bg, title, costText, removeLabel]);
-        container.setSize(180, 120);
-        container.setInteractive(new Phaser.Geom.Rectangle(-90, -60, 180, 120), Phaser.Geom.Rectangle.Contains);
-        container.on('pointerover', () => container.setScale(1.05));
-        container.on('pointerout', () => container.setScale(1));
-        container.on('pointerdown', () => {
+
+        // Interactive on curse background
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(-90, -60, 180, 120),
+            Phaser.Geom.Rectangle.Contains
+        );
+        bg.on('pointerover', () => container.setScale(1.05));
+        bg.on('pointerout', () => container.setScale(1));
+        bg.on('pointerdown', () => {
             if (this.remainingGold < cost) return;
             if (this.removedCurses.includes(curse.id)) return;
             this.remainingGold -= cost;

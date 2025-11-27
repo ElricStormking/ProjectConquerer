@@ -151,10 +151,13 @@ export class TitleMenuScene extends Phaser.Scene {
         
         // Make interactive if not disabled
         if (!disabled) {
-            container.setSize(MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT);
-            container.setInteractive({ useHandCursor: true });
+            // Interactive on the background graphics instead of the container
+            bg.setInteractive(
+                new Phaser.Geom.Rectangle(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT),
+                Phaser.Geom.Rectangle.Contains
+            );
             
-            container.on('pointerover', () => {
+            bg.on('pointerover', () => {
                 bg.clear();
                 bg.fillStyle(0x4d5673, 0.95);
                 bg.fillRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
@@ -165,7 +168,7 @@ export class TitleMenuScene extends Phaser.Scene {
                 container.setScale(1.05);
             });
             
-            container.on('pointerout', () => {
+            bg.on('pointerout', () => {
                 bg.clear();
                 bg.fillStyle(bgColor, 0.9);
                 bg.fillRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
@@ -176,11 +179,11 @@ export class TitleMenuScene extends Phaser.Scene {
                 container.setScale(1);
             });
             
-            container.on('pointerdown', () => {
+            bg.on('pointerdown', () => {
                 container.setScale(0.95);
             });
             
-            container.on('pointerup', () => {
+            bg.on('pointerup', () => {
                 container.setScale(1.05);
                 callback();
             });

@@ -33,14 +33,19 @@ export class HandManager {
         this.scene.add.existing(sprite);
         sprite.setDepth(7000 + this.cards.length);
 
-        sprite.on('dragstart', (_pointer: Phaser.Input.Pointer) => {
+        // Drag events are emitted from the CardSprite's internal input target
+        // (its background rectangle), so subscribe to that object instead of
+        // the container itself.
+        const inputTarget = sprite.getInputTarget();
+
+        inputTarget.on('dragstart', (_pointer: Phaser.Input.Pointer) => {
             this.draggingCardId = card.id;
             sprite.setDepth(9000);
             sprite.setDragHighlight(true);
             this.battleEvents.emit('ui:card-drag-start', card);
         });
 
-        sprite.on('drag', (pointer: Phaser.Input.Pointer) => {
+        inputTarget.on('drag', (pointer: Phaser.Input.Pointer) => {
             sprite.x = pointer.x;
             sprite.y = pointer.y;
             this.battleEvents.emit('ui:card-drag', {
@@ -49,7 +54,7 @@ export class HandManager {
             });
         });
 
-        sprite.on('dragend', (pointer: Phaser.Input.Pointer) => {
+        inputTarget.on('dragend', (pointer: Phaser.Input.Pointer) => {
             sprite.setDragHighlight(false);
             this.battleEvents.emit('ui:card-drag-end');
             this.battleEvents.emit('ui:card-play', {

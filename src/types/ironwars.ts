@@ -266,6 +266,13 @@ export interface IRunState {
     fortressMaxHp: number;
     gold: number;
     deck: ICard[];
+    /**
+     * Set of card template ids (e.g. 'card_soldier_1', 'card_overclock') that
+     * the player has acquired during this run from rewards/shops/events.
+     * These cards appear in DeckBuilding \"Available Cards\" but are not
+     * automatically included in the active deck.
+     */
+    cardCollection: string[];
     relics: string[];
     curses: string[];
     commanderRoster: string[];

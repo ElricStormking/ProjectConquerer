@@ -142,24 +142,27 @@ export class CommanderUnlockScene extends Phaser.Scene {
         }).setOrigin(0.5);
         continueBtn.add(btnText);
         
-        continueBtn.setSize(200, 50);
-        continueBtn.setInteractive({ useHandCursor: true });
+        // Interactive on the button background instead of the container
+        btnBg.setInteractive(
+            new Phaser.Geom.Rectangle(-100, -25, 200, 50),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        continueBtn.on('pointerover', () => {
+        btnBg.on('pointerover', () => {
             continueBtn.setScale(1.08);
             btnBg.clear();
             btnBg.fillStyle(0xf0dba5, 1);
             btnBg.fillRoundedRect(-100, -25, 200, 50, 10);
         });
         
-        continueBtn.on('pointerout', () => {
+        btnBg.on('pointerout', () => {
             continueBtn.setScale(1);
             btnBg.clear();
             btnBg.fillStyle(factionColor, 1);
             btnBg.fillRoundedRect(-100, -25, 200, 50, 10);
         });
         
-        continueBtn.on('pointerup', () => {
+        btnBg.on('pointerup', () => {
             this.scene.stop();
             this.onComplete();
         });

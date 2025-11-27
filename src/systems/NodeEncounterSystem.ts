@@ -25,7 +25,6 @@ export class NodeEncounterSystem {
     constructor(private readonly hostScene: Phaser.Scene) {}
 
     public resolveNode(node: IMapNode): void {
-        if (this.resolving) return;
         this.resolving = true;
 
         switch (node.type) {
@@ -116,14 +115,18 @@ export class NodeEncounterSystem {
 
         const rewardSceneKey = 'RewardScene';
 
-        this.hostScene.scene.launch(rewardSceneKey, {
+        const scenePlugin = this.hostScene.scene;
+        scenePlugin.launch(rewardSceneKey, {
             title: 'Battle Cleared',
             subtitle: 'Choose one reward to add to your run',
             cardChoices,
             goldReward,
             onComplete: (result: RewardSceneResult) => {
                 if (result.card) {
-                    this.runManager.addCardToRunDeck(result.card);
+                    // Rewards now expand the player's collection; they are not
+                    // automatically slotted into the active deck. The player
+                    // can add them later in DeckBuilding.
+                    this.runManager.addCardToCollection(result.card);
                 }
                 if (result.goldAwarded) {
                     this.runManager.gainGold(result.goldAwarded);
@@ -136,6 +139,7 @@ export class NodeEncounterSystem {
                 }
             }
         });
+        scenePlugin.bringToTop(rewardSceneKey);
     }
 
     private presentRelicReward(node: IMapNode): void {
@@ -146,7 +150,8 @@ export class NodeEncounterSystem {
         }
 
         const relicRewardSceneKey = 'RelicRewardScene';
-        this.hostScene.scene.launch(relicRewardSceneKey, {
+        const scenePlugin = this.hostScene.scene;
+        scenePlugin.launch(relicRewardSceneKey, {
             title: node.type === NodeType.BOSS ? 'Boss Defeated!' : 'Elite Conquered!',
             subtitle: 'Choose a relic to aid your journey',
             relicChoices,
@@ -159,6 +164,7 @@ export class NodeEncounterSystem {
                 this.checkCommanderUnlock(node);
             }
         });
+        scenePlugin.bringToTop(relicRewardSceneKey);
     }
 
     private checkCommanderUnlock(node: IMapNode): void {
@@ -191,26 +197,32 @@ export class NodeEncounterSystem {
         this.runManager.addCommanderToRoster(commanderToUnlock.id);
         
         // Show unlock scene
-        this.hostScene.scene.launch('CommanderUnlockScene', {
+        const scenePlugin = this.hostScene.scene;
+        const unlockSceneKey = 'CommanderUnlockScene';
+        scenePlugin.launch(unlockSceneKey, {
             commander: commanderToUnlock,
             onComplete: () => {
+                scenePlugin.stop(unlockSceneKey);
                 this.finishEncounter(node);
             }
         });
+        scenePlugin.bringToTop(unlockSceneKey);
     }
 
     private startEventEncounter(node: IMapNode): void {
         const eventSceneKey = 'EventScene';
-        this.hostScene.scene.launch(eventSceneKey, {
+        const scenePlugin = this.hostScene.scene;
+        scenePlugin.launch(eventSceneKey, {
             eventId: node.encounterId,
             onComplete: (resolution: EventResolution) => {
-                this.hostScene.scene.stop(eventSceneKey);
+                scenePlugin.stop(eventSceneKey);
                 if (resolution.option) {
                     this.applyEventEffect(resolution.option.effectId ?? '');
                 }
                 this.finishEncounter(node);
             }
         });
+        scenePlugin.bringToTop(eventSceneKey);
     }
 
     private startShopEncounter(node: IMapNode): void {
@@ -221,17 +233,20 @@ export class NodeEncounterSystem {
         const curses = this.relicManager.getCurses();
         const curseRemovalCost = 100 + (node.rewardTier * 25);
 
-        this.hostScene.scene.launch(shopSceneKey, {
+        const scenePlugin = this.hostScene.scene;
+        scenePlugin.launch(shopSceneKey, {
             inventory,
             currentGold: this.runManager.getGold(),
             curses,
             curseRemovalCost,
             onComplete: (result: { purchasedCards: ICard[]; purchasedRelic?: IRelicConfig; removedCurses: string[]; goldSpent: number }) => {
-                this.hostScene.scene.stop(shopSceneKey);
+                scenePlugin.stop(shopSceneKey);
                 if (result.goldSpent > 0) {
                     this.runManager.spendGold(result.goldSpent);
                 }
-                result.purchasedCards.forEach(card => this.runManager.addCardToRunDeck(card));
+                // Purchased cards go into the collection; player can add them
+                // to the deck later in DeckBuilding.
+                result.purchasedCards.forEach(card => this.runManager.addCardToCollection(card));
                 if (result.purchasedRelic) {
                     this.runManager.addRelic(result.purchasedRelic.id);
                 }
@@ -239,22 +254,25 @@ export class NodeEncounterSystem {
                 this.finishEncounter(node);
             }
         });
+        scenePlugin.bringToTop(shopSceneKey);
     }
 
     private startRestEncounter(node: IMapNode): void {
         const restSceneKey = 'RestScene';
         const state = this.runManager.getRunState();
         const healAmount = state ? Math.round(state.fortressMaxHp * 0.3) : 150;
-        this.hostScene.scene.launch(restSceneKey, {
+        const scenePlugin = this.hostScene.scene;
+        scenePlugin.launch(restSceneKey, {
             healAmount,
             onComplete: (action: 'rest' | 'skip') => {
-                this.hostScene.scene.stop(restSceneKey);
+                scenePlugin.stop(restSceneKey);
                 if (action === 'rest') {
                     this.runManager.healFortress(healAmount);
                 }
                 this.finishEncounter(node);
             }
         });
+        scenePlugin.bringToTop(restSceneKey);
     }
 
     private startRecruitmentEncounter(node: IMapNode): void {
@@ -264,7 +282,8 @@ export class NodeEncounterSystem {
             return;
         }
         const bonusCard = Phaser.Utils.Array.GetRandom(starterDeck);
-        this.runManager.addCardToRunDeck(bonusCard);
+        // Recruitment grants a new copy of an existing card into the collection.
+        this.runManager.addCardToCollection(bonusCard);
         this.finishEncounter(node);
     }
 
@@ -353,19 +372,19 @@ export class NodeEncounterSystem {
 
         if (lower.includes('add_card_epic')) {
             const cards = this.generateCardChoices(3);
-            if (cards[0]) this.runManager.addCardToRunDeck(cards[0]);
+            if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
         if (lower.includes('add_card_rare')) {
             const cards = this.generateCardChoices(2);
-            if (cards[0]) this.runManager.addCardToRunDeck(cards[0]);
+            if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
         if (lower.includes('gain_random_card')) {
             const cards = this.generateCardChoices(1);
-            if (cards[0]) this.runManager.addCardToRunDeck(cards[0]);
+            if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 

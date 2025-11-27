@@ -159,10 +159,13 @@ export class OptionsScene extends Phaser.Scene {
         }).setOrigin(0.5);
         backBtn.add(btnText);
         
-        backBtn.setSize(160, 50);
-        backBtn.setInteractive({ useHandCursor: true });
+        // Interactive on the button background instead of the container
+        btnBg.setInteractive(
+            new Phaser.Geom.Rectangle(-80, -25, 160, 50),
+            Phaser.Geom.Rectangle.Contains
+        );
         
-        backBtn.on('pointerover', () => {
+        btnBg.on('pointerover', () => {
             btnBg.clear();
             btnBg.fillStyle(0x4d5673, 0.95);
             btnBg.fillRoundedRect(-80, -25, 160, 50, 8);
@@ -170,7 +173,7 @@ export class OptionsScene extends Phaser.Scene {
             btnBg.strokeRoundedRect(-80, -25, 160, 50, 8);
         });
         
-        backBtn.on('pointerout', () => {
+        btnBg.on('pointerout', () => {
             btnBg.clear();
             btnBg.fillStyle(0x3d4663, 0.9);
             btnBg.fillRoundedRect(-80, -25, 160, 50, 8);
@@ -178,7 +181,7 @@ export class OptionsScene extends Phaser.Scene {
             btnBg.strokeRoundedRect(-80, -25, 160, 50, 8);
         });
         
-        backBtn.on('pointerup', () => {
+        btnBg.on('pointerup', () => {
             this.closeOptions();
         });
         

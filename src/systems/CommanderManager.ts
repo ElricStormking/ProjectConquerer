@@ -127,6 +127,43 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         return this.getCardsForCommanders(commanderRoster);
     }
 
+    /**
+     * Check whether a given card template id is usable with the current
+     * commander roster (i.e., at least one owned commander has this card
+     * in their cardIds list).
+     */
+    public isCardUsableByRoster(cardId: string, commanderRoster: string[]): boolean {
+        // For usability checks we work on template ids exactly as stored in
+        // commanders.csv (e.g. 'card_soldier_1', 'card_overclock').
+        const key = cardId;
+        const allCommanders = this.getAllCommanders();
+        const owners = allCommanders.filter(cmd => cmd.cardIds.includes(key)).map(cmd => cmd.id);
+
+        if (owners.length === 0) {
+            // Card is not yet assigned to any commander the player can own.
+            // Treat as locked until a specific commander is designed for it.
+            return false;
+        }
+
+        // Usable only if at least one owning commander is in the current roster.
+        return owners.some(id => commanderRoster.includes(id));
+    }
+
+    private getCardKey(id: string): string {
+        let base = id.replace(/_\d+$/, '');
+        base = base.replace(/_\d+$/, '');
+        return base;
+    }
+
+    private getCardKey(id: string): string {
+        // Normalize runtime copies like `card_railgunner_1_1717358234123` back to the base card id
+        // 1) Strip trailing timestamp / runtime suffix
+        let base = id.replace(/_\d+$/, '');
+        // 2) Strip trailing deck index (e.g. `_1`, `_2`) so all variants of the same type collapse
+        base = base.replace(/_\d+$/, '');
+        return base;
+    }
+
     public validateDeck(deck: ICard[], commanderRoster: string[], maxDeckSize = 40): {
         valid: boolean;
         errors: string[];
@@ -144,10 +181,11 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         
         // Check all cards come from commanders in roster
         const availableCards = this.getAvailableCardsForRoster(commanderRoster);
-        const availableCardIds = new Set(availableCards.map(c => c.id));
+        const availableCardKeys = new Set(availableCards.map(c => this.getCardKey(c.id)));
         
         for (const card of deck) {
-            if (!availableCardIds.has(card.id)) {
+            const key = this.getCardKey(card.id);
+            if (!availableCardKeys.has(key)) {
                 errors.push(`Card ${card.name} (${card.id}) is not available from current commanders`);
             }
         }

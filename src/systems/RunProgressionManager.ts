@@ -55,6 +55,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             relics: [...this.runState.relics],
             curses: [...this.runState.curses],
             commanderRoster: [...this.runState.commanderRoster],
+            cardCollection: [...(this.runState.cardCollection ?? [])],
             factionId: this.runState.factionId
         };
     }
@@ -124,6 +125,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             fortressMaxHp: modifiedFortressHp,
             gold: startingGold,
             deck: [...deck],
+            // Start with an empty collection; new rewards will populate this.
+            cardCollection: [],
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
@@ -231,6 +234,33 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.emit('deck-updated', [...this.runState.deck]);
     }
 
+    /**
+     * Track that the player has acquired a card template (by id) during this run.
+     * This does NOT add the card to the active deck; it only expands the pool
+     * of cards visible in DeckBuilding \"Available Cards\".
+     */
+    public addCardToCollection(card: ICard): void {
+        if (!this.runState) return;
+        const baseId = this.normalizeCardId(card.id);
+        if (!this.runState.cardCollection) {
+            this.runState.cardCollection = [];
+        }
+        this.runState.cardCollection.push(baseId);
+        this.saveRun();
+    }
+
+    public clearCardCollection(): void {
+        if (!this.runState) return;
+        this.runState.cardCollection = [];
+        this.saveRun();
+    }
+
+    private normalizeCardId(id: string): string {
+        let base = id.replace(/_\d+$/, '');
+        base = base.replace(/_\d+$/, '');
+        return base;
+    }
+
     public addCommanderToRoster(commanderId: string): boolean {
         if (!this.runState) return false;
         if (this.runState.commanderRoster.includes(commanderId)) return false;
@@ -318,6 +348,10 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public getDeckSnapshot(): ICard[] {
         return this.runState ? [...this.runState.deck] : [];
+    }
+
+    public getCardCollection(): string[] {
+        return this.runState ? [...(this.runState.cardCollection ?? [])] : [];
     }
 
     public removeRandomCard(predicate?: (card: ICard) => boolean): ICard | undefined {
