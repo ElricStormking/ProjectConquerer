@@ -70,9 +70,17 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('map_nodes_data', 'data/map_nodes.csv');
         this.load.text('factions_data', 'data/factions.csv');
         this.load.text('commanders_data', 'data/commanders.csv');
+        
+        // Fortress grid CSVs (metadata + tilemap pairs)
+        this.load.text('fortress_grid_sanctum_order_01_meta', 'data/fortress_grids/fortress_sanctum_order_01.csv');
+        this.load.text('fortress_grid_sanctum_order_01_tilemap', 'data/fortress_grids/fortress_sanctum_order_01_grid.csv');
 
         // Load character spritesheets with full frame dimensions (96x96 for complete character)
         this.load.image('world_bg', 'assets/gamemap_01.png');
+        
+        // Fortress images
+        this.load.image('fortress_sanctum_order_01', 'assets/fortress/Fortress_Sanctum_Order_01.png');
+        
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');
         this.load.image('building_armor_shop', 'assets/buildings/cog_buildings/Building_ArmorShop.png');

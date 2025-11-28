@@ -54,6 +54,23 @@ export interface IFortressConfig {
     abilities: string[];
 }
 
+/**
+ * Fortress grid configuration loaded from CSV files.
+ * Designers create a metadata CSV and a 2D tilemap CSV which get parsed into this structure.
+ */
+export interface IFortressGridConfig {
+    fortressId: string;
+    factionId: string;
+    name: string;
+    imageKey: string;
+    maxHp: number;
+    cellSizeWidth: number;
+    cellSizeHeight: number;
+    gridWidth: number;
+    gridHeight: number;
+    cells: IFortressCell[];
+}
+
 export type UnitRole = 'melee' | 'ranged' | 'support' | 'tank' | 'siege';
 
 export interface IUnitConfig {

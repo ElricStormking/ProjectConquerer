@@ -16,7 +16,10 @@ import {
     IRelicConfig,
     IRelicEffect,
     IFactionConfig,
-    ICommanderFullConfig
+    ICommanderFullConfig,
+    IFortressGridConfig,
+    IFortressCell,
+    FortressCellType
 } from '../types/ironwars';
 
 export class DataManager {
@@ -38,6 +41,9 @@ export class DataManager {
     // Faction and commander data
     private factions: Map<string, IFactionConfig> = new Map();
     private commanders: Map<string, ICommanderFullConfig> = new Map();
+    
+    // Fortress grid data
+    private fortressGrids: Map<string, IFortressGridConfig> = new Map();
 
     private constructor() {}
 
@@ -65,8 +71,11 @@ export class DataManager {
         if (cache.text.exists('factions_data')) this.parseFactions(cache.text.get('factions_data'));
         if (cache.text.exists('commanders_data')) this.parseCommanders(cache.text.get('commanders_data'));
         
+        // Fortress grid data - load all fortress grids
+        this.parseFortressGridsFromCache(cache);
+        
         console.log('DataManager: Parsing complete.');
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${this.waves.size} waves, ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders.`);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${this.waves.size} waves, ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
     }
 
     private parseUnits(csv: string): void {
@@ -452,5 +461,101 @@ export class DataManager {
         return commander.cardIds
             .map(cardId => this.cards.get(cardId))
             .filter((card): card is ICard => card !== undefined);
+    }
+
+    // Fortress grid parsing and accessors
+    
+    /**
+     * Parse fortress grids from cache. Looks for fortress grid files by convention:
+     * - fortress_grid_{id}_meta for metadata CSV
+     * - fortress_grid_{id}_tilemap for 2D grid CSV
+     */
+    private parseFortressGridsFromCache(cache: Phaser.Cache.CacheManager): void {
+        // Known fortress grid IDs - add more here as they're created
+        const fortressIds = ['sanctum_order_01'];
+        
+        for (const id of fortressIds) {
+            const metaKey = `fortress_grid_${id}_meta`;
+            const tilemapKey = `fortress_grid_${id}_tilemap`;
+            
+            if (cache.text.exists(metaKey) && cache.text.exists(tilemapKey)) {
+                const metaCsv = cache.text.get(metaKey);
+                const tilemapCsv = cache.text.get(tilemapKey);
+                this.parseFortressGrid(metaCsv, tilemapCsv);
+            }
+        }
+    }
+
+    /**
+     * Parse a single fortress grid from metadata CSV and tilemap CSV.
+     * @param metaCsv - CSV with fortress metadata (id, faction_id, name, etc.)
+     * @param tilemapCsv - 2D array CSV where 0=blocked, 1=buildable, 2=core
+     */
+    private parseFortressGrid(metaCsv: string, tilemapCsv: string): void {
+        if (!metaCsv || !tilemapCsv) return;
+        
+        // Parse metadata
+        const metaResult = Papa.parse(metaCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        if (metaResult.data.length === 0) return;
+        
+        const meta = metaResult.data[0] as any;
+        
+        // Parse tilemap as 2D array (no header)
+        const tilemapResult = Papa.parse(tilemapCsv, { header: false, dynamicTyping: true, skipEmptyLines: true });
+        const grid = tilemapResult.data as number[][];
+        
+        if (grid.length === 0) return;
+        
+        // Convert 2D array to IFortressCell[]
+        const cells: IFortressCell[] = [];
+        const gridHeight = grid.length;
+        const gridWidth = grid[0]?.length ?? 0;
+        
+        for (let row = 0; row < gridHeight; row++) {
+            for (let col = 0; col < gridWidth; col++) {
+                const cellValue = grid[row][col];
+                if (cellValue > 0) {
+                    let cellType: FortressCellType = 'buildable';
+                    if (cellValue === 2) cellType = 'core';
+                    else if (cellValue === 0) cellType = 'blocked';
+                    
+                    cells.push({
+                        x: col,
+                        y: row,
+                        type: cellType
+                    });
+                }
+            }
+        }
+        
+        const fortressGrid: IFortressGridConfig = {
+            fortressId: meta.id,
+            factionId: meta.faction_id,
+            name: meta.name,
+            imageKey: meta.image_key,
+            maxHp: Number(meta.max_hp) || 1000,
+            cellSizeWidth: Number(meta.cell_size_width) || 64,
+            cellSizeHeight: Number(meta.cell_size_height) || 32,
+            gridWidth,
+            gridHeight,
+            cells
+        };
+        
+        this.fortressGrids.set(fortressGrid.fortressId, fortressGrid);
+        console.log(`[DataManager] Loaded fortress grid: ${fortressGrid.fortressId} (${gridWidth}x${gridHeight}, ${cells.length} cells)`);
+    }
+
+    /**
+     * Get a fortress grid configuration by fortress ID.
+     */
+    public getFortressGrid(fortressId: string): IFortressGridConfig | undefined {
+        return this.fortressGrids.get(fortressId);
+    }
+
+    /**
+     * Get all loaded fortress grids.
+     */
+    public getAllFortressGrids(): IFortressGridConfig[] {
+        return Array.from(this.fortressGrids.values());
     }
 }

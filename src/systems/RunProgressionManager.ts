@@ -181,6 +181,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             return false;
         }
         this.runState.currentNodeId = nodeId;
+        // Update accessibility so other nodes become locked once a path is chosen
+        this.updateNodeAccessibility();
+        this.saveRun();
         this.emit('node-selected', this.getNodeSnapshot(nodeId));
         return true;
     }
@@ -456,36 +459,33 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     private updateNodeAccessibility(): void {
         if (!this.runState) return;
-        const completed = new Set(this.runState.completedNodeIds);
+        const currentNodeId = this.runState.currentNodeId;
+        const currentNode = this.nodeGraph.get(currentNodeId);
 
+        // Reset all nodes to inaccessible
         this.nodeGraph.forEach(node => {
             node.isAccessible = false;
-            if (completed.has(node.id)) {
-                node.isAccessible = false;
-            }
         });
 
         const currentStage = this.stageGraph.get(this.runState.currentStageIndex);
-        if (!currentStage) return;
+        if (!currentStage || !currentNode) return;
 
-        currentStage.nodes.forEach(node => {
-            if (completed.has(node.id)) {
-                node.isAccessible = false;
-                return;
+        // CASE 1: Player is standing on a node that isn't finished yet.
+        // Only that node should be clickable; all other paths are locked out.
+        if (!currentNode.isCompleted) {
+            currentNode.isAccessible = true;
+            return;
+        }
+
+        // CASE 2: Current node is completed. The only valid choices are the
+        // immediate children of this node (its outgoing edges). This enforces
+        // a single-path progression like Slay the Spire: once you choose a
+        // branch, you can't go back and pick nodes from a different branch.
+        currentNode.nextNodeIds.forEach(nextId => {
+            const nextNode = this.nodeGraph.get(nextId);
+            if (nextNode && !nextNode.isCompleted) {
+                nextNode.isAccessible = true;
             }
-
-            const inbound = (this.inboundEdges.get(node.id) || []).filter(prevId => {
-                const prevNode = this.nodeGraph.get(prevId);
-                return prevNode?.stageIndex === currentStage.index;
-            });
-
-            if (inbound.length === 0) {
-                node.isAccessible = true;
-                return;
-            }
-
-            const unlocked = inbound.every(prevId => completed.has(prevId));
-            node.isAccessible = unlocked;
         });
     }
 

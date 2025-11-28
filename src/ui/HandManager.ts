@@ -42,6 +42,13 @@ export class HandManager {
             this.draggingCardId = card.id;
             sprite.setDepth(9000);
             sprite.setDragHighlight(true);
+            // Shrink card to 1/5 size (0.2 scale) while dragging to reduce visual obstruction
+            this.scene.tweens.add({
+                targets: sprite,
+                scale: 0.3,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
             this.battleEvents.emit('ui:card-drag-start', card);
         });
 
@@ -56,6 +63,13 @@ export class HandManager {
 
         inputTarget.on('dragend', (pointer: Phaser.Input.Pointer) => {
             sprite.setDragHighlight(false);
+            // Restore card to normal size
+            this.scene.tweens.add({
+                targets: sprite,
+                scale: 1,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
             this.battleEvents.emit('ui:card-drag-end');
             this.battleEvents.emit('ui:card-play', {
                 card,

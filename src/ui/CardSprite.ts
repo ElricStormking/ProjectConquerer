@@ -66,7 +66,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
             this.descText,
             this.dragHighlight
         ]);
-        
+
         // Attach input and dragging to the background rectangle instead of the container.
         // Let Phaser compute the hit area from the rectangle's size/origin so it matches
         // the visual card bounds exactly.

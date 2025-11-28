@@ -21,6 +21,7 @@ const STARTING_HAND = 5;
 
 import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
+import { FactionRegistry } from '../systems/FactionRegistry';
 
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
@@ -171,23 +172,48 @@ export class BattleScene extends Phaser.Scene {
         // (soldier, railgunner, tank, medic, cannon) can be summoned for testing.
         this.gameState.initialize(this.starterData, 10, 40);
 
+        // Get fortress config from FactionRegistry (uses DataManager CSV grids if available)
+        // Default to Sanctum Order fortress for testing
+        const factionRegistry = FactionRegistry.getInstance();
+        const testFortressId = 'fortress_sanctum_order_01';
+        let fortressConfig = factionRegistry.getFortressConfig(testFortressId);
+        
+        // Fallback to starterData if no CSV fortress found
+        if (!fortressConfig) {
+            console.warn(`[BattleScene] Fortress ${testFortressId} not found, using starterData fallback`);
+            fortressConfig = this.starterData.fortress;
+        } else {
+            console.log(`[BattleScene] Using fortress from CSV: ${fortressConfig.name} (${fortressConfig.gridWidth}x${fortressConfig.gridHeight})`);
+        }
+
+        // Get cell size from grid config if available
+        const gridConfig = factionRegistry.getFortressGridConfig(testFortressId);
+        const cellWidth = gridConfig?.cellSizeWidth ?? 64;
+        const cellHeight = gridConfig?.cellSizeHeight ?? 32;
+
         // Position the player's fortress/grid (blue team summon area) in the
-        // upper-left region of the canvas, with medium diamond cells.
+        // upper-left region of the canvas.
         this.fortressSystem = new FortressSystem(
             this,
             this.isometricRenderer,
-            this.starterData.fortress,
-            340, 140,
-            128, 64
+            fortressConfig,
+            340, 200,
+            cellWidth, cellHeight
         );
         this.fortressSystem.initialize();
-        const coreX = Math.floor(this.starterData.fortress.gridWidth / 2);
-        const coreY = Math.floor(this.starterData.fortress.gridHeight / 2);
+        
+        // Calculate fortress core world position BEFORE creating the image
+        const coreX = Math.floor(fortressConfig.gridWidth / 2);
+        const coreY = Math.floor(fortressConfig.gridHeight / 2);
         this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
+        
+        // Create fortress image behind the grid (needs fortressCoreWorld to be set)
+        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth);
+        
         this.createFortressCorePlaceholder();
 
         this.deckSystem = new DeckSystem(7);
-
+        
         // Prefer the player's run deck from RunProgressionManager.
         const runManager = RunProgressionManager.getInstance();
         const runDeck = runManager.getDeckSnapshot();
@@ -197,8 +223,8 @@ export class BattleScene extends Phaser.Scene {
             this.deckSystem.reset(runDeck);
         } else {
             // Fallback: use all cards from DataManager (prototype behavior).
-            const cards = DataManager.getInstance().getAllCards();
-            this.deckSystem.reset(cards);
+        const cards = DataManager.getInstance().getAllCards();
+        this.deckSystem.reset(cards);
         }
         this.deckSystem.draw(STARTING_HAND);
         
@@ -300,7 +326,7 @@ export class BattleScene extends Phaser.Scene {
                 const totalIncome = baseIncome + bonusIncome;
                 this.gameState.gainResource(totalIncome);
                 console.log(`[BattleScene] Granted ${totalIncome} resources (wave ${currentWave})`);
-
+                
                 // Between waves: offer a card reward drawn from the current deck
                 this.showCardRewardScreen();
             } else {
@@ -462,6 +488,48 @@ export class BattleScene extends Phaser.Scene {
         this.events.emit('card-placement-result', { cardId: payload.card.id, success });
     }
 
+    private fortressImage?: Phaser.GameObjects.Image;
+
+    /**
+     * Create the fortress image behind the spawn grid.
+     * The image is positioned at the grid center and scaled to fit the grid.
+     */
+    private createFortressImage(imageKey: string, gridWidth: number) {
+        if (this.fortressImage) {
+            this.fortressImage.destroy();
+        }
+
+        // Check if the texture exists
+        if (!this.textures.exists(imageKey)) {
+            console.warn(`[BattleScene] Fortress image "${imageKey}" not found, skipping`);
+            return;
+        }
+
+        // Get the center of the grid (fortressCoreWorld must be set before calling this)
+        const coreX = this.fortressCoreWorld.x;
+        const coreY = this.fortressCoreWorld.y;
+
+        const fortress = this.add.image(coreX, coreY, imageKey);
+        
+        // Position the fortress so the grid appears on top of it
+        // Origin at center horizontally, and about 40% down (top surface center)
+        fortress.setOrigin(0.5, 0.4);
+        
+        // Scale the fortress to match the grid size
+        // For isometric diamond grid, the visual width spans gridWidth cells diagonally
+        const { width: cellWidth } = this.fortressSystem.getCellDimensions();
+        const gridVisualWidth = gridWidth * cellWidth;
+        const targetScale = gridVisualWidth / fortress.width * 1.3; // Scale up to encompass full grid
+        fortress.setScale(targetScale);
+
+        // Place behind the grid graphics but in front of background
+        // Use a depth that's below the grid lines but above world background
+        fortress.setDepth(-500);
+        
+        this.fortressImage = fortress;
+        console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${targetScale.toFixed(2)}`);
+    }
+
     private createFortressCorePlaceholder() {
         const x = this.fortressCoreWorld.x;
         const y = this.fortressCoreWorld.y;
@@ -469,6 +537,13 @@ export class BattleScene extends Phaser.Scene {
         if (this.fortressCoreGraphic) {
             this.fortressCoreGraphic.destroy();
         }
+        
+        // For now, skip the core building placeholder when using fortress image
+        // The fortress image already has a visual center
+        if (this.fortressImage) {
+            return;
+        }
+        
         const core = this.add.image(x, y, 'building_fortress_core');
         core.setOrigin(0.5, 0.8);
         const { width } = this.fortressSystem.getCellDimensions();

@@ -17,7 +17,7 @@ export class StageMapScene extends Phaser.Scene {
     private encounterSystem!: NodeEncounterSystem;
     private nodeContainers: Map<string, Phaser.GameObjects.Container> = new Map();
     private pathGraphics!: Phaser.GameObjects.Graphics;
-    private fortressToken?: Phaser.GameObjects.Ellipse;
+    private fortressToken?: Phaser.GameObjects.Image;
     private hudText?: Phaser.GameObjects.Text;
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
@@ -395,6 +395,14 @@ export class StageMapScene extends Phaser.Scene {
 
         this.runManager.moveToNode(nodeId);
         this.moveFortressToken(node);
+        
+        // Update node visuals to reflect that other paths are now locked
+        this.updateAllNodeStates();
+        const stage = this.runManager.getCurrentStage();
+        if (stage) {
+            this.drawPaths(stage);
+        }
+        
         this.encounterSystem.resolveNode(node);
     }
 
@@ -431,9 +439,24 @@ export class StageMapScene extends Phaser.Scene {
         if (!node) return;
         const position = this.normalizeToPixels(node);
         if (!this.fortressToken) {
-            this.fortressToken = this.add.ellipse(position.x, position.y, 28, 28, 0xf0f4ff, 1);
-            this.fortressToken.setStrokeStyle(4, 0x1d9bf0);
-            this.fortressToken.setDepth(10);
+            // Get the player's current fortress image key
+            const runState = this.runManager.getRunState();
+            const factionId = runState?.factionId ?? 'sanctum_order';
+            const gridConfig = this.factionRegistry.getFortressGridConfig(`fortress_${factionId}_01`);
+            const imageKey = gridConfig?.imageKey ?? 'fortress_sanctum_order_01';
+            
+            // Create fortress image as the map token
+            if (this.textures.exists(imageKey)) {
+                this.fortressToken = this.add.image(position.x, position.y, imageKey);
+                this.fortressToken.setScale(0.12); // Scale down for map display
+                this.fortressToken.setDepth(10);
+            } else {
+                // Fallback to a simple circle if image not found
+                const fallback = this.add.ellipse(position.x, position.y, 28, 28, 0xf0f4ff, 1);
+                fallback.setStrokeStyle(4, 0x1d9bf0);
+                fallback.setDepth(10);
+                this.fortressToken = fallback as unknown as Phaser.GameObjects.Image;
+            }
         }
         this.tweens.add({
             targets: this.fortressToken,

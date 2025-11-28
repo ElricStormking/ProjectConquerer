@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DataManager } from './DataManager';
-import { IFactionConfig, IFortressConfig, IFortressCell, ResourceType } from '../types/ironwars';
+import { IFactionConfig, IFortressConfig, IFortressCell, IFortressGridConfig, ResourceType } from '../types/ironwars';
 
 // Default fortress grid builder
 function buildDefaultFortressCells(width: number, height: number): IFortressCell[] {
@@ -131,6 +131,13 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
     }
 
     public getFortressConfig(fortressId: string): IFortressConfig | undefined {
+        // First, try to get fortress grid from DataManager (loaded from CSV)
+        const gridConfig = this.dataManager.getFortressGrid(fortressId);
+        if (gridConfig) {
+            return this.convertGridConfigToFortressConfig(gridConfig);
+        }
+        
+        // Fallback to hardcoded template with procedural cells
         const template = FORTRESS_TEMPLATES[fortressId];
         if (!template) return undefined;
         
@@ -138,6 +145,29 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
             ...template,
             cells: buildDefaultFortressCells(template.gridWidth, template.gridHeight)
         };
+    }
+
+    /**
+     * Convert IFortressGridConfig (from CSV) to IFortressConfig (used by FortressSystem)
+     */
+    private convertGridConfigToFortressConfig(gridConfig: IFortressGridConfig): IFortressConfig {
+        return {
+            id: gridConfig.fortressId,
+            name: gridConfig.name,
+            factionId: gridConfig.factionId,
+            gridWidth: gridConfig.gridWidth,
+            gridHeight: gridConfig.gridHeight,
+            cells: gridConfig.cells,
+            maxHp: gridConfig.maxHp,
+            abilities: [] // Can be extended later via CSV
+        };
+    }
+
+    /**
+     * Get fortress grid config directly (for systems that need the extended info like cell sizes)
+     */
+    public getFortressGridConfig(fortressId: string): IFortressGridConfig | undefined {
+        return this.dataManager.getFortressGrid(fortressId);
     }
 
     public getFortressForFaction(factionId: string): IFortressConfig | undefined {

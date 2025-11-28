@@ -677,10 +677,7 @@ export class DeckBuildingScene extends Phaser.Scene {
                 new Phaser.Geom.Rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT),
                 Phaser.Geom.Rectangle.Contains
             );
-            
-            // Debug: Draw hit area frame aligned with the interactive rectangle
-            this.drawDebugHitArea(container, 0, 0, CARD_WIDTH, CARD_HEIGHT, 0x00ffff);
-            
+
             bg.on('pointerover', () => {
                 container.setScale(1.08);
                 container.setDepth(10);
@@ -698,7 +695,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         return container;
     }
-
+    
     private getRarityColor(rarity?: string): number {
         const colors: Record<string, number> = {
             common: 0x888888,
@@ -708,15 +705,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         };
         return colors[rarity ?? 'common'] ?? 0x888888;
     }
-
-    private drawDebugHitArea(container: Phaser.GameObjects.Container, x: number, y: number, width: number, height: number, color: number = 0x00ff00): void {
-        const debugFrame = this.add.graphics();
-        debugFrame.lineStyle(2, color, 1);
-        debugFrame.strokeRect(x, y, width, height);
-        debugFrame.setDepth(10000);
-        container.add(debugFrame);
-    }
-
+    
     private addCardToDeck(card: ICard): void {
         if (this.currentDeck.length >= MAX_DECK_SIZE) {
             this.showMessage('Deck is full!', '#e74c3c');
