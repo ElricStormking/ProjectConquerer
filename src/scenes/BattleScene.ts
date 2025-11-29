@@ -279,6 +279,27 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private bindStateEvents() {
+        // Clean up previous listeners for local systems
+        if (this.deckSystem) {
+            this.deckSystem.removeAllListeners();
+        }
+        if (this.waveManager) {
+            this.waveManager.removeAllListeners();
+        }
+        if (this.commanderSystem) {
+            this.commanderSystem.removeAllListeners();
+        }
+        // Note: GameStateManager is a singleton, so we must be careful not to remove listeners from other scenes (like UIScene).
+        // Ideally, we should store the handler reference and use off(), but for now we'll rely on uniqueness or assume restart clears.
+        // Actually, `this.gameState` is global. If we attach here, we MUST detach on shutdown.
+        // But BattleScene doesn't have a robust shutdown yet.
+        // Let's implement a cleanup method for GameState listeners specifically for this scene instance.
+        // Since we can't easily identify "our" listeners without storing them, let's just assume
+        // we need to be careful. A better approach is to use `this.events.on('shutdown', ...)` to clean up.
+        this.events.on('shutdown', () => {
+            this.cleanupListeners();
+        });
+
         this.deckSystem.on('deck-state-changed', (state: IDeckState) => {
             this.gameState.setDeckState(state);
         });
@@ -359,6 +380,24 @@ export class BattleScene extends Phaser.Scene {
         this.commanderSystem.on('skill-cast', (payload: { cooldown: number; lastCast: number }) => {
             this.events.emit('commander-cast', payload);
         });
+    }
+
+    private cleanupListeners() {
+        // Remove input listeners
+        this.input.off('pointermove');
+        this.input.off('wheel');
+
+        // Remove local event listeners
+        this.events.off('ui:card-drag-start');
+        this.events.off('ui:card-drag-end');
+        this.events.off('ui:card-drag');
+        this.events.off('ui:card-play');
+        this.events.off('ui:start-wave');
+        this.events.off('ui:commander-cast');
+        
+        // Note: We don't aggressively clear GameStateManager listeners here because
+        // we didn't store the references to remove them specifically. 
+        // This is a technical debt item: GameStateManager needs a better subscription model for scenes.
     }
 
     private createPhaseControls() {
@@ -444,6 +483,14 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private setupPointerBridge() {
+        // Ensure clean slate by removing previous listeners to prevent accumulation
+        this.events.off('ui:card-drag-start');
+        this.events.off('ui:card-drag-end');
+        this.events.off('ui:card-drag');
+        this.events.off('ui:card-play');
+        this.events.off('ui:start-wave');
+        this.events.off('ui:commander-cast');
+
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handlePointerMove(pointer));
 
         this.events.on('ui:card-drag-start', (card: ICard) => {

@@ -62,6 +62,10 @@ export class HandManager {
         });
 
         inputTarget.on('dragend', (pointer: Phaser.Input.Pointer) => {
+            // Prevent duplicate firing if already handling a dragend
+            if (!this.draggingCardId) {
+                return;
+            }
             sprite.setDragHighlight(false);
             // Restore card to normal size
             this.scene.tweens.add({

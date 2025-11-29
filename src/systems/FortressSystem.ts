@@ -33,7 +33,13 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         this.cellWidth = cellWidth;
         this.cellHeight = cellHeight;
         config.cells.forEach(cell => {
-            this.cellMap.set(this.key(cell.x, cell.y), { ...cell });
+            // Ensure we start fresh by stripping persistent fields if they leaked into the config
+            this.cellMap.set(this.key(cell.x, cell.y), { 
+                ...cell,
+                occupantId: undefined,
+                occupantType: undefined,
+                enhancementLevel: 0
+            });
         });
     }
 
@@ -56,10 +62,19 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         return !!cell && cell.type === 'buildable' && !cell.occupantId;
     }
 
-    public occupyCell(x: number, y: number, occupantId: string): void {
+    public occupyCell(x: number, y: number, occupantId: string, occupantType?: string): void {
         const cell = this.getCell(x, y);
         if (!cell) return;
         cell.occupantId = occupantId;
+        cell.occupantType = occupantType;
+        cell.enhancementLevel = 0;
+    }
+
+    public enhanceCell(x: number, y: number): number {
+        const cell = this.getCell(x, y);
+        if (!cell) return 0;
+        cell.enhancementLevel = (cell.enhancementLevel || 0) + 1;
+        return cell.enhancementLevel;
     }
 
     public releaseCellByOccupant(occupantId: string): void {
@@ -68,11 +83,22 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
             if (cell.occupantId === occupantId) {
                 console.log(`[FortressSystem] Releasing cell (${cell.x}, ${cell.y}) from occupant ${occupantId}`);
                 cell.occupantId = undefined;
+                cell.occupantType = undefined;
+                cell.enhancementLevel = 0;
                 released = true;
             }
         }
         if (!released) {
             console.log(`[FortressSystem] No cell found for occupant ${occupantId}`);
+        }
+    }
+
+    public resetAllEnhancements(): void {
+        for (const cell of this.cellMap.values()) {
+            if (cell.enhancementLevel && cell.enhancementLevel > 0) {
+                console.log(`[FortressSystem] Resetting enhancement for cell (${cell.x}, ${cell.y}) from level ${cell.enhancementLevel} to 0`);
+                cell.enhancementLevel = 0;
+            }
         }
     }
 

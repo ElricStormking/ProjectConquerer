@@ -151,13 +151,17 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
      * Convert IFortressGridConfig (from CSV) to IFortressConfig (used by FortressSystem)
      */
     private convertGridConfigToFortressConfig(gridConfig: IFortressGridConfig): IFortressConfig {
+        // Must deep copy the cells array to prevent one FortressSystem instance's state
+        // (like occupancy or enhancement levels) from polluting the cached source of truth.
+        const cellsCopy = gridConfig.cells.map(cell => ({ ...cell }));
+        
         return {
             id: gridConfig.fortressId,
             name: gridConfig.name,
             factionId: gridConfig.factionId,
             gridWidth: gridConfig.gridWidth,
             gridHeight: gridConfig.gridHeight,
-            cells: gridConfig.cells,
+            cells: cellsCopy,
             maxHp: gridConfig.maxHp,
             abilities: [] // Can be extended later via CSV
         };

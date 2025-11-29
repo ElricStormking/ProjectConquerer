@@ -41,6 +41,8 @@ export interface IFortressCell {
     y: number;
     type: FortressCellType;
     occupantId?: string;
+    occupantType?: string; // The card/unit/building ID (e.g., 'card_soldier', 'cannon_tower')
+    enhancementLevel: number; // 0 to 3
 }
 
 export interface IFortressConfig {
