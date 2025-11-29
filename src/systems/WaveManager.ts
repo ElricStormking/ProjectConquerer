@@ -13,6 +13,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     private activeEnemyIds: Set<string> = new Set();
     private timers: Phaser.Time.TimerEvent[] = [];
     private readonly relicManager = RelicManager.getInstance();
+    private unitDeathHandler: (unit: any) => void;
 
     constructor(
         private scene: Phaser.Scene,
@@ -20,7 +21,9 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         private gameState: GameStateManager
     ) {
         super();
-        this.scene.events.on('unit-death', (unit: any) => {
+        
+        // Store handler reference so we can remove it later
+        this.unitDeathHandler = (unit: any) => {
             if (unit.getTeam && unit.getTeam() === 2) {
                 const unitId = unit.getId();
                 const unitType = unit.getConfig?.()?.unitType || 'unknown';
@@ -28,11 +31,27 @@ export class WaveManager extends Phaser.Events.EventEmitter {
                 this.activeEnemyIds.delete(unitId);
                 this.tryCompleteWave();
             }
-        });
+        };
+        this.scene.events.on('unit-death', this.unitDeathHandler);
+    }
+    
+    public destroy(): void {
+        this.clearTimers();
+        this.scene.events.off('unit-death', this.unitDeathHandler);
+        this.removeAllListeners();
+        this.activeEnemyIds.clear();
+        this.waves = [];
+        console.log('[WaveManager] Destroyed and cleaned up');
     }
 
     public loadWaves(waves: IWaveConfig[]): void {
+        // Reset state when loading new waves
+        this.clearTimers();
+        this.activeWaveIndex = -1;
+        this.pendingSpawnEvents = 0;
+        this.activeEnemyIds.clear();
         this.waves = waves;
+        console.log(`[WaveManager] Loaded ${waves.length} waves, state reset`);
     }
 
     public startFirstWave(): void {

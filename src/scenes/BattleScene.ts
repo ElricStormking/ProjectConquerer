@@ -50,9 +50,24 @@ export class BattleScene extends Phaser.Scene {
     private hasStartedFirstWave = false;
     private bgm?: Phaser.Sound.BaseSound;
     private medicLastHeal: Map<string, number> = new Map();
+    
+    // Scene data passed from NodeEncounterSystem
+    private encounterId: string = 'default';
+    private nodeId: string = '';
+    private nodeType: string = '';
 
     constructor() {
         super({ key: 'BattleScene' });
+    }
+
+    public init(data: { nodeId?: string; encounterId?: string; nodeType?: string }): void {
+        this.nodeId = data.nodeId ?? '';
+        this.encounterId = data.encounterId ?? 'default';
+        this.nodeType = data.nodeType ?? 'battle';
+        
+        // Reset battle state for new encounter
+        this.battleState = 'preparation';
+        this.hasStartedFirstWave = false;
     }
 
     public create() {
@@ -236,10 +251,16 @@ export class BattleScene extends Phaser.Scene {
             this.unitManager
         );
 
+        // Destroy old WaveManager if it exists to clean up event listeners
+        if (this.waveManager) {
+            this.waveManager.destroy();
+        }
+        
         this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
         
-        // Use DataManager to load waves instead of hardcoded starterData.waves
-        const waves = DataManager.getInstance().getAllWaves();
+        // Load waves for this specific encounter (battle/elite/boss node)
+        const waves = DataManager.getInstance().getWavesForEncounter(this.encounterId);
+        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, found ${waves.length} waves`);
         this.waveManager.loadWaves(waves);
 
         this.commanderSystem = new CommanderSystem(this, this.unitManager);

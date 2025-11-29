@@ -99,6 +99,7 @@ export interface IEnemySpawn {
 
 export interface IWaveConfig {
     id: string;
+    encounterId: string;  // Links to node's encounter_id for filtering waves by encounter
     index: number;
     spawns: IEnemySpawn[];
 }

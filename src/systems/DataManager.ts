@@ -27,7 +27,8 @@ export class DataManager {
     
     private units: Map<string, UnitTemplate> = new Map();
     private cards: Map<string, ICard> = new Map();
-    private waves: Map<number, IWaveConfig> = new Map();
+    // Waves grouped by encounter_id, then by wave index
+    private wavesByEncounter: Map<string, Map<number, IWaveConfig>> = new Map();
     private skills: Map<string, Omit<Skill, 'currentRank'>> = new Map();
     
     // Placeholders for future data
@@ -75,7 +76,8 @@ export class DataManager {
         this.parseFortressGridsFromCache(cache);
         
         console.log('DataManager: Parsing complete.');
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${this.waves.size} waves, ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
+        const totalWaves = Array.from(this.wavesByEncounter.values()).reduce((sum, m) => sum + m.size, 0);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
     }
 
     private parseUnits(csv: string): void {
@@ -133,21 +135,29 @@ export class DataManager {
         if (!csv) return;
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
-        // Group by wave_index (or wave_id)
-        const waveMap = new Map<number, IWaveConfig>();
+        // Group by encounter_id, then by wave_index
+        this.wavesByEncounter.clear();
 
         result.data.forEach((row: any) => {
+            const encounterId = row.encounter_id || 'default';
             const waveIndex = row.wave_index;
             
-            if (!waveMap.has(waveIndex)) {
-                waveMap.set(waveIndex, {
+            if (!this.wavesByEncounter.has(encounterId)) {
+                this.wavesByEncounter.set(encounterId, new Map());
+            }
+            
+            const encounterWaves = this.wavesByEncounter.get(encounterId)!;
+            
+            if (!encounterWaves.has(waveIndex)) {
+                encounterWaves.set(waveIndex, {
                     id: row.wave_id,
+                    encounterId: encounterId,
                     index: waveIndex,
                     spawns: []
                 });
             }
 
-            const wave = waveMap.get(waveIndex)!;
+            const wave = encounterWaves.get(waveIndex)!;
             const spawn: IEnemySpawn = {
                 unitId: row.spawn_unit_id,
                 count: row.count,
@@ -156,8 +166,6 @@ export class DataManager {
             };
             wave.spawns.push(spawn);
         });
-
-        this.waves = waveMap;
     }
 
     private parseSkills(csv: string): void {
@@ -377,12 +385,39 @@ export class DataManager {
         return Array.from(this.cards.values());
     }
 
-    public getWave(index: number): IWaveConfig | undefined {
-        return this.waves.get(index);
+    public getWave(encounterId: string, index: number): IWaveConfig | undefined {
+        const encounterWaves = this.wavesByEncounter.get(encounterId);
+        return encounterWaves?.get(index);
     }
     
+    /**
+     * Get all waves for a specific encounter (battle/elite/boss node).
+     * Falls back to 'default' encounter if the specified one doesn't exist.
+     */
+    public getWavesForEncounter(encounterId: string): IWaveConfig[] {
+        let encounterWaves = this.wavesByEncounter.get(encounterId);
+        
+        // Fallback to 'default' if encounter not found
+        if (!encounterWaves) {
+            encounterWaves = this.wavesByEncounter.get('default');
+        }
+        
+        if (!encounterWaves) {
+            return [];
+        }
+        
+        return Array.from(encounterWaves.values()).sort((a, b) => a.index - b.index);
+    }
+    
+    /**
+     * Get all waves across all encounters (for debugging/legacy support).
+     */
     public getAllWaves(): IWaveConfig[] {
-        return Array.from(this.waves.values()).sort((a, b) => a.index - b.index);
+        const allWaves: IWaveConfig[] = [];
+        this.wavesByEncounter.forEach(encounterWaves => {
+            allWaves.push(...encounterWaves.values());
+        });
+        return allWaves.sort((a, b) => a.index - b.index);
     }
 
     public getSkillTemplate(id: string): Omit<Skill, 'currentRank'> | undefined {
