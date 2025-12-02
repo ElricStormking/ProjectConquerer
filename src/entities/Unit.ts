@@ -145,9 +145,13 @@ export class Unit extends Phaser.Events.EventEmitter {
         // 96x96 sprites; render at half scale for normal units. Bosses like
         // the Raider Boss are visually scaled up to be three times larger
         // than a normal enemy.
+        // Aegis Tank uses 64x64 sprites, so scale up to match visual size
         let scale = 0.5;
         if (this.config.unitType === UnitType.RAIDER_BOSS) {
             scale *= 3;
+        } else if (this.config.unitType === UnitType.COG_AEGIS_TANK || this.config.unitType === UnitType.COG_THUNDER_CANNON || this.config.unitType === UnitType.COG_RAILGUNNER) {
+            // 64x64 sprites need larger scale to match 96x96 visual size
+            scale = 0.75; // 0.5 * (96/64) = 0.75
         }
         this.sprite.setScale(scale);
         
@@ -756,10 +760,10 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.NINJA: return 'ninja';
             case UnitType.SHOTGUNNER: return 'shotgunner';
             case UnitType.COG_SOLDIER: return 'warrior';
-            case UnitType.COG_RAILGUNNER: return 'sniper';
-            case UnitType.COG_AEGIS_TANK: return 'shotgunner';
+            case UnitType.COG_RAILGUNNER: return 'camp1_soldier3';
+            case UnitType.COG_AEGIS_TANK: return 'camp1_soldier1';
             case UnitType.COG_MEDIC_DRONE: return 'chronotemporal';
-            case UnitType.COG_THUNDER_CANNON: return 'dark_mage';
+            case UnitType.COG_THUNDER_CANNON: return 'camp1_soldier2';
             case UnitType.RAIDER_GRUNT: return 'warrior';
             case UnitType.RAIDER_BOMBER: return 'shotgunner';
             case UnitType.RAIDER_BOSS: return 'shotgunner';

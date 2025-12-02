@@ -75,7 +75,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('fortress_grid_sanctum_order_01_meta', 'data/fortress_grids/fortress_sanctum_order_01.csv');
         this.load.text('fortress_grid_sanctum_order_01_tilemap', 'data/fortress_grids/fortress_sanctum_order_01_grid.csv');
 
-        // Load character spritesheets with full frame dimensions (96x96 for complete character)
+        // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
         
         // Fortress images
@@ -100,23 +100,33 @@ export class PreloadScene extends Phaser.Scene {
         this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
         // Prototype background music
         this.load.audio('bgm_dragonbattle', 'assets/audio/bgm/bgm_01_dragonbattle.mp3');
-        this.load.spritesheet('chronotemporal', 'assets/characters/Chronotemporal.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('chronotemporal_anim', 'assets/characters/Chronotemporal.json');
+        this.load.spritesheet('chronotemporal', 'assets/units/Chronotemporal.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('chronotemporal_anim', 'assets/units/Chronotemporal.json');
         
-        this.load.spritesheet('sniper', 'assets/characters/Sniper.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('sniper_anim', 'assets/characters/Sniper.json');
+        this.load.spritesheet('sniper', 'assets/units/Sniper.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('sniper_anim', 'assets/units/Sniper.json');
         
-        this.load.spritesheet('dark_mage', 'assets/characters/Dark Mage.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('dark_mage_anim', 'assets/characters/Dark Mage.json');
+        this.load.spritesheet('dark_mage', 'assets/units/Dark Mage.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('dark_mage_anim', 'assets/units/Dark Mage.json');
         
-        this.load.spritesheet('warrior', 'assets/characters/warrior.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('warrior_anim', 'assets/characters/warrior.json');
+        this.load.spritesheet('warrior', 'assets/units/warrior.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('warrior_anim', 'assets/units/warrior.json');
         
-        this.load.spritesheet('ninja', 'assets/characters/ninja.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('ninja_anim', 'assets/characters/ninja.json');
+        this.load.spritesheet('ninja', 'assets/units/ninja.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('ninja_anim', 'assets/units/ninja.json');
         
-        this.load.spritesheet('shotgunner', 'assets/characters/Shotgunner.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('shotgunner_anim', 'assets/characters/Shotgunner.json');
+        this.load.spritesheet('shotgunner', 'assets/units/Shotgunner.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('shotgunner_anim', 'assets/units/Shotgunner.json');
+        
+        // Cog Dominion units
+        this.load.spritesheet('camp1_soldier1', 'assets/units/Cog_Dominion/cog_aegis_tank/camp1_soldier1.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('camp1_soldier1_anim', 'assets/units/Cog_Dominion/cog_aegis_tank/camp1_soldier1_an.json');
+        
+        this.load.spritesheet('camp1_soldier2', 'assets/units/Cog_Dominion/cog_thunder_mage/camp1_soldier2.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('camp1_soldier2_anim', 'assets/units/Cog_Dominion/cog_thunder_mage/camp1_soldier2_an.json');
+        
+        this.load.spritesheet('camp1_soldier3', 'assets/units/Cog_Dominion/cog_railgunner/camp1_soldier3.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('camp1_soldier3_anim', 'assets/units/Cog_Dominion/cog_railgunner/camp1_soldier3_an.json');
     }
 
     create() {
