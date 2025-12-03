@@ -134,8 +134,9 @@ High mobility, assassination, clone disruption, crit stacking.
 
 # ## **UNIT CARDS (12)**
 
-### **1. Azure Spear Adept – Cost 2**
+### **1. Azure Spear Chargers – Cost 2**
 - Long reach melee  
+- First attack Stun
 - Every 3 attacks → 0.3s mini-stun  
 - On kill → +1 Chi Flow  
 
@@ -154,14 +155,14 @@ High mobility, assassination, clone disruption, crit stacking.
 
 ---
 
-### **4. Daggerwind Kunoichi – Cost 2**
+### **4. Shuriken Ninjas – Cost 2**
 - Ranged daggers  
 - Crits cause “Bleeding Chi” slow  
 - Gains stealth after kill  
 
 ---
 
-### **5. Shadowblade Adept – Cost 3**
+### **5. Shadowblade Assassins – Cost 3**
 - Stealth assassin  
 - First hit = crit + 0.5s stun  
 - Re-stealth on kill (ICD)
@@ -175,7 +176,7 @@ High mobility, assassination, clone disruption, crit stacking.
 
 ---
 
-### **7. Spirit Charm Gunners – Cost 3**
+### **7. Repeating Crossbow Gunners – Cost 3**
 - Ranged support  
 - Applies +15% vuln  
 - Small AoE slow every 5 hits  
@@ -218,67 +219,29 @@ High mobility, assassination, clone disruption, crit stacking.
 
 # ## **SPELL CARDS (10)**
 
-### **1. Chi Palm Strike – Cost 2**
+### **1. Expansion Slots – Cost 2**
 - Single target stun (1.2s)  
 - Optional Chi Flow spend = scaling DMG  
 
 ---
 
-### **2. Dragon Wave – Cost 3**
+### **2. Move the Units or Building – Cost 3**
 - Long-line AoE  
 - 0.75s stun  
 - +30% dmg vs slowed enemies  
 
 ---
 
-### **3. Mirage Step – Cost 2**
+### **3. Resource Gathering – Cost 3***
 - Teleport ninja ally  
 - Leaves clone that taunts  
 
 ---
 
-### **4. Jade Earthquake – Cost 4**
+### **4. Destroy To Improve Surrounding – Cost 4**
 - Large AoE  
 - 0.5s stun  
 - Knockback 2 tiles  
-
----
-
-### **5. Chi Burst – Cost 2**
-- Circular AoE  
-- +1 Chi Flow per enemy hit (max 5)  
-
----
-
-### **6. Spirit Bind – Cost 2**
-- Roots enemies 2s  
-- Rooted enemies that die → spawn Paper Doll  
-
----
-
-### **7. Crescent Rend – Cost 3**
-- Arc spear strike  
-- Stuns shielded enemies 1.5s  
-- Breaks barriers  
-
----
-
-### **8. Shuriken Storm – Cost 2**
-- Cone barrage  
-- Crit vulnerability debuff  
-- Stacking slow  
-
----
-
-### **9. Talisman Purge – Cost 1**
-- Cleanse allies  
-- Silences nearby enemies 0.6s  
-
----
-
-### **10. Ki Reversal Seal – Cost 3**
-- Reflect next 3 melee attacks  
-- Reflected hits apply mini-stun  
 
 ---
 
