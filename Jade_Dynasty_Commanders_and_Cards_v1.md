@@ -149,7 +149,7 @@ High mobility, assassination, clone disruption, crit stacking.
 
 ---
 
-### **3. Twin-Blade Storm Monks – Cost 3**
+### **3. Twin-Storm Monks – Cost 3**
 - Fast melee combo  
 - If 2 monks hit same target in 0.4s → **1s stun**
 
