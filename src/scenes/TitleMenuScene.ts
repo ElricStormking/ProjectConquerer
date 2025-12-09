@@ -35,39 +35,16 @@ export class TitleMenuScene extends Phaser.Scene {
     }
 
     private createBackground(width: number, height: number): void {
-        // Dark gradient background
-        const bg = this.add.graphics();
-        bg.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x1a1d2e, 0x1a1d2e, 1);
-        bg.fillRect(0, 0, width, height);
-        
-        // Decorative lines
-        const lines = this.add.graphics();
-        lines.lineStyle(1, 0x3d4663, 0.3);
-        for (let i = 0; i < 20; i++) {
-            const y = 50 + i * 60;
-            lines.lineBetween(0, y, width, y);
+        const key = this.textures.exists('title_bg') ? 'title_bg' : undefined;
+        if (key) {
+            const bgImage = this.add.image(width / 2, height / 2, key);
+            bgImage.setDisplaySize(width, height);
+        } else {
+            // Fallback gradient if image missing
+            const bg = this.add.graphics();
+            bg.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x1a1d2e, 0x1a1d2e, 1);
+            bg.fillRect(0, 0, width, height);
         }
-        
-        // Corner embellishments
-        const cornerSize = 150;
-        const corners = this.add.graphics();
-        corners.lineStyle(2, 0xd4a017, 0.6);
-        
-        // Top left
-        corners.lineBetween(0, cornerSize, 0, 0);
-        corners.lineBetween(0, 0, cornerSize, 0);
-        
-        // Top right
-        corners.lineBetween(width - cornerSize, 0, width, 0);
-        corners.lineBetween(width, 0, width, cornerSize);
-        
-        // Bottom left
-        corners.lineBetween(0, height - cornerSize, 0, height);
-        corners.lineBetween(0, height, cornerSize, height);
-        
-        // Bottom right
-        corners.lineBetween(width - cornerSize, height, width, height);
-        corners.lineBetween(width, height - cornerSize, width, height);
     }
 
     private createTitle(width: number): void {

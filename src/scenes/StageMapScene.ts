@@ -316,8 +316,16 @@ export class StageMapScene extends Phaser.Scene {
         this.cameras.main.fadeIn(300, 0, 0, 0);
         this.stageDecor = this.add.container(0, 0);
         this.stageDecor.setDepth(0);
-        const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
-        this.stageDecor.add(bg);
+        const bgKey = stage.backgroundKey || 'stage_default';
+        if (this.textures.exists(bgKey)) {
+            const bgImage = this.add.image(MAP_WIDTH / 2, MAP_HEIGHT / 2, bgKey);
+            bgImage.setDisplaySize(MAP_WIDTH, MAP_HEIGHT);
+            bgImage.setDepth(0);
+            this.stageDecor.add(bgImage);
+        } else {
+            const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
+            this.stageDecor.add(bg);
+        }
         const title = this.add.text(MAP_WIDTH / 2, 80, stage.name, {
             fontSize: '48px',
             color: '#f0dba5',

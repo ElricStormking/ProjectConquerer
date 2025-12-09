@@ -139,7 +139,14 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private createEnvironment() {
-        const bg = this.add.image(960, 540, 'world_bg');
+        // Pick battle background based on current stage (stage 1 uses Jade map)
+        const runManager = RunProgressionManager.getInstance();
+        const stageIndex = runManager.getRunState()?.currentStageIndex ?? 0;
+        let bgKey = 'world_bg';
+        if (stageIndex === 0 && this.textures.exists('battle_bg_stage_1')) {
+            bgKey = 'battle_bg_stage_1';
+        }
+        const bg = this.add.image(960, 540, bgKey);
         bg.setDepth(-10000);
         bg.setDisplaySize(1920, 1080);
 
