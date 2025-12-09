@@ -75,7 +75,8 @@ export class TitleMenuScene extends Phaser.Scene {
     }
 
     private createMenu(width: number, height: number): void {
-        this.menuContainer = this.add.container(width / 2, height / 2 + 80);
+        // Move the buttons down to avoid blocking center artwork
+        this.menuContainer = this.add.container(width / 2, height / 2 + 230);
         
         const buttonConfigs = [
             { label: 'New Game', callback: () => this.onNewGame() },
