@@ -604,7 +604,7 @@ export class BattleScene extends Phaser.Scene {
         fortress.setDepth(-500);
         
         this.fortressImage = fortress;
-        console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${targetScale.toFixed(2)}`);
+        console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${baseScale.toFixed(2)}`);
     }
 
     private createFortressCorePlaceholder() {
