@@ -446,6 +446,8 @@ export class StageMapScene extends Phaser.Scene {
     private moveFortressToken(node?: IMapNode): void {
         if (!node) return;
         const position = this.normalizeToPixels(node);
+        // Lift the fortress token above the node so it doesn't block the node visuals.
+        const tokenY = position.y - 100;
         if (!this.fortressToken) {
             // Get the player's current fortress image key
             const runState = this.runManager.getRunState();
@@ -455,12 +457,12 @@ export class StageMapScene extends Phaser.Scene {
             
             // Create fortress image as the map token
             if (this.textures.exists(imageKey)) {
-                this.fortressToken = this.add.image(position.x, position.y, imageKey);
+                this.fortressToken = this.add.image(position.x, tokenY, imageKey);
                 this.fortressToken.setScale(0.12); // Scale down for map display
                 this.fortressToken.setDepth(10);
             } else {
                 // Fallback to a simple circle if image not found
-                const fallback = this.add.ellipse(position.x, position.y, 28, 28, 0xf0f4ff, 1);
+                const fallback = this.add.ellipse(position.x, tokenY, 28, 28, 0xf0f4ff, 1);
                 fallback.setStrokeStyle(4, 0x1d9bf0);
                 fallback.setDepth(10);
                 this.fortressToken = fallback as unknown as Phaser.GameObjects.Image;
@@ -469,7 +471,7 @@ export class StageMapScene extends Phaser.Scene {
         this.tweens.add({
             targets: this.fortressToken,
             x: position.x,
-            y: position.y,
+            y: tokenY,
             duration: 450,
             ease: 'Sine.easeInOut'
         });
