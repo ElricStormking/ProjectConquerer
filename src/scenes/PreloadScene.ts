@@ -79,7 +79,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('world_bg', 'assets/gamemap_01.png');
         
         // Fortress images
-        this.load.image('fortress_sanctum_order_01', 'assets/fortress/Fortress_Sanctum_Order_01.png');
+        // Swap default testing fortress art to the new Jade Dynasty fortress graphic
+        this.load.image('fortress_sanctum_order_01', 'assets/fortress/fortress_jade_dynasty_01.png');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');
