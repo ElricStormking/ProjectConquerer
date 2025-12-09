@@ -195,9 +195,9 @@ export class BattleScene extends Phaser.Scene {
         this.gameState.initialize(this.starterData, 10, 40);
 
         // Get fortress config from FactionRegistry (uses DataManager CSV grids if available)
-        // Default to Sanctum Order fortress for testing
+        // Default to Jade Dynasty fortress for testing
         const factionRegistry = FactionRegistry.getInstance();
-        const testFortressId = 'fortress_sanctum_order_01';
+        const testFortressId = 'jade_palace';
         let fortressConfig = factionRegistry.getFortressConfig(testFortressId);
         
         // Fallback to starterData if no CSV fortress found

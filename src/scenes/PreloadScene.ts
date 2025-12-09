@@ -81,16 +81,11 @@ export class PreloadScene extends Phaser.Scene {
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         
-        // Fortress grid CSVs (metadata + tilemap pairs)
-        this.load.text('fortress_grid_sanctum_order_01_meta', 'data/fortress_grids/fortress_sanctum_order_01.csv');
-        this.load.text('fortress_grid_sanctum_order_01_tilemap', 'data/fortress_grids/fortress_sanctum_order_01_grid.csv');
-
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
         
-        // Fortress images
-        // Swap default testing fortress art to the new Jade Dynasty fortress graphic
-        this.load.image('fortress_sanctum_order_01', 'assets/fortress/fortress_jade_dynasty_01.png');
+        // Fortress images (use Jade Dynasty as default test fortress art)
+        this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

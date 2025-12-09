@@ -451,9 +451,9 @@ export class StageMapScene extends Phaser.Scene {
         if (!this.fortressToken) {
             // Get the player's current fortress image key
             const runState = this.runManager.getRunState();
-            const factionId = runState?.factionId ?? 'sanctum_order';
+            const factionId = runState?.factionId ?? 'cog_dominion';
             const gridConfig = this.factionRegistry.getFortressGridConfig(`fortress_${factionId}_01`);
-            const imageKey = gridConfig?.imageKey ?? 'fortress_sanctum_order_01';
+            const imageKey = gridConfig?.imageKey ?? 'fortress_jade_dynasty_01';
             
             // Create fortress image as the map token
             if (this.textures.exists(imageKey)) {

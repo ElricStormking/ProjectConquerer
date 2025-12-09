@@ -42,15 +42,6 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         maxHp: 450,
         abilities: ['chi_barrier', 'inner_peace']
     },
-    ember_forge: {
-        id: 'ember_forge',
-        name: 'Ember Forge',
-        factionId: 'ember_court',
-        gridWidth: 5,
-        gridHeight: 5,
-        maxHp: 480,
-        abilities: ['heat_vent', 'flame_wall']
-    },
     virel_bastion: {
         id: 'virel_bastion',
         name: 'Virel Bastion',
@@ -60,15 +51,6 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         maxHp: 550,
         abilities: ['tactical_regroup', 'fortified_position']
     },
-    sanctum_cathedral: {
-        id: 'sanctum_cathedral',
-        name: 'Sanctum Cathedral',
-        factionId: 'sanctum_order',
-        gridWidth: 5,
-        gridHeight: 5,
-        maxHp: 520,
-        abilities: ['divine_shield', 'mass_heal']
-    },
     grove_heart: {
         id: 'grove_heart',
         name: 'Grove Heart',
@@ -77,15 +59,6 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         gridHeight: 6,
         maxHp: 600,
         abilities: ['regeneration', 'root_bind']
-    },
-    arcane_spire: {
-        id: 'arcane_spire',
-        name: 'Arcane Spire',
-        factionId: 'aetherion_arcana',
-        gridWidth: 4,
-        gridHeight: 6,
-        maxHp: 400,
-        abilities: ['mana_burst', 'arcane_shield']
     },
     frost_citadel: {
         id: 'frost_citadel',
@@ -189,11 +162,8 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
         const colors: Record<string, number> = {
             cog_dominion: 0xd4a017,      // Gold/brass
             jade_dynasty: 0x2ecc71,       // Jade green
-            ember_court: 0xe74c3c,        // Ember red
             republic_virel: 0x3498db,     // Steel blue
-            sanctum_order: 0xf1c40f,      // Holy gold
             verdant_covenant: 0x27ae60,   // Forest green
-            aetherion_arcana: 0x9b59b6,   // Arcane purple
             frost_clan: 0x74b9ff,         // Ice blue
             bloodfang_warborn: 0xc0392b   // Blood red
         };

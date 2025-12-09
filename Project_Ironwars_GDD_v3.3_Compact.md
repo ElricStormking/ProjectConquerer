@@ -115,9 +115,7 @@ A fortress defines:
 
 Examples:
 - **Cog Dominion:** Iron Syndicate Citadel (industrial mech-city)
-- **Ember Court:** Flame Titan (walking volcano)
 - **Jade Dynasty:** Jade Dragon Caravan Fortress
-- **Aetherion Arcana:** Sky Citadel (floating fortress)
 - **Eternal Frost Clan:** Frozen Sepulcher (necropolis glacier)
 - **Bloodfang Warborn:** Maw of the Moon (bone-totem ritual camp)
 - etc.
@@ -131,12 +129,9 @@ Player unlocks new fortress layouts via progression.
 | Faction | Fantasy Theme | Resource | Playstyle |
 |--------|---------------|----------|-----------|
 | **Cog Dominion** | Greedy industrial alliance of humans/goblins/dwarves | Profit | Mechs, economy, flexible builds |
-| **Ember Court** | Dwarven fire empire on a Flame Titan | Heat & Pressure | Fire AoE, tanks |
 | **Republic of Virel** | Gunpowder tacticians | Tactical Orders | Reliable ranged precision |
 | **Jade Dynasty** | Eastern Chi-Tech monks & ninjas | Chi Flow | Fast, reactive counterplay |
-| **Sanctum Order** | Holy templars, zealots, radiant machines | Faith | Shields, healing |
 | **Verdant Covenant** | Nature, elves, druids, treants | Lifeforce | Regrowth, battlefield control |
-| **Aetherion Arcana** | Arcane sky mages, lightning constructs | Aetherstorm | Flying units, AoE spells |
 | **Eternal Frost Clan** | Vampire-lich king & undead ice swarm | Soulfrost | Mind control, freezes, undead |
 | **Bloodfang Warborn** | Barbarian werewolves & shamans | Blood Frenzy | Aggressive melee burst |
 
@@ -191,11 +186,8 @@ Wave elements:
 
 ### Faction Resources:
 - Profit (Cog Dominion)  
-- Heat & Pressure (Ember Court)  
 - Chi Flow (Jade Dynasty)  
-- Faith (Sanctum Order)  
 - Lifeforce (Verdant Covenant)  
-- Aetherstorm (Aetherion Arcana)  
 - Soulfrost (Eternal Frost)  
 - Blood Frenzy (Bloodfang Warborn)
 

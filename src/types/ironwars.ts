@@ -2,11 +2,8 @@ export enum ResourceType {
     GOLD = 'gold',
     PROFIT = 'profit',
     CHI_FLOW = 'chi_flow',
-    HEAT = 'heat',
     TACTICAL_ORDERS = 'tactical_orders',
-    FAITH = 'faith',
     LIFEFORCE = 'lifeforce',
-    AETHERSTORM = 'aetherstorm',
     SOULFROST = 'soulfrost',
     BLOOD_FRENZY = 'blood_frenzy'
 }
