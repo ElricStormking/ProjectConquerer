@@ -86,6 +86,8 @@ export class PreloadScene extends Phaser.Scene {
         
         // Fortress images (use Jade Dynasty as default test fortress art)
         this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
+        // Alias for jade_palace fortress id to avoid missing texture
+        this.load.image('jade_palace', 'assets/fortress/fortress_jade_dynasty_01.png');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

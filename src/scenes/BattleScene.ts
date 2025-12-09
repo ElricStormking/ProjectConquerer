@@ -230,7 +230,9 @@ export class BattleScene extends Phaser.Scene {
         this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
         
         // Create fortress image behind the grid (needs fortressCoreWorld to be set)
-        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth);
+        // Fallback to loaded jade fortress art if no imageKey is present.
+        const fortressImageKey = gridConfig?.imageKey ?? 'fortress_jade_dynasty_01';
+        this.createFortressImage(fortressImageKey, fortressConfig.gridWidth);
         
         this.createFortressCorePlaceholder();
 
