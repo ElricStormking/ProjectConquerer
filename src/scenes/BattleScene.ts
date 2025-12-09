@@ -586,22 +586,18 @@ export class BattleScene extends Phaser.Scene {
         const coreX = this.fortressCoreWorld.x;
         const coreY = this.fortressCoreWorld.y;
 
-        // Nudge the art upward so the fortress floor lines up with the grid
-        const verticalOffset = -320;
-        const horizontalOffset = -60; // shift left to match grid alignment
-        const fortress = this.add.image(coreX + horizontalOffset, coreY + verticalOffset, imageKey);
+        const fortress = this.add.image(coreX, coreY, imageKey);
         
         // Position the fortress so the grid appears on top of it
-        // Origin at center horizontally, and about 30% down (top surface center)
-        fortress.setOrigin(0.5, 0.3);
-        
-        // Scale the fortress to match the grid size
-        // For isometric diamond grid, the visual width spans gridWidth cells diagonally
-        const { width: cellWidth } = this.fortressSystem.getCellDimensions();
+        // Origin at center horizontally, and about 40% down (top surface center)
+        const { width: cellWidth, height: cellHeight } = this.fortressSystem.getCellDimensions();
         const gridVisualWidth = gridWidth * cellWidth;
-        // Existing scale boosted by 1.5x to make the fortress visually larger
-        const targetScale = gridVisualWidth / fortress.width * 1.3;
-        fortress.setScale(targetScale * 1.25);
+        const baseScale = gridVisualWidth / fortress.width * 1.3;
+        
+        // Restore previous size and slight downward placement relative to the grid center
+        fortress.setOrigin(0.5, 0.4);
+        fortress.y = coreY + cellHeight * 0.2;
+        fortress.setScale(baseScale);
 
         // Place behind the grid graphics but in front of background
         // Use a depth that's below the grid lines but above world background
