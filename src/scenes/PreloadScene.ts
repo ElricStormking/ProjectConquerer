@@ -73,6 +73,8 @@ export class PreloadScene extends Phaser.Scene {
         
         // Title screen
         this.load.image('title_bg', 'assets/ui/ui_title_menu/TitleScreen.png');
+        this.load.image('ui_button_on', 'assets/ui/ui_title_menu/button_on.png');
+        this.load.image('ui_button_off', 'assets/ui/ui_title_menu/button_off.png');
 
         // Stage maps (world map backgrounds)
         this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png');

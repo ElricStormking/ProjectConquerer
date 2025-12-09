@@ -103,18 +103,10 @@ export class TitleMenuScene extends Phaser.Scene {
         disabled = false
     ): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
-        
-        // Button background
-        const bg = this.add.graphics();
-        const bgColor = disabled ? 0x2a2d3a : 0x3d4663;
-        const borderColor = disabled ? 0x4a4d5a : 0xd4a017;
-        
-        bg.fillStyle(bgColor, 0.9);
-        bg.fillRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                           MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
-        bg.lineStyle(2, borderColor, 1);
-        bg.strokeRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                             MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
+
+        // Button background using provided frame art
+        const bg = this.add.image(0, 0, 'ui_button_off');
+        bg.setDisplaySize(MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT);
         container.add(bg);
         
         // Button text
@@ -128,31 +120,15 @@ export class TitleMenuScene extends Phaser.Scene {
         
         // Make interactive if not disabled
         if (!disabled) {
-            // Interactive on the background graphics instead of the container
-            bg.setInteractive(
-                new Phaser.Geom.Rectangle(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT),
-                Phaser.Geom.Rectangle.Contains
-            );
+            bg.setInteractive({ useHandCursor: true });
             
             bg.on('pointerover', () => {
-                bg.clear();
-                bg.fillStyle(0x4d5673, 0.95);
-                bg.fillRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                                   MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
-                bg.lineStyle(3, 0xf0dba5, 1);
-                bg.strokeRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                                     MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
+                bg.setTexture('ui_button_on');
                 container.setScale(1.05);
             });
             
             bg.on('pointerout', () => {
-                bg.clear();
-                bg.fillStyle(bgColor, 0.9);
-                bg.fillRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                                   MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
-                bg.lineStyle(2, borderColor, 1);
-                bg.strokeRoundedRect(-MENU_BUTTON_WIDTH / 2, -MENU_BUTTON_HEIGHT / 2, 
-                                     MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, 8);
+                bg.setTexture('ui_button_off');
                 container.setScale(1);
             });
             
@@ -164,6 +140,8 @@ export class TitleMenuScene extends Phaser.Scene {
                 container.setScale(1.05);
                 callback();
             });
+        } else {
+            container.setAlpha(0.6);
         }
         
         return container;
