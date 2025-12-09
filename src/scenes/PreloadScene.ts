@@ -71,6 +71,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('factions_data', 'data/factions.csv');
         this.load.text('commanders_data', 'data/commanders.csv');
         
+        // Fortress grid CSVs (metadata + tilemap pairs)
+        this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');
+        this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv');
+
         // Title screen
         this.load.image('title_bg', 'assets/ui/ui_title_menu/TitleScreen.png');
         this.load.image('ui_button_on', 'assets/ui/ui_title_menu/button_on.png');
