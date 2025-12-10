@@ -45,9 +45,11 @@ export class BattleScene extends Phaser.Scene {
     private fortressCoreGraphic?: Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
     private startButton!: Phaser.GameObjects.Container;
     private startButtonLabel!: Phaser.GameObjects.Text;
+    private startButtonBg?: Phaser.GameObjects.Rectangle;
     private overlayContainer?: Phaser.GameObjects.Container;
     private battleState: 'preparation' | 'running' | 'victory' | 'defeat' = 'preparation';
     private hasStartedFirstWave = false;
+    private waveIntermissionCameraLock = false;
     private bgm?: Phaser.Sound.BaseSound;
     private medicLastHeal: Map<string, number> = new Map();
     
@@ -58,6 +60,51 @@ export class BattleScene extends Phaser.Scene {
 
     constructor() {
         super({ key: 'BattleScene' });
+    }
+
+    /**
+     * Simple modal shown between waves. Blocks input until player clicks to continue.
+     */
+    private showWaveClearedOverlay(onContinue: () => void): void {
+        const { width, height } = this.cameras.main;
+        const container = this.add.container(width / 2, height / 2);
+        container.setDepth(12000);
+
+        // Hide and disable the start button while the intermission UI is active.
+        this.startButton?.setVisible(false);
+        this.startButtonBg?.disableInteractive();
+        this.waveIntermissionCameraLock = true;
+
+        const bg = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0.5);
+        bg.setInteractive();
+
+        const panel = this.add.rectangle(0, 0, 520, 220, 0x1a1d2e, 0.92).setOrigin(0.5);
+        panel.setStrokeStyle(3, 0xd4a017, 0.9);
+
+        const title = this.add.text(0, -40, 'Wave Cleared!', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '40px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const subtitle = this.add.text(0, 20, 'Click to continue', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '20px',
+            color: '#c0c0c0'
+        }).setOrigin(0.5);
+
+        container.add([bg, panel, title, subtitle]);
+
+        const proceed = () => {
+            container.destroy();
+            onContinue();
+        };
+
+        bg.on('pointerup', proceed);
+        panel.on('pointerup', proceed);
+        title.on('pointerup', proceed);
+        subtitle.on('pointerup', proceed);
     }
 
     public init(data: { nodeId?: string; encounterId?: string; nodeType?: string }): void {
@@ -197,7 +244,7 @@ export class BattleScene extends Phaser.Scene {
         // Get fortress config from FactionRegistry (uses DataManager CSV grids if available)
         // Default to Jade Dynasty fortress for testing
         const factionRegistry = FactionRegistry.getInstance();
-        const testFortressId = 'jade_palace';
+        const testFortressId = 'fortress_jade_dynasty_01';
         let fortressConfig = factionRegistry.getFortressConfig(testFortressId);
         
         // Fallback to starterData if no CSV fortress found
@@ -230,9 +277,7 @@ export class BattleScene extends Phaser.Scene {
         this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
         
         // Create fortress image behind the grid (needs fortressCoreWorld to be set)
-        // Fallback to loaded jade fortress art if no imageKey is present.
-        const fortressImageKey = gridConfig?.imageKey ?? 'fortress_jade_dynasty_01';
-        this.createFortressImage(fortressImageKey, fortressConfig.gridWidth);
+        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth);
         
         this.createFortressCorePlaceholder();
 
@@ -366,6 +411,7 @@ export class BattleScene extends Phaser.Scene {
                 // Between waves, return to a full building phase so the
                 // player can adjust their fortress and play additional
                 // cards before the next fight.
+                this.waveIntermissionCameraLock = true; // keep camera at center until reward is done
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
                 this.resetAlliedUnitsToSpawnPositions();
@@ -378,8 +424,12 @@ export class BattleScene extends Phaser.Scene {
                 this.gameState.gainResource(totalIncome);
                 console.log(`[BattleScene] Granted ${totalIncome} resources (wave ${currentWave})`);
                 
-                // Between waves: offer a card reward drawn from the current deck
-                this.showCardRewardScreen();
+                // Hide start button while the victory UI is up
+                this.hideStartButton();
+                // Between waves: show a Wave Cleared overlay before offering card reward
+                this.showWaveClearedOverlay(() => {
+                    this.showCardRewardScreen();
+                });
             } else {
                 console.log('[BattleScene] No more waves, triggering victory');
                 this.handleVictory();
@@ -388,6 +438,15 @@ export class BattleScene extends Phaser.Scene {
 
         this.commanderSystem.on('skill-cast', (payload: { cooldown: number; lastCast: number }) => {
             this.events.emit('commander-cast', payload);
+        });
+
+        this.gameState.on('phase-changed', (phase: BattlePhase) => {
+            // Only show/enable the start button in PREPARATION and when not locked by intermission
+            if (phase === 'PREPARATION' && !this.waveIntermissionCameraLock) {
+                this.showStartButton(this.hasStartedFirstWave ? 'Start Next Wave' : 'Start Battle');
+            } else {
+                this.hideStartButton();
+            }
         });
     }
 
@@ -432,15 +491,30 @@ export class BattleScene extends Phaser.Scene {
         background.on('pointerdown', () => this.tryStartWave());
         this.startButton = container;
         this.startButtonLabel = label;
+        this.startButtonBg = background;
     }
 
     private showStartButton(text: string) {
+        // Only during preparation and not during intermission lock
+        if (this.waveIntermissionCameraLock || this.gameState.getState().phase !== 'PREPARATION') {
+            this.hideStartButton();
+            return;
+        }
         this.startButtonLabel.setText(text);
         this.startButton.setVisible(true);
+        if (this.gameState.getState().phase === 'PREPARATION') {
+            this.startButtonBg?.setInteractive(
+                new Phaser.Geom.Rectangle(-130, -33, 260, 66),
+                Phaser.Geom.Rectangle.Contains
+            );
+        } else {
+            this.startButtonBg?.disableInteractive();
+        }
     }
 
     private hideStartButton() {
         this.startButton.setVisible(false);
+        this.startButtonBg?.disableInteractive();
     }
 
     private showCardRewardScreen(): void {
@@ -471,10 +545,16 @@ export class BattleScene extends Phaser.Scene {
             this.scene.stop('CardRewardScene');
 
             this.showStartButton('Start Next Wave');
+            // Release camera lock and return to fortress view
+            this.waveIntermissionCameraLock = false;
+            this.updateCameraForPhase('PREPARATION');
         });
     }
 
     private tryStartWave() {
+        if (this.waveIntermissionCameraLock) {
+            return;
+        }
         if (this.battleState === 'running') {
             return;
         }
@@ -586,25 +666,29 @@ export class BattleScene extends Phaser.Scene {
         const coreX = this.fortressCoreWorld.x;
         const coreY = this.fortressCoreWorld.y;
 
-        const fortress = this.add.image(coreX, coreY, imageKey);
+        // Nudge the art upward so the fortress floor lines up with the grid
+        const verticalOffset = -320;
+        const horizontalOffset = -60; // shift left to match grid alignment
+        const fortress = this.add.image(coreX + horizontalOffset, coreY + verticalOffset, imageKey);
         
         // Position the fortress so the grid appears on top of it
-        // Origin at center horizontally, and about 40% down (top surface center)
-        const { width: cellWidth, height: cellHeight } = this.fortressSystem.getCellDimensions();
-        const gridVisualWidth = gridWidth * cellWidth;
-        const baseScale = gridVisualWidth / fortress.width * 1.3;
+        // Origin at center horizontally, and about 30% down (top surface center)
+        fortress.setOrigin(0.5, 0.3);
         
-        // Restore previous size and slight downward placement relative to the grid center
-        fortress.setOrigin(0.5, 0.4);
-        fortress.y = coreY + cellHeight * 0.2;
-        fortress.setScale(baseScale);
+        // Scale the fortress to match the grid size
+        // For isometric diamond grid, the visual width spans gridWidth cells diagonally
+        const { width: cellWidth } = this.fortressSystem.getCellDimensions();
+        const gridVisualWidth = gridWidth * cellWidth;
+        // Existing scale boosted by 1.5x to make the fortress visually larger
+        const targetScale = gridVisualWidth / fortress.width * 1.3;
+        fortress.setScale(targetScale * 1.25);
 
         // Place behind the grid graphics but in front of background
         // Use a depth that's below the grid lines but above world background
         fortress.setDepth(-500);
         
         this.fortressImage = fortress;
-        console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${baseScale.toFixed(2)}`);
+        console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${targetScale.toFixed(2)}`);
     }
 
     private createFortressCorePlaceholder() {
@@ -664,6 +748,10 @@ export class BattleScene extends Phaser.Scene {
         const camera = this.cameras.main;
         const duration = 600;
 
+        if (this.waveIntermissionCameraLock) {
+            // Keep camera steady during wave-cleared reward flow
+            return;
+        }
         if (phase === 'PREPARATION') {
             // Zoom in and center on the player's fortress grid (building phase),
             // so the spawn diamonds sit in the middle of the screen.

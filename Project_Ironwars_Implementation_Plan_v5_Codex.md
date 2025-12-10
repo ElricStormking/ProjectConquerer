@@ -69,11 +69,8 @@ export enum ResourceType {
   GOLD = 'gold',
   PROFIT = 'profit',  // Cog Dominion
   CHI_FLOW = 'chi_flow',  // Jade Dynasty
-  HEAT = 'heat',  // Ember Court
   TACTICAL_ORDERS = 'tactical_orders',  // Republic of Virel
-  FAITH = 'faith',  // Sanctum Order
   LIFEFORCE = 'lifeforce',  // Verdant Covenant
-  AETHERSTORM = 'aetherstorm',  // Aetherion Arcana
   SOULFROST = 'soulfrost',  // Eternal Frost Clan
   BLOOD_FRENZY = 'blood_frenzy'  // Bloodfang Warborn
 }
@@ -391,7 +388,7 @@ export interface ICommanderConfig {
   - Options → Volume controls modal
   - Exit → Thank you message
 - ✅ **Faction Selection**: `src/scenes/FactionSelectionScene.ts`
-  - Horizontal carousel for 9 factions
+  - Horizontal carousel for 6 factions
   - Each panel shows: faction emblem, fortress preview, starting commander, sample cards
   - Navigation arrows and "Select Faction" button
 - ✅ **Deck Building System**: `src/scenes/DeckBuildingScene.ts`
@@ -405,8 +402,8 @@ export interface ICommanderConfig {
   - Meta-progression tracking (unlocked commanders, relics)
   - Auto-save on state changes
 - ✅ **9 Factions Data**: `public/data/factions.csv` and `public/data/commanders.csv`
-  - Cog Dominion, Jade Dynasty, Ember Court, Republic of Virel
-  - Sanctum Order, Verdant Covenant, Aetherion Arcana
+  - Cog Dominion, Jade Dynasty, Republic of Virel
+  - Verdant Covenant, Eternal Frost Clan, Bloodfang Warborn
   - Eternal Frost Clan, Bloodfang Warborn
   - Each with unique resource type, fortress, and starting commander
 - ✅ **Commander System**: `src/systems/CommanderManager.ts` + `src/systems/FactionRegistry.ts`

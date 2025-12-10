@@ -14,6 +14,7 @@ const CARDS_PER_ROW = 6;
 interface DeckBuildingSceneData {
     factionId?: string;
     isNewRun?: boolean;
+    commanderId?: string;
 }
 
 export class DeckBuildingScene extends Phaser.Scene {
@@ -24,6 +25,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     
     private factionId = 'cog_dominion';
     private isNewRun = false;
+    private startingCommanderId: string | undefined;
     private commanderRoster: string[] = [];
     private currentDeck: ICard[] = [];
     private availableCards: ICard[] = [];
@@ -51,6 +53,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     init(data: DeckBuildingSceneData): void {
         this.factionId = data.factionId ?? 'cog_dominion';
         this.isNewRun = data.isNewRun ?? false;
+        this.startingCommanderId = data.commanderId;
     }
 
     create(): void {
@@ -77,8 +80,10 @@ export class DeckBuildingScene extends Phaser.Scene {
 
     private initializeData(): void {
         if (this.isNewRun) {
-            // Starting a new run - get starter commander
-            const starterCommander = this.commanderManager.getStarterCommander(this.factionId);
+            // Starting a new run - get selected starter commander (or faction default)
+            const starterCommander = this.startingCommanderId
+                ? this.commanderManager.getCommander(this.startingCommanderId)
+                : this.commanderManager.getStarterCommander(this.factionId);
             if (starterCommander) {
                 this.commanderRoster = [starterCommander.id];
                 // Start with an empty deck; player builds up to the per-card limits
@@ -650,6 +655,22 @@ export class DeckBuildingScene extends Phaser.Scene {
         // Card portrait area
         const portraitBg = this.add.rectangle(CARD_WIDTH / 2, 60, CARD_WIDTH - 16, 55, 0x1a1d2e);
         container.add(portraitBg);
+        const portraitBounds = { w: CARD_WIDTH - 20, h: 50 };
+        if (card.portraitKey && this.textures.exists(card.portraitKey)) {
+            const img = this.add.image(CARD_WIDTH / 2, 60, card.portraitKey).setOrigin(0.5);
+            const texW = img.width || portraitBounds.w;
+            const texH = img.height || portraitBounds.h;
+            const scale = Math.min(portraitBounds.w / texW, portraitBounds.h / texH);
+            img.setScale(scale);
+            container.add(img);
+        } else {
+            const placeholder = this.add.text(CARD_WIDTH / 2, 60, 'No Art', {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '10px',
+                color: '#555'
+            }).setOrigin(0.5);
+            container.add(placeholder);
+        }
         
         // Card name
         const displayName = card.name.length > 12 ? card.name.slice(0, 11) + '...' : card.name;
@@ -830,7 +851,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         if (this.isNewRun) {
             // Start new run with selected faction and deck
-            this.runManager.startNewRun(this.factionId);
+            this.runManager.startNewRun(this.factionId, 0, this.selectedCommander ?? undefined);
             // Override deck with player's customized deck
             this.runManager.setRunDeck(this.currentDeck);
         } else {

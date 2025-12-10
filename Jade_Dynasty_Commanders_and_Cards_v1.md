@@ -135,6 +135,7 @@ High mobility, assassination, clone disruption, crit stacking.
 # ## **UNIT CARDS (12)**
 
 ### **1. Azure Spear Chargers – Cost 2**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Long reach melee  
 - First attack Stun
 - Every 3 attacks → 0.3s mini-stun  
@@ -143,19 +144,22 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **2. Chi Dragoon – Cost 3**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Bruiser  
 - Every 4 attacks → Shockwave stun  
 - Gains +10% damage per Chi Flow  
 
 ---
 
-### **3. Twin-Storm Monks – Cost 3**
+### **3. Storm Monks – Cost 3**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Fast melee combo  
-- If 2 monks hit same target in 0.4s → **1s stun**
+- If two monks hit a target in 0.4s → **1s stun**
 
 ---
 
 ### **4. Shuriken Ninjas – Cost 2**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Ranged daggers  
 - Crits cause “Bleeding Chi” slow  
 - Gains stealth after kill  
@@ -163,6 +167,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **5. Shadowblade Assassins – Cost 3**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Stealth assassin  
 - First hit = crit + 0.5s stun  
 - Re-stealth on kill (ICD)
@@ -170,6 +175,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **6. Jade Halberd Guardian – Cost 4**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Tank  
 - Wide halberd cleave  
 - Shock Slam every 6s → **1.2s stun**
@@ -177,6 +183,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **7. Repeating Crossbow Gunners – Cost 3**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Ranged support  
 - Applies +15% vuln  
 - Small AoE slow every 5 hits  
@@ -184,6 +191,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **8. Shrine Oni Guardian – Cost 4**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Tank spirit  
 - Taunts every 7s  
 - Gains Chi Shield when healed  
@@ -192,6 +200,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **9. Paper Doll Guardian – Cost 2**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Evasive tank  
 - 40% chance to dodge  
 - On death → **roots** enemies  
@@ -199,6 +208,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **10. Blue Oni Bruiser – Cost 3**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Strong melee  
 - Applies “Frost Chi” slow  
 - Scales with Chi Flow  
@@ -206,12 +216,14 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **11. Spirit Lantern Healer – Cost 2**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Heals nearby allies  
 - Enemies in radius: -10% ATK/SPEED  
 
 ---
 
 ### **12. Golden Shikigami Fox – Cost 3**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Agile ranged spirit  
 - Homing flames + 0.2s mini-stun  
 
@@ -220,45 +232,47 @@ High mobility, assassination, clone disruption, crit stacking.
 # ## **SPELL CARDS (10)**
 
 ### **1. Expansion Slots – Cost 2**
-- Single target stun (1.2s)  
-- Optional Chi Flow spend = scaling DMG  
+- Belong to All 3 jade dynasty commanders
+- expand an empty slot next to units.
 
 ---
 
 ### **2. Move the Units or Building – Cost 3**
-- Long-line AoE  
-- 0.75s stun  
-- +30% dmg vs slowed enemies  
+- Belong to All 3 jade dynasty commanders
+- Move The units or building to an empty slot next to it.
 
 ---
 
 ### **3. Resource Gathering – Cost 3***
-- Teleport ninja ally  
+- Belong to All 3 jade dynasty commanders
+- Expand an empty slot next to units and gain 50 gold.
 - Leaves clone that taunts  
 
 ---
 
 ### **4. Destroy To Improve Surrounding – Cost 4**
-- Large AoE  
-- 0.5s stun  
-- Knockback 2 tiles  
+- Belong to All 3 jade dynasty commanders
+- Destroy a unit or building and reinforcement all adjacent units and buildings.
 
 ---
 
 # ## **STRUCTURE CARDS (6)**
 
 ### **1. War Drum of the South Wind – Cost 3**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Aura: +10% AS, +20% MS on spawn  
 
 ---
 
 ### **2. Jade Healing Shrine – Cost 2**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Heals allies  
 - +1 Chi Flow every 8s  
 
 ---
 
 ### **3. Smoke Bomb Generator – Cost 3**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Smoke field:  
   - Enemies: -40% accuracy  
   - Ninjas: +50% dodge  
@@ -266,11 +280,13 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **4. Chi Resonance Tower – Cost 4**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Pulses stun every 4s  
 
 ---
 
 ### **5. Spirit Bell Shrine – Cost 2**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Healing bell pulses  
 - Slows enemies  
 - Reduces enemy stun resistance  
@@ -278,6 +294,7 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **6. Jade Archer Turret – Cost 3**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Piercing arrows  
 - Every 8 shots: AoE stun  
 
@@ -286,23 +303,27 @@ High mobility, assassination, clone disruption, crit stacking.
 # ## **MODULE CARDS (6)**
 
 ### **1. Chi Amplifier Node**
+- Belong to Commander 1: Long Jin – Spear Saint
 - +20% stun duration  
 - +10 Chi Damage to melee units  
 
 ---
 
 ### **2. Spirit Gate Node**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Spawns random Shikigami every 20s  
 
 ---
 
 ### **3. Feng Shui Ward Node**
+- Belong to Commander 2: Hanami Reika – Spirit Miko Priestess
 - Healing aura  
 - +15% healing received  
 
 ---
 
 ### **4. Ninja Warp Pad**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - Ninjas:  
   - 1.5s invis  
   - +30% crit first attack  
@@ -310,11 +331,13 @@ High mobility, assassination, clone disruption, crit stacking.
 ---
 
 ### **5. Jade Shield Node**
+- Belong to Commander 1: Long Jin – Spear Saint
 - Grants Chi Shield (+15% HP)  
 
 ---
 
 ### **6. Chi Reactor Node**
+- Belong to Commander 3: Kasumi Nightwind – Master Ninja
 - +1 Chi Flow every 10s  
 - If Chi Flow > 20 → +10% global damage  
 

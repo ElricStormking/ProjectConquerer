@@ -1,4 +1,4 @@
 id,index,name,theme,background_key,music_key,boss_node_id,next_stage_id
 stage_1,0,Cog Foundries,cog_foundries,stage_1_map,stage_1_theme,s1_boss,stage_2
-stage_2,1,Frontier Expanse,frontier_expanse,stage_2_map,stage_2_theme,s2_boss,stage_3
-stage_3,2,Frozen Heights,frozen_heights,stage_3_map,stage_3_theme,s3_boss,
+stage_2,1,Ember Peaks,ember_peaks,stage_2_map,stage_2_theme,s2_boss,stage_3
+stage_3,2,Sky Citadel,sky_citadel,stage_3_map,stage_3_theme,s3_boss,

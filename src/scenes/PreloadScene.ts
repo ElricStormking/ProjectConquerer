@@ -71,27 +71,42 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('factions_data', 'data/factions.csv');
         this.load.text('commanders_data', 'data/commanders.csv');
         
-        // Fortress grid CSVs (metadata + tilemap pairs)
-        this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');
-        this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv');
-
         // Title screen
         this.load.image('title_bg', 'assets/ui/ui_title_menu/TitleScreen.png');
         this.load.image('ui_button_on', 'assets/ui/ui_title_menu/button_on.png');
         this.load.image('ui_button_off', 'assets/ui/ui_title_menu/button_off.png');
+        // Commander portraits (Jade Dynasty starters)
+        this.load.image('commander_long_jin', 'assets/commanders/jade_commanders/Long_Jin.png');
+        this.load.image('commander_hanami_reika', 'assets/commanders/jade_commanders/Hanami_Reika.png');
+        // Jade Dynasty unit card art
+        this.load.image('card_jade_azure_spear', 'assets/cards/Jade_dynasty/units/Azure_Spear_Chargers.png');
+        this.load.image('card_jade_chi_dragoon', 'assets/cards/Jade_dynasty/units/Chi_Dragoon.png');
+        this.load.image('card_jade_storm_monks', 'assets/cards/Jade_dynasty/units/Storm_Monks.png');
+        this.load.image('card_jade_shuriken_ninjas', 'assets/cards/Jade_dynasty/units/Shuriken_Ninjas.png');
+        this.load.image('card_jade_shadowblade_assassins', 'assets/cards/Jade_dynasty/units/Shadowblade _Assassins.png');
+        this.load.image('card_jade_halberd_guardian', 'assets/cards/Jade_dynasty/units/Jade Halberd Guardian.png');
+        this.load.image('card_jade_crossbow_gunners', 'assets/cards/Jade_dynasty/units/Repeating_Crossbow_Gunners.png');
+        this.load.image('card_jade_shrine_oni', 'assets/cards/Jade_dynasty/units/Shrine_Oni_Guardian.png');
+        this.load.image('card_jade_paper_doll', 'assets/cards/Jade_dynasty/units/Paper_Doll_Guardian.png');
+        this.load.image('card_jade_blue_oni', 'assets/cards/Jade_dynasty/units/Blue_Oni_Bruiser.png');
+        this.load.image('card_jade_spirit_lantern', 'assets/cards/Jade_dynasty/units/Spirit_Lantern_Healer.png');
+        this.load.image('card_jade_shikigami_fox', 'assets/cards/Jade_dynasty/units/Golden_Shikigami_Fox.png');
 
         // Stage maps (world map backgrounds)
         this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         
+        // Fortress grid CSVs (metadata + tilemap pairs)
+        this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');
+        this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv');
+
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
         
-        // Fortress images (use Jade Dynasty as default test fortress art)
+        // Fortress images
+        // Default testing fortress art now uses Jade Dynasty
         this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
-        // Alias for jade_palace fortress id to avoid missing texture
-        this.load.image('jade_palace', 'assets/fortress/fortress_jade_dynasty_01.png');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

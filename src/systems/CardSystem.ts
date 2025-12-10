@@ -571,7 +571,7 @@ export class CardSystem {
         // Looking at `BattleScene.ts`:
         // `this.fortressSystem = new FortressSystem(...)` in `initializeIronwarsPrototype`.
         // It loads config from `FactionRegistry` or `starterData`.
-        // This config comes from static CSV data (`fortress_sanctum_order_01`).
+        // This config comes from static CSV data (`fortress_jade_dynasty_01`).
         // It does NOT seem to load a dynamic "saved fortress state" with placed units/buildings 
         // from `RunProgressionManager`.
         

@@ -12,6 +12,7 @@ export class FactionSelectionScene extends Phaser.Scene {
     
     private factions: IFactionConfig[] = [];
     private currentIndex = 0;
+    private selectedCommanderByFaction: Record<string, string | null> = {};
     private carouselContainer!: Phaser.GameObjects.Container;
     private factionPanels: Phaser.GameObjects.Container[] = [];
     private leftArrow!: Phaser.GameObjects.Container;
@@ -26,7 +27,9 @@ export class FactionSelectionScene extends Phaser.Scene {
     create(): void {
         const { width, height } = this.cameras.main;
         
-        this.factions = this.factionRegistry.getAllFactions();
+        // Only show currently supported factions (Jade + Frost for now)
+        const allowedFactions = new Set(['jade_dynasty', 'frost_clan']);
+        this.factions = this.factionRegistry.getAllFactions().filter(f => allowedFactions.has(f.id));
         if (this.factions.length === 0) {
             // Fallback if no factions loaded
             console.warn('[FactionSelectionScene] No factions loaded, using default');
@@ -139,13 +142,21 @@ export class FactionSelectionScene extends Phaser.Scene {
         panel.add(divider);
         
         // Commander section
-        const commander = this.commanderManager.getStarterCommander(faction.id);
-        if (commander) {
-            this.addCommanderSection(panel, commander, factionColor);
-        }
-        
-        // Cards preview section
-        this.addCardsPreview(panel, faction.id, factionColor);
+        const commanders = this.commanderManager.getCommandersByFaction(faction.id);
+        const selectedCommanderId = commanders[0]?.id ?? null;
+        this.selectedCommanderByFaction[faction.id] = selectedCommanderId;
+
+        const commanderSection = this.add.container(0, 0);
+        commanderSection.setName('commanderSection');
+        panel.add(commanderSection);
+
+        const cardsSection = this.add.container(0, 0);
+        cardsSection.setName('cardsSection');
+        panel.add(cardsSection);
+
+        this.addCommanderSelector(panel, commanders, factionColor);
+        this.renderCommanderSection(panel, faction.id, factionColor);
+        this.renderCardsPreview(panel, faction.id, factionColor);
         
         // Fortress preview
         this.addFortressPreview(panel, faction.id, factionColor);
@@ -153,103 +164,168 @@ export class FactionSelectionScene extends Phaser.Scene {
         return panel;
     }
 
-    private addCommanderSection(
-        panel: Phaser.GameObjects.Container, 
-        commander: ICommanderFullConfig,
-        factionColor: number
-    ): void {
-        // Commander portrait placeholder
-        const portrait = this.add.rectangle(-280, 20, 100, 120, factionColor, 0.3);
-        portrait.setStrokeStyle(2, factionColor);
-        panel.add(portrait);
-        
-        const portraitLabel = this.add.text(-280, 20, 'CMD', {
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '24px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-        panel.add(portraitLabel);
-        
-        // Commander name
-        const cmdNameText = this.add.text(-200, -40, 'Starting Commander:', {
+    private addCommanderSelector(panel: Phaser.GameObjects.Container, commanders: ICommanderFullConfig[], factionColor: number): void {
+        const selectorY = -40;
+        const startX = -200;
+        const btnW = 160;
+        const btnH = 40;
+        const gap = 20;
+
+        commanders.forEach((cmd, i) => {
+            const btn = this.add.container(startX + i * (btnW + gap), selectorY);
+            const bg = this.add.graphics();
+            bg.fillStyle(0x2a2d3a, 0.9);
+            bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+            bg.lineStyle(2, factionColor, 0.8);
+            bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+            btn.add(bg);
+
+            const txt = this.add.text(0, 0, cmd.name, {
+                fontFamily: 'Georgia, serif',
+                fontSize: '14px',
+                color: '#f0dba5'
+            }).setOrigin(0.5);
+            btn.add(txt);
+
+            bg.setInteractive(
+                new Phaser.Geom.Rectangle(-btnW / 2, -btnH / 2, btnW, btnH),
+                Phaser.Geom.Rectangle.Contains
+            );
+
+            bg.on('pointerover', () => btn.setScale(1.05));
+            bg.on('pointerout', () => btn.setScale(1));
+            bg.on('pointerup', () => {
+                this.selectedCommanderByFaction[cmd.factionId] = cmd.id;
+                this.renderCommanderSection(panel, cmd.factionId, factionColor);
+                this.renderCardsPreview(panel, cmd.factionId, factionColor);
+            });
+
+            panel.add(btn);
+        });
+    }
+
+    private renderCommanderSection(panel: Phaser.GameObjects.Container, factionId: string, factionColor: number): void {
+        const container = panel.getByName('commanderSection') as Phaser.GameObjects.Container;
+        container.removeAll(true);
+        const selectedId = this.selectedCommanderByFaction[factionId];
+        if (!selectedId) {
+            container.add(this.add.text(-200, -20, 'No commander available', { fontSize: '16px', color: '#c0c0c0' }));
+            return;
+        }
+        const commander = this.commanderManager.getCommander(selectedId);
+        if (!commander) return;
+
+        // Portrait
+        if (this.textures.exists(commander.portraitKey)) {
+            const portrait = this.add.image(-300, 40, commander.portraitKey);
+            portrait.setDisplaySize(110, 130);
+            container.add(portrait);
+        } else {
+            const portrait = this.add.rectangle(-300, 40, 110, 130, factionColor, 0.3);
+            portrait.setStrokeStyle(2, factionColor);
+            container.add(portrait);
+        }
+
+        const cmdLabel = this.add.text(-200, -10, 'Commander:', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
-        panel.add(cmdNameText);
-        
-        const cmdName = this.add.text(-200, -15, commander.name, {
+        container.add(cmdLabel);
+
+        const cmdName = this.add.text(-200, 15, commander.name, {
             fontFamily: 'Georgia, serif',
             fontSize: '24px',
             color: '#f0dba5',
             fontStyle: 'bold'
         }).setOrigin(0, 0);
-        panel.add(cmdName);
-        
-        // Active skill
-        const skillLabel = this.add.text(-200, 25, 'Active Skill:', {
+        container.add(cmdName);
+
+        const skillLabel = this.add.text(-200, 55, 'Active Skill:', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
-        panel.add(skillLabel);
-        
-        const skillName = this.add.text(-200, 48, commander.activeSkillId.replace(/_/g, ' ').toUpperCase(), {
+        container.add(skillLabel);
+
+        const skillName = this.add.text(-200, 78, commander.activeSkillId.replace(/_/g, ' ').toUpperCase(), {
             fontFamily: 'Arial, sans-serif',
             fontSize: '18px',
             color: '#c0c0c0'
         }).setOrigin(0, 0);
-        panel.add(skillName);
+        container.add(skillName);
     }
 
-    private addCardsPreview(
-        panel: Phaser.GameObjects.Container, 
-        factionId: string,
-        factionColor: number
-    ): void {
-        const starterCommander = this.commanderManager.getStarterCommander(factionId);
-        const cards = starterCommander ? 
-            this.commanderManager.getCardsForCommander(starterCommander.id).slice(0, 3) : [];
-        
+    private renderCardsPreview(panel: Phaser.GameObjects.Container, factionId: string, factionColor: number): void {
+        const container = panel.getByName('cardsSection') as Phaser.GameObjects.Container;
+        container.removeAll(true);
+        const selectedId = this.selectedCommanderByFaction[factionId];
+        if (!selectedId) {
+            container.add(this.add.text(120, 0, 'Sample cards coming soon', { fontSize: '14px', color: '#c0c0c0' }));
+            return;
+        }
+        const cards = this.commanderManager.getCardsForCommander(selectedId).slice(0, 3);
+
         const startX = 100;
         const cardWidth = 80;
         const cardHeight = 110;
         const gap = 20;
-        
-        // Section label
+
         const label = this.add.text(startX + 60, -40, 'Sample Cards:', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
-        panel.add(label);
-        
+        container.add(label);
+
+        if (cards.length === 0) {
+            const placeholder = this.add.text(startX, 20, 'Coming soon', {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '14px',
+                color: '#c0c0c0'
+            }).setOrigin(0, 0);
+            container.add(placeholder);
+            return;
+        }
+
         cards.forEach((card, i) => {
             const x = startX + i * (cardWidth + gap);
             const y = 40;
-            
-            // Card background
+
             const cardBg = this.add.graphics();
             cardBg.fillStyle(0x2a2d3a, 1);
             cardBg.fillRoundedRect(x, y - cardHeight / 2, cardWidth, cardHeight, 6);
             cardBg.lineStyle(2, factionColor, 0.8);
             cardBg.strokeRoundedRect(x, y - cardHeight / 2, cardWidth, cardHeight, 6);
-            panel.add(cardBg);
-            
-            // Card cost
+            container.add(cardBg);
+
             const costCircle = this.add.circle(x + 15, y - cardHeight / 2 + 15, 12, 0x3d4663);
             costCircle.setStrokeStyle(1, factionColor);
-            panel.add(costCircle);
-            
+            container.add(costCircle);
+
             const costText = this.add.text(x + 15, y - cardHeight / 2 + 15, String(card.cost), {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '14px',
                 color: '#f0dba5',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
-            panel.add(costText);
-            
-            // Card name (truncated)
+            container.add(costText);
+
+            // Portrait
+            const artW = cardWidth - 16;
+            const artH = 60;
+            if (card.portraitKey && this.textures.exists(card.portraitKey)) {
+                const img = this.add.image(x + cardWidth / 2, y - 10, card.portraitKey).setOrigin(0.5);
+                const texW = img.width || artW;
+                const texH = img.height || artH;
+                const scale = Math.min(artW / texW, artH / texH);
+                img.setScale(scale);
+                container.add(img);
+            } else {
+                const placeholder = this.add.rectangle(x + cardWidth / 2, y - 10, artW, artH, 0x1a1d2e);
+                container.add(placeholder);
+            }
+
             const cardName = card.name.length > 10 ? card.name.slice(0, 9) + '...' : card.name;
             const nameText = this.add.text(x + cardWidth / 2, y + 30, cardName, {
                 fontFamily: 'Arial, sans-serif',
@@ -257,7 +333,7 @@ export class FactionSelectionScene extends Phaser.Scene {
                 color: '#c0c0c0',
                 align: 'center'
             }).setOrigin(0.5);
-            panel.add(nameText);
+            container.add(nameText);
         });
     }
 
@@ -518,12 +594,14 @@ export class FactionSelectionScene extends Phaser.Scene {
 
     private selectFaction(): void {
         const selectedFaction = this.factions[this.currentIndex];
+        const commanderId = this.selectedCommanderByFaction[selectedFaction.id] ?? null;
         
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.time.delayedCall(400, () => {
             this.scene.start('DeckBuildingScene', { 
                 factionId: selectedFaction.id,
-                isNewRun: true
+                isNewRun: true,
+                commanderId: commanderId ?? undefined
             });
         });
     }

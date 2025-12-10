@@ -15,3 +15,35 @@ card_thunder_cannon_2,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder
 card_cannon_tower_1,Cannon Tower,spell,4,profit,cannon_tower,card_cannon_tower,Build a stationary cannon tower on the fortress grid.,common
 card_barrier_field,Armor Shop,spell,3,profit,barrier_field,card_spell_barrier,Construct an armor shop that grants shields to units on this tile.,common
 card_overclock,Overclock,spell,2,profit,overclock,card_spell_overclock,Increase attack speed briefly.,common
+
+# Jade Dynasty – Long Jin (starter set)
+card_jade_azure_spear,Azure Spear Chargers,unit,2,chi_flow,jade_azure_spear,card_jade_azure_spear,Long reach melee; first hit stuns; gains Chi on kill.,common
+card_jade_chi_dragoon,Chi Dragoon,unit,3,chi_flow,jade_chi_dragoon,card_jade_chi_dragoon,Bruiser that scales damage with Chi Flow.,rare
+card_jade_storm_monks,Storm Monks,unit,3,chi_flow,jade_storm_monks,card_jade_storm_monks,Fast melee combo; dual hits can stun.,rare
+card_jade_shuriken_ninjas,Shuriken Ninjas,unit,2,chi_flow,jade_shuriken_ninjas,card_jade_shuriken_ninjas,Ranged daggers; crits apply Bleeding Chi and stealth on kill.,common
+card_jade_shadowblade_assassins,Shadowblade Assassins,unit,3,chi_flow,jade_shadowblade_assassins,card_jade_shadowblade_assassins,Stealth assassin; opening crit with brief stun; re-stealth on kill.,rare
+card_jade_halberd_guardian,Jade Halberd Guardian,unit,4,chi_flow,jade_halberd_guardian,card_jade_halberd_guardian,Tank with wide cleave; periodic shock slam.,rare
+card_jade_crossbow_gunners,Repeating Crossbow Gunners,unit,3,chi_flow,jade_crossbow_gunners,card_jade_crossbow_gunners,Ranged support; applies vulnerability and AoE slow.,common
+card_jade_war_drum,War Drum of the South Wind,structure,3,chi_flow,jade_war_drum,card_placeholder,Aura: +10% AS, +20% MS on spawn.,common
+card_jade_resonance_tower,Chi Resonance Tower,structure,4,chi_flow,jade_resonance_tower,card_placeholder,Pulses stun every few seconds.,rare
+card_jade_amplifier,Chi Amplifier Node,module,3,chi_flow,jade_amplifier,card_placeholder,+20% stun duration, +Chi damage to melee.,rare
+card_jade_expansion_slots,Expansion Slots,spell,2,chi_flow,jade_expansion,card_placeholder,Expand an empty slot next to units.,common
+card_jade_move_units,Move the Units or Building,spell,3,chi_flow,jade_move_units,card_placeholder,Relocate a unit or building to an adjacent empty slot.,common
+
+# Jade Dynasty – Hanami Reika (starter set)
+card_jade_shrine_oni,Shrine Oni Guardian,unit,4,chi_flow,jade_shrine_oni,card_jade_shrine_oni,Tank spirit that taunts and gains Chi Shield.,rare
+card_jade_spirit_lantern,Spirit Lantern Healer,unit,2,chi_flow,jade_spirit_lantern,card_jade_spirit_lantern,Heals allies; debuffs enemies in aura.,common
+card_jade_healing_shrine,Jade Healing Shrine,structure,2,chi_flow,jade_healing_shrine,card_placeholder,Heals allies and generates Chi Flow.,common
+card_jade_spirit_bell,Spirit Bell Shrine,structure,2,chi_flow,jade_spirit_bell,card_placeholder,Healing pulses; slows and lowers stun resistance.,rare
+card_jade_spirit_gate,Spirit Gate Node,module,3,chi_flow,jade_spirit_gate,card_placeholder,Spawns random Shikigami periodically.,rare
+card_jade_resource_gathering,Resource Gathering,spell,3,chi_flow,jade_resource_gathering,card_placeholder,Expand a slot and gain gold; leaves a taunting clone.,common
+card_jade_destroy_improve,Destroy To Improve Surrounding,spell,4,chi_flow,jade_destroy_improve,card_placeholder,Destroy a unit/building to reinforce adjacent allies.,rare
+card_jade_paper_doll,Paper Doll Guardian,unit,2,chi_flow,jade_paper_doll,card_jade_paper_doll,Evasive tank; dodge chance; roots on death.,common
+card_jade_blue_oni,Blue Oni Bruiser,unit,3,chi_flow,jade_blue_oni,card_jade_blue_oni,Bruiser applying Frost Chi slow; scales with Chi Flow.,rare
+card_jade_shikigami_fox,Golden Shikigami Fox,unit,3,chi_flow,jade_shikigami_fox,card_jade_shikigami_fox,Agile ranged spirit with homing flames and mini-stun.,rare
+card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_placeholder,Smoke field reduces enemy accuracy; boosts ninja dodge.,common
+card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_placeholder,Piercing arrows; periodic AoE stun.,rare
+card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_placeholder,Healing aura; increased healing received.,common
+card_jade_ninja_warp,Ninja Warp Pad,module,3,chi_flow,jade_ninja_warp,card_placeholder,Grants brief invisibility and crit bonus to ninjas.,rare
+card_jade_shield_node,Jade Shield Node,module,3,chi_flow,jade_shield_node,card_placeholder,Grants Chi Shield to allies (+HP shield).,common
+card_jade_chi_reactor,Chi Reactor Node,module,3,chi_flow,jade_chi_reactor,card_placeholder,Generates Chi Flow over time; boosts damage at high Chi.,rare

@@ -5,7 +5,7 @@
 The existing `FortressSystem` already uses `IFortressCell[]` for grid management with isometric rendering. We will extend this by:
 1. Moving fortress grid definitions to external CSV files (2D tilemap format)
 2. Adding a loader in `DataManager` to parse CSV and convert to isometric cells
-3. Creating a sample 5x5 CSV grid for Sanctum Order fortress
+3. Creating a sample 5x5 CSV grid for Jade Dynasty fortress
 
 ## Data Structure
 
@@ -13,14 +13,14 @@ The existing `FortressSystem` already uses `IFortressCell[]` for grid management
 
 Each fortress will have a corresponding CSV file in `public/data/fortress_grids/`:
 
-**File: `fortress_sanctum_order_01.csv`**
+**File: `fortress_jade_dynasty_01.csv`**
 
 ```csv
 id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height
-fortress_sanctum_order_01,sanctum_order,Sanctum Cathedral,fortress_sanctum_order_01,1000,64,32
+fortress_jade_dynasty_01,jade_dynasty,Cloud Fortress,fortress_jade_dynasty_01,1000,128,64
 ```
 
-**File: `fortress_sanctum_order_01_grid.csv`** (companion tilemap file)
+**File: `fortress_jade_dynasty_01_grid.csv`** (companion tilemap file)
 
 ```csv
 1,1,1,1,1
@@ -39,10 +39,10 @@ The CSV is a simple 2D array where row 0 = y:0, column 0 = x:0. The game's isome
 
 ## Files to Create/Modify
 
-### 1. Create: `public/data/fortress_grids/fortress_sanctum_order_01.csv`
+### 1. Create: `public/data/fortress_grids/fortress_jade_dynasty_01.csv`
 Fortress metadata (id, faction, dimensions, hp).
 
-### 2. Create: `public/data/fortress_grids/fortress_sanctum_order_01_grid.csv`
+### 2. Create: `public/data/fortress_grids/fortress_jade_dynasty_01_grid.csv`
 5x5 tilemap with 24 buildable cells (1s) and 1 core (2).
 
 ### 3. Modify: `src/types/ironwars.ts`
@@ -59,8 +59,8 @@ Fortress metadata (id, faction, dimensions, hp).
 - Load fortress grids in `parse()` method
 
 ### 5. Modify: `src/scenes/PreloadScene.ts`
-- Add `this.load.text('fortress_grid_sanctum_meta', 'data/fortress_grids/fortress_sanctum_order_01.csv')`
-- Add `this.load.text('fortress_grid_sanctum_tilemap', 'data/fortress_grids/fortress_sanctum_order_01_grid.csv')`
+- Add `this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv')`
+- Add `this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv')`
 - Repeat for other fortresses as needed
 
 ### 6. Modify: `src/systems/FortressSystem.ts`
@@ -74,7 +74,7 @@ Fortress metadata (id, faction, dimensions, hp).
 ### 8. Modify: `src/scenes/BattleScene.ts`
 - Ensure FortressSystem receives grid config from DataManager/FactionRegistry based on selected faction
 
-## Sample 5x5 Grid (Sanctum Order)
+## Sample 5x5 Grid (Jade Dynasty)
 
 Designer creates this simple CSV:
 
@@ -119,8 +119,8 @@ The existing `FortressSystem.gridToWorld()` handles isometric transformation.
 
 ## Implementation Todos
 
-- [ ] Create fortress_sanctum_order_01.csv (metadata)
-- [ ] Create fortress_sanctum_order_01_grid.csv (5x5 tilemap)
+- [ ] Create fortress_jade_dynasty_01.csv (metadata)
+- [ ] Create fortress_jade_dynasty_01_grid.csv (5x5 tilemap)
 - [ ] Add IFortressGridConfig interface to ironwars.ts
 - [ ] Add parseFortressGrids() CSV parser with 2D array conversion
 - [ ] Load fortress CSV files in PreloadScene

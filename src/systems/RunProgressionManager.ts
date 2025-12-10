@@ -79,14 +79,18 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return { ...node, nextNodeIds: [...node.nextNodeIds] };
     }
 
-    public startNewRun(factionId = 'cog_dominion', difficulty = 0): void {
+    public startNewRun(factionId = 'cog_dominion', difficulty = 0, commanderIdOverride?: string): void {
         this.difficultyLevel = difficulty;
         this.buildStageGraph();
         
         // Get faction-specific data
         const fortress = this.factionRegistry.getFortressForFaction(factionId);
-        const starterCommander = this.commanderManager.getStarterCommander(factionId);
-        const starterDeck = this.commanderManager.getStarterDeck(factionId);
+        const starterCommander = commanderIdOverride
+            ? this.commanderManager.getCommander(commanderIdOverride)
+            : this.commanderManager.getStarterCommander(factionId);
+        const starterDeck = starterCommander
+            ? this.commanderManager.getCardsForCommander(starterCommander.id).slice(0, 6)
+            : this.commanderManager.getStarterDeck(factionId);
         
         // Fallback to COG_DOMINION_STARTER if faction data not found
         const fallbackStarter = COG_DOMINION_STARTER;
@@ -474,8 +478,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         // Only that node should be clickable; all other paths are locked out.
         if (!currentNode.isCompleted) {
             currentNode.isAccessible = true;
-            return;
-        }
+                return;
+            }
 
         // CASE 2: Current node is completed. The only valid choices are the
         // immediate children of this node (its outgoing edges). This enforces
