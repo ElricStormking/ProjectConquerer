@@ -91,6 +91,20 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_jade_blue_oni', 'assets/cards/Jade_dynasty/units/Blue_Oni_Bruiser.png');
         this.load.image('card_jade_spirit_lantern', 'assets/cards/Jade_dynasty/units/Spirit_Lantern_Healer.png');
         this.load.image('card_jade_shikigami_fox', 'assets/cards/Jade_dynasty/units/Golden_Shikigami_Fox.png');
+        // Jade Dynasty buildings (card art)
+        this.load.image('card_jade_war_drum', 'assets/cards/Jade_dynasty/buildings/War_Drum_of_the_South_Wind.png.png');
+        this.load.image('card_jade_resonance_tower', 'assets/cards/Jade_dynasty/buildings/Chi_Resonance_Tower.png.png');
+        this.load.image('card_jade_healing_shrine', 'assets/cards/Jade_dynasty/buildings/Jade_Healing_Shrine.png.png');
+        this.load.image('card_jade_spirit_bell', 'assets/cards/Jade_dynasty/buildings/Spirit_Bell_Shrine.png.png');
+        this.load.image('card_jade_smoke_bomb', 'assets/cards/Jade_dynasty/buildings/Smoke_Bomb_Generator.png.png');
+        this.load.image('card_jade_archer_turret', 'assets/cards/Jade_dynasty/buildings/Jade_Archer_Turret.png.png');
+        // Jade Dynasty modules (card art)
+        this.load.image('card_jade_amplifier', 'assets/cards/Jade_dynasty/Modules/Chi_Amplifier.png.png');
+        this.load.image('card_jade_spirit_gate', 'assets/cards/Jade_dynasty/Modules/Spirit_Gate.png.png');
+        this.load.image('card_jade_feng_shui_ward', 'assets/cards/Jade_dynasty/Modules/Feng_Shui_Ward.png.png');
+        this.load.image('card_jade_ninja_warp', 'assets/cards/Jade_dynasty/Modules/Ninja_Warp_Pad.png.png');
+        this.load.image('card_jade_shield_node', 'assets/cards/Jade_dynasty/Modules/Jade_Shield.png.png');
+        this.load.image('card_jade_chi_reactor', 'assets/cards/Jade_dynasty/Modules/Chi_Reactor.png.png');
 
         // Stage maps (world map backgrounds)
         this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png');
