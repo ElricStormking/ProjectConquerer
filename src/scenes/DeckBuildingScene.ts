@@ -6,10 +6,9 @@ import { DataManager } from '../systems/DataManager';
 import { ICard } from '../types/ironwars';
 
 const MAX_DECK_SIZE = 40;
-const CARD_WIDTH = 100;
-const CARD_HEIGHT = 140;
-const CARD_GAP = 12;
-const CARDS_PER_ROW = 6;
+const CARD_WIDTH = 140;
+const CARD_HEIGHT = 200;
+const CARD_GAP = 14;
 
 interface DeckBuildingSceneData {
     factionId?: string;
@@ -42,6 +41,10 @@ export class DeckBuildingScene extends Phaser.Scene {
     private cardGridContainer!: Phaser.GameObjects.Container;
     private deckListContainer!: Phaser.GameObjects.Container;
     private deckCountText!: Phaser.GameObjects.Text;
+    // Layout bounds
+    private commanderBounds = { x: 0, y: 90, width: 280, height: 0 };
+    private cardPanelBounds = { x: 0, y: 90, width: 0, height: 0 };
+    private deckBounds = { x: 0, y: 90, width: 340, height: 0 };
     
     private cardGridScrollY = 0;
     private deckScrollY = 0;
@@ -58,6 +61,8 @@ export class DeckBuildingScene extends Phaser.Scene {
 
     create(): void {
         const { width, height } = this.cameras.main;
+        
+        this.computeLayout(width, height);
         
         // Initialize data
         this.initializeData();
@@ -76,6 +81,27 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.renderDeck();
         
         this.cameras.main.fadeIn(400, 0, 0, 0);
+    }
+
+    private computeLayout(width: number, height: number): void {
+        const padding = 30;
+        const verticalMargin = 140;
+        this.commanderBounds.width = 0.18 * width;
+        this.commanderBounds.width = Math.min(Math.max(this.commanderBounds.width, 260), 340);
+        this.commanderBounds.height = height - verticalMargin;
+        this.commanderBounds.x = padding;
+        this.commanderBounds.y = 90;
+        
+        this.deckBounds.width = 0.22 * width;
+        this.deckBounds.width = Math.min(Math.max(this.deckBounds.width, 320), 400);
+        this.deckBounds.height = height - verticalMargin;
+        this.deckBounds.x = width - padding - this.deckBounds.width;
+        this.deckBounds.y = 90;
+        
+        this.cardPanelBounds.x = this.commanderBounds.x + this.commanderBounds.width + 20;
+        this.cardPanelBounds.y = 90;
+        this.cardPanelBounds.width = this.deckBounds.x - this.cardPanelBounds.x - 20;
+        this.cardPanelBounds.height = height - verticalMargin;
     }
 
     private initializeData(): void {
@@ -152,10 +178,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private createCommanderPanel(): void {
-        const panelX = 30;
-        const panelY = 90;
-        const panelWidth = 250;
-        const panelHeight = 700;
+        const { x: panelX, y: panelY, width: panelWidth, height: panelHeight } = this.commanderBounds;
         
         this.commanderPanel = this.add.container(panelX, panelY);
         
@@ -184,10 +207,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private createCardGridPanel(): void {
-        const panelX = 300;
-        const panelY = 90;
-        const panelWidth = 850;
-        const panelHeight = 700;
+        const { x: panelX, y: panelY, width: panelWidth, height: panelHeight } = this.cardPanelBounds;
         
         this.cardGridPanel = this.add.container(panelX, panelY);
         
@@ -243,10 +263,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private createDeckPanel(): void {
-        const panelX = 1170;
-        const panelY = 90;
-        const panelWidth = 320;
-        const panelHeight = 700;
+        const { x: panelX, y: panelY, width: panelWidth, height: panelHeight } = this.deckBounds;
         
         this.deckPanel = this.add.container(panelX, panelY);
         
@@ -302,7 +319,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private createBottomButtons(width: number, height: number): void {
-        const buttonY = height - 60;
+        const buttonY = height - 50;
         
         // Back button
         this.createButton(150, buttonY, '← Back', () => this.onBack());
@@ -314,8 +331,8 @@ export class DeckBuildingScene extends Phaser.Scene {
 
     private createButton(x: number, y: number, label: string, callback: () => void, isPrimary = false): void {
         const container = this.add.container(x, y);
-        const buttonWidth = 180;
-        const buttonHeight = 50;
+        const buttonWidth = 200;
+        const buttonHeight = 56;
         
         const bg = this.add.graphics();
         const fillColor = isPrimary ? 0xd4a017 : 0x3d4663;
@@ -470,6 +487,9 @@ export class DeckBuildingScene extends Phaser.Scene {
         const startX = 10;
         const startY = 10;
 
+        const availableWidth = this.cardPanelBounds.width - startX * 2;
+        const cardsPerRow = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
+
         // Count how many copies of each card type are currently in the deck
         const deckCounts = new Map<string, number>();
         this.currentDeck.forEach(card => {
@@ -480,8 +500,8 @@ export class DeckBuildingScene extends Phaser.Scene {
         const groupedCards = Array.from(this.availableCardLimits.values());
 
         groupedCards.forEach(({ card, max }, index) => {
-            const col = index % CARDS_PER_ROW;
-            const row = Math.floor(index / CARDS_PER_ROW);
+            const col = index % cardsPerRow;
+            const row = Math.floor(index / cardsPerRow);
 
             const x = startX + col * (CARD_WIDTH + CARD_GAP);
             const y = startY + row * (CARD_HEIGHT + CARD_GAP) + this.cardGridScrollY;
@@ -622,9 +642,9 @@ export class DeckBuildingScene extends Phaser.Scene {
         // Card background
         const bg = this.add.graphics();
         bg.fillStyle(0x2a2d3a, 1);
-        bg.fillRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 6);
+        bg.fillRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 8);
         bg.lineStyle(2, this.getRarityColor(card.rarity), 1);
-        bg.strokeRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 6);
+        bg.strokeRoundedRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 8);
         container.add(bg);
         
         // Cost circle
@@ -652,12 +672,13 @@ export class DeckBuildingScene extends Phaser.Scene {
         typeIndicator.setStrokeStyle(1, 0xffffff, 0.3);
         container.add(typeIndicator);
         
-        // Card portrait area
-        const portraitBg = this.add.rectangle(CARD_WIDTH / 2, 60, CARD_WIDTH - 16, 55, 0x1a1d2e);
+        // Card portrait area (scaled to fill ~70% height, keeping padding)
+        const portraitAreaHeight = CARD_HEIGHT * 0.7;
+        const portraitBg = this.add.rectangle(CARD_WIDTH / 2, 10 + portraitAreaHeight / 2, CARD_WIDTH - 16, portraitAreaHeight, 0x1a1d2e);
         container.add(portraitBg);
-        const portraitBounds = { w: CARD_WIDTH - 20, h: 50 };
+        const portraitBounds = { w: CARD_WIDTH - 20, h: portraitAreaHeight - 8 };
         if (card.portraitKey && this.textures.exists(card.portraitKey)) {
-            const img = this.add.image(CARD_WIDTH / 2, 60, card.portraitKey).setOrigin(0.5);
+            const img = this.add.image(CARD_WIDTH / 2, portraitBg.y, card.portraitKey).setOrigin(0.5);
             const texW = img.width || portraitBounds.w;
             const texH = img.height || portraitBounds.h;
             const scale = Math.min(portraitBounds.w / texW, portraitBounds.h / texH);
@@ -672,11 +693,11 @@ export class DeckBuildingScene extends Phaser.Scene {
             container.add(placeholder);
         }
         
-        // Card name
-        const displayName = card.name.length > 12 ? card.name.slice(0, 11) + '...' : card.name;
-        const nameText = this.add.text(CARD_WIDTH / 2, 105, displayName, {
+        // Card name (moved below larger portrait)
+        const displayName = card.name.length > 16 ? card.name.slice(0, 15) + '...' : card.name;
+        const nameText = this.add.text(CARD_WIDTH / 2, 10 + portraitAreaHeight + 4, displayName, {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '11px',
+            fontSize: '12px',
             color: '#c0c0c0',
             align: 'center'
         }).setOrigin(0.5, 0);
@@ -684,9 +705,9 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         // Card rarity indicator
         const rarityText = card.rarity?.charAt(0).toUpperCase() ?? 'C';
-        const rarityLabel = this.add.text(CARD_WIDTH / 2, 125, rarityText, {
+        const rarityLabel = this.add.text(CARD_WIDTH / 2, nameText.y + 16, rarityText, {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '10px',
+            fontSize: '11px',
             color: '#8a9cc5'
         }).setOrigin(0.5, 0);
         container.add(rarityLabel);
