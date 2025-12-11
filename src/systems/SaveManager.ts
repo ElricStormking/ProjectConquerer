@@ -91,8 +91,10 @@ export class SaveManager extends Phaser.Events.EventEmitter {
         if (!this.saveData.runState) return null;
         // Return a deep clone
         const run = this.saveData.runState;
+        const lives = (run as any).lives ?? 3;
         return {
             ...run,
+            lives,
             deck: run.deck.map(card => ({ ...card })),
             completedNodeIds: [...run.completedNodeIds],
             relics: [...run.relics],

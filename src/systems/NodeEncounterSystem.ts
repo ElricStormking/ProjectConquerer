@@ -91,8 +91,9 @@ export class NodeEncounterSystem {
         scenePlugin.bringToTop(this.hostScene.scene.key);
 
         if (!victory) {
+            const livesLeft = this.runManager.loseLife(1);
             this.resolving = false;
-            this.hostScene.events.emit('battle-failed', node);
+            this.hostScene.events.emit('battle-failed', node, livesLeft);
             return;
         }
 

@@ -3,14 +3,17 @@ import { ICard, IGameState } from '../types/ironwars';
 import { HandManager } from '../ui/HandManager';
 import { RelicInventoryUI } from '../ui/RelicInventoryUI';
 import { GameStateManager } from '../systems/GameStateManager';
+import { RunProgressionManager } from '../systems/RunProgressionManager';
 
 export class UIScene extends Phaser.Scene {
+    private readonly runManager = RunProgressionManager.getInstance();
     private handManager!: HandManager;
     private relicInventoryUI: RelicInventoryUI | null = null;
     private battleScene!: Phaser.Scene;
     private profitText!: Phaser.GameObjects.Text;
     private goldText!: Phaser.GameObjects.Text;
     private fortressText!: Phaser.GameObjects.Text;
+    private livesText!: Phaser.GameObjects.Text;
     private waveText!: Phaser.GameObjects.Text;
     private phaseText!: Phaser.GameObjects.Text;
     private commanderText!: Phaser.GameObjects.Text;
@@ -31,9 +34,11 @@ export class UIScene extends Phaser.Scene {
         this.createTopHud();
         this.createStartButton();
         this.registerBattleEvents();
+        this.registerRunEvents();
         const state = GameStateManager.getInstance().getState();
         this.handManager.setCards(state.hand);
         this.updateStateTexts(state);
+        this.updateLivesText();
     }
 
     public update() {
@@ -43,20 +48,24 @@ export class UIScene extends Phaser.Scene {
     }
 
     private createTopHud() {
-        const leftPanel = this.add.rectangle(170, 60, 320, 90, 0x0f111a, 0.7)
+        const leftPanel = this.add.rectangle(170, 70, 320, 140, 0x0f111a, 0.7)
             .setOrigin(0.5)
             .setStrokeStyle(2, 0xffffff, 0.2);
-        this.profitText = this.add.text(40, 30, 'PROFIT 0', {
+        this.profitText = this.add.text(40, 25, 'PROFIT 0', {
             fontSize: '20px',
             color: '#ffffff'
         });
-        this.goldText = this.add.text(40, 60, 'GOLD 0', {
+        this.goldText = this.add.text(40, 55, 'GOLD 0', {
             fontSize: '18px',
             color: '#b8c2d3'
         });
-        this.fortressText = this.add.text(40, 90, 'FORTRESS 0 / 0', {
+        this.fortressText = this.add.text(40, 85, 'FORTRESS 0 / 0', {
             fontSize: '18px',
             color: '#ffdd88'
+        });
+        this.livesText = this.add.text(40, 115, 'LIVES 3', {
+            fontSize: '18px',
+            color: '#ff9e9e'
         });
 
         const rightPanel = this.add.rectangle(1750, 60, 340, 90, 0x0f111a, 0.7)
@@ -155,11 +164,26 @@ export class UIScene extends Phaser.Scene {
         });
     }
 
+    private registerRunEvents() {
+        this.runManager.on('lives-updated', this.updateLivesText, this);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.runManager.off('lives-updated', this.updateLivesText, this);
+        });
+    }
+
     private updateStateTexts(state: IGameState) {
         this.profitText.setText(`PROFIT ${state.factionResource}`);
         this.goldText.setText(`GOLD ${state.gold}`);
         this.fortressText.setText(`FORTRESS ${state.fortressHp} / ${state.fortressMaxHp}`);
         this.waveText.setText(`Wave ${state.currentWave}`);
+        this.updateLivesText();
+    }
+
+    private updateLivesText() {
+        const lives = this.runManager.getLives();
+        if (this.livesText) {
+            this.livesText.setText(`LIVES ${lives}`);
+        }
     }
 
     private updateCommanderCooldown() {

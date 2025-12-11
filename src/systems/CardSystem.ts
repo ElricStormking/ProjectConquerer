@@ -206,6 +206,9 @@ export class CardSystem {
 
         // Use DataManager to get unit template directly
         const unitTemplate = DataManager.getInstance().getUnitTemplate(unitId);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H2',location:'CardSystem.spawnUnitCard',message:'template lookup',data:{unitId,found:!!unitTemplate,spriteKeyGuess:unitTemplate?.type},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (!unitTemplate) {
             console.error(`[CardSystem] Unit template not found for ID: ${unitId}`);
             // Fallback to starter data if possible, or fail

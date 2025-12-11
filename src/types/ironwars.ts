@@ -282,6 +282,7 @@ export interface IRunState {
     fortressHp: number;
     fortressMaxHp: number;
     gold: number;
+    lives: number;
     deck: ICard[];
     /**
      * Set of card template ids (e.g. 'card_soldier_1', 'card_overclock') that

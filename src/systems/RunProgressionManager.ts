@@ -48,7 +48,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public getRunState(): RunStateSnapshot | null {
         if (!this.runState) return null;
-        return {
+        const snapshot = {
             ...this.runState,
             deck: [...this.runState.deck],
             completedNodeIds: [...this.runState.completedNodeIds],
@@ -56,8 +56,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             curses: [...this.runState.curses],
             commanderRoster: [...this.runState.commanderRoster],
             cardCollection: [...(this.runState.cardCollection ?? [])],
-            factionId: this.runState.factionId
+            factionId: this.runState.factionId,
+            lives: this.runState.lives
         };
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H1',location:'RunProgressionManager.getRunState',message:'snapshot',data:{deck: snapshot.deck.map(c=>c.id), node:snapshot.currentNodeId},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        return snapshot;
     }
 
     public getFactionId(): string {
@@ -117,6 +122,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
         let startingGold = 120;
         const runStartContext = this.relicManager.applyTrigger(RelicTrigger.ON_RUN_START, {});
+        const startingLives = 3 + (Number(runStartContext.extraLives) || 0);
         if (runStartContext.goldBonus) {
             startingGold += runStartContext.goldBonus as number;
         }
@@ -128,6 +134,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             fortressHp: modifiedFortressHp,
             fortressMaxHp: modifiedFortressHp,
             gold: startingGold,
+            lives: startingLives,
             deck: [...deck],
             // Start with an empty collection; new rewards will populate this.
             cardCollection: [],
@@ -139,6 +146,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
         this.updateNodeAccessibility();
         this.saveRun();
+        this.emit('lives-updated', startingLives);
         this.emit('run-started', this.getRunState());
         this.emit('stage-entered', this.getStageSnapshot(startingStageIndex));
         this.emit('node-selected', this.getNodeSnapshot(entryNodeId));
@@ -152,6 +160,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         
         this.buildStageGraph();
         this.runState = savedRun;
+        if (this.runState && (this.runState as any).lives === undefined) {
+            this.runState.lives = 3;
+        }
         
         // Restore relics
         this.relicManager.reset();
@@ -159,6 +170,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         savedRun.curses.forEach(id => this.relicManager.addRelic(id));
         
         this.updateNodeAccessibility();
+        if (this.runState) {
+            this.emit('lives-updated', this.runState.lives);
+        }
         this.emit('run-loaded', this.getRunState());
         this.emit('stage-entered', this.getStageSnapshot(savedRun.currentStageIndex));
         this.emit('node-selected', this.getNodeSnapshot(savedRun.currentNodeId));
@@ -283,15 +297,19 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public addRelic(relicId: string): void {
         if (!this.runState) return;
+        const config = this.dataManager.getRelicConfig(relicId);
         if (this.relicManager.addRelic(relicId)) {
             this.runState.relics = this.relicManager.getActiveRelicIds();
             this.runState.curses = this.relicManager.getCurses().map(c => c.id);
             this.emit('relics-updated', [...this.runState.relics]);
-            if (this.relicManager.hasRelic(relicId)) {
-                const config = this.dataManager.getRelicConfig(relicId);
                 if (config?.isCursed) {
                     this.emit('curses-updated', [...this.runState.curses]);
                 }
+            if (config?.effect?.type === 'extra_life') {
+                const bonus = Number(config.effect.value) || 1;
+                this.addLives(bonus);
+            } else {
+                this.saveRun();
             }
         }
     }
@@ -353,6 +371,37 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return this.runState ? this.runState.gold : 0;
     }
 
+    public getLives(): number {
+        return this.runState ? this.runState.lives : 0;
+    }
+
+    public addLives(amount: number): number {
+        if (!this.runState) return 0;
+        const gain = Math.max(0, Math.floor(amount));
+        if (gain === 0) {
+            return this.runState.lives;
+        }
+        this.runState.lives += gain;
+        this.saveRun();
+        this.emit('lives-updated', this.runState.lives);
+        return this.runState.lives;
+    }
+
+    public loseLife(amount: number = 1): number {
+        if (!this.runState) return 0;
+        const loss = Math.max(0, Math.floor(amount));
+        const nextLives = Math.max(0, this.runState.lives - loss);
+        this.runState.lives = nextLives;
+        if (nextLives > 0) {
+            this.saveRun();
+            this.emit('lives-updated', nextLives);
+        } else {
+            this.emit('lives-updated', nextLives);
+            this.handleRunFailure();
+        }
+        return nextLives;
+    }
+
     public getDeckSnapshot(): ICard[] {
         return this.runState ? [...this.runState.deck] : [];
     }
@@ -374,6 +423,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const [removed] = deck.splice(index, 1);
         this.emit('deck-updated', [...deck]);
         return removed;
+    }
+
+    private handleRunFailure(): void {
+        const snapshot = this.getRunState();
+        this.saveManager.deleteSavedRun();
+        this.runState = null;
+        this.emit('run-failed', snapshot);
     }
 
     private buildStageGraph(): void {

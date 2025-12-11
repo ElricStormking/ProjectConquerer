@@ -168,6 +168,44 @@ export class PreloadScene extends Phaser.Scene {
         
         this.load.spritesheet('camp1_soldier3', 'assets/units/Cog_Dominion/cog_railgunner/camp1_soldier3.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('camp1_soldier3_anim', 'assets/units/Cog_Dominion/cog_railgunner/camp1_soldier3_an.json');
+
+        // Jade Dynasty units
+        this.load.spritesheet('jade_azure_spear', 'assets/units/Jade Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('jade_azure_spear_anim', 'assets/units/Jade Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers_an.json');
+
+        this.load.spritesheet('jade_storm_monks', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_storm_monks_anim', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
+
+        this.load.spritesheet('jade_crossbow_gunners', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_crossbow_gunners_anim', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
+
+        this.load.spritesheet('jade_halberd_guardian', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.json('jade_halberd_guardian_anim', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
+
+        this.load.spritesheet('jade_shrine_oni', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_shrine_oni_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+
+        this.load.spritesheet('jade_shikigami_fox', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shikigami_fox_anim', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
+
+        // Placeholder: reuse existing sheets for other Jade units until unique sheets provided
+        this.load.spritesheet('jade_chi_dragoon', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.json('jade_chi_dragoon_anim', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
+
+        this.load.spritesheet('jade_shuriken_ninjas', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shuriken_ninjas_anim', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
+
+        this.load.spritesheet('jade_shadowblade_assassins', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shadowblade_assassins_anim', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
+
+        this.load.spritesheet('jade_spirit_lantern', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_spirit_lantern_anim', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
+
+        this.load.spritesheet('jade_paper_doll', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_paper_doll_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+
+        this.load.spritesheet('jade_blue_oni', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_blue_oni_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
     }
 
     create() {

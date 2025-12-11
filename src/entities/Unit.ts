@@ -36,6 +36,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     private healthBar!: Phaser.GameObjects.Graphics;
     private healthBarBg!: Phaser.GameObjects.Graphics;
     private teamFlag!: Phaser.GameObjects.Graphics;
+    private statusIcon?: Phaser.GameObjects.Text;
     private classLabel!: Phaser.GameObjects.Text;
     private trailPoints: Array<{x: number, y: number, alpha: number}> = [];
     private trailGraphics!: Phaser.GameObjects.Graphics;
@@ -65,8 +66,11 @@ export class Unit extends Phaser.Events.EventEmitter {
     private attackSpeedMultiplier: number = 1;
     private friction: number = 0.2;
     
-    private statusEffects: Map<StatusEffect, number> = new Map();
+    private statusEffects: Map<StatusEffect, { remaining: number; magnitude?: number; tickInterval?: number; accumulator?: number }> = new Map();
+    private stunned: boolean = false;
     private lastAttackTime: number = 0;
+    private lastAzureStunTime: number = 0;
+    private lastStormComboTime: number = 0;
 
     // Visual indicator for building-based buffs (Armor Shop / Overclock
     // Stable) shown as a yellow square next to the unit name.
@@ -142,16 +146,15 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Set origin to center-bottom for proper positioning (feet at position)
         this.sprite.setOrigin(0.5, 0.8);
         
-        // 96x96 sprites; render at half scale for normal units. Bosses like
-        // the Raider Boss are visually scaled up to be three times larger
-        // than a normal enemy.
-        // Aegis Tank uses 64x64 sprites, so scale up to match visual size
-        let scale = 0.5;
+        // Scale relative to a 96px baseline so differently-sized sheets look consistent.
+        const frameWidth = Math.max(1, this.sprite.frame.width);
+        let baseScale = 0.5 * (96 / frameWidth);
+        if (this.config.unitType === UnitType.JADE_AZURE_SPEAR) {
+            baseScale *= 2.4; // Azure Spear Chargers need to be larger
+        }
+        let scale = baseScale;
         if (this.config.unitType === UnitType.RAIDER_BOSS) {
             scale *= 3;
-        } else if (this.config.unitType === UnitType.COG_AEGIS_TANK || this.config.unitType === UnitType.COG_THUNDER_CANNON || this.config.unitType === UnitType.COG_RAILGUNNER) {
-            // 64x64 sprites need larger scale to match 96x96 visual size
-            scale = 0.75; // 0.5 * (96/64) = 0.75
         }
         this.sprite.setScale(scale);
         
@@ -169,6 +172,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBarBg = this.scene.add.graphics();
         this.healthBar = this.scene.add.graphics();
         this.teamFlag = this.scene.add.graphics();
+        this.statusIcon = this.scene.add.text(this.config.x, this.config.y - 130, '', {
+            fontSize: '18px',
+            color: '#ffff66',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5, 0.5);
         this.attackSwingGraphics = this.scene.add.graphics();
         // Class label above unit
         const className = UNIT_TEMPLATES[this.config.unitType]?.name ?? this.config.unitType;
@@ -293,6 +302,13 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.COG_SOLDIER:
             case UnitType.COG_AEGIS_TANK:
             case UnitType.RAIDER_GRUNT:
+            case UnitType.JADE_AZURE_SPEAR:
+            case UnitType.JADE_STORM_MONKS:
+            case UnitType.JADE_HALBERD_GUARDIAN:
+            case UnitType.JADE_SHRINE_ONI:
+            case UnitType.JADE_CHI_DRAGOON:
+            case UnitType.JADE_BLUE_ONI:
+            case UnitType.JADE_PAPER_DOLL:
                 return true;
             default:
                 return false;
@@ -325,6 +341,8 @@ export class Unit extends Phaser.Events.EventEmitter {
                 const swingAngle = Phaser.Math.DegToRad(120); // narrower cone so it feels forward
                 const radius = Math.max(this.getRange(), 60);
                 const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
+                let appliedStormStun = false;
+
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
                     const pos = enemy.getPosition();
@@ -336,6 +354,22 @@ export class Unit extends Phaser.Events.EventEmitter {
                     const diff = Phaser.Math.Angle.Wrap(angleToEnemy - this.facing);
                     if (Math.abs(diff) <= swingAngle / 2) {
                         combatSystem.dealDamage(this as any, enemy as any, this.getDamage());
+
+                        // Jade-specific CC
+                        if (this.config.unitType === UnitType.JADE_AZURE_SPEAR) {
+                            if (currentTime - this.lastAzureStunTime > 1500) {
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.9);
+                                this.lastAzureStunTime = currentTime;
+                            }
+                        } else if (this.config.unitType === UnitType.JADE_STORM_MONKS && !appliedStormStun) {
+                            if (currentTime - this.lastStormComboTime <= 400) {
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.0);
+                                this.lastStormComboTime = 0;
+                                appliedStormStun = true;
+                            } else {
+                                this.lastStormComboTime = currentTime;
+                            }
+                        }
                     }
                 });
             } else if (!targetUnit.isDead()) {
@@ -438,6 +472,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar.y = this.body.position.y;
         this.teamFlag.x = this.body.position.x;
         this.teamFlag.y = this.body.position.y;
+        if (this.statusIcon) {
+            this.statusIcon.x = this.body.position.x;
+            this.statusIcon.y = this.body.position.y - 130;
+            this.statusIcon.setDepth(this.body.position.y + 4000);
+        }
         if (this.classLabel) {
             this.classLabel.x = this.body.position.x;
             this.classLabel.y = this.body.position.y - 110;
@@ -482,6 +521,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public move(direction: { x: number; y: number }): void {
         if (this.dead) return;
+        if (this.stunned) return;
 
         const dx = direction.x;
         const dy = direction.y;
@@ -588,6 +628,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar.setVisible(false);
         this.healthBarBg.setVisible(false);
         this.teamFlag.setVisible(false);
+        if (this.statusIcon) {
+            this.statusIcon.setVisible(false);
+            this.statusIcon.destroy();
+            this.statusIcon = undefined;
+        }
         this.trailGraphics.clear(); // Clear trail on death
         this.trailPoints = []; // Clear trail points
         
@@ -617,18 +662,40 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.classLabel) { this.classLabel.x = x; this.classLabel.y = y - 110; }
     }
     
-    public addStatusEffect(effect: StatusEffect, duration: number): void {
-        this.statusEffects.set(effect, duration);
+    public addStatusEffect(effect: StatusEffect, duration: number, magnitude?: number, tickIntervalSeconds?: number): void {
+        this.statusEffects.set(effect, { remaining: duration * 1000, magnitude, tickInterval: tickIntervalSeconds ? tickIntervalSeconds * 1000 : undefined, accumulator: 0 });
+        if (effect === StatusEffect.STUNNED) {
+            this.stunned = true;
+        }
     }
     
     public updateStatusEffects(deltaTime: number): void {
-        this.statusEffects.forEach((duration, effect) => {
-            const newDuration = duration - deltaTime;
-            
-            if (newDuration <= 0) {
+        this.statusEffects.forEach((entry, effect) => {
+            const newRemaining = entry.remaining - deltaTime;
+            let accumulator = entry.accumulator ?? 0;
+
+            // Handle periodic effects
+            if ((effect === StatusEffect.DOT || effect === StatusEffect.HOT) && entry.tickInterval) {
+                accumulator += deltaTime;
+                while (accumulator >= entry.tickInterval) {
+                    accumulator -= entry.tickInterval;
+                    if (effect === StatusEffect.DOT && entry.magnitude) {
+                        this.takeDamage(entry.magnitude);
+                    } else if (effect === StatusEffect.HOT && entry.magnitude) {
+                        this.heal(entry.magnitude);
+                    }
+                }
+            }
+
+            if (newRemaining <= 0) {
                 this.removeStatusEffect(effect);
+                this.statusEffects.delete(effect);
             } else {
-                this.statusEffects.set(effect, newDuration);
+                this.statusEffects.set(effect, {
+                    ...entry,
+                    remaining: newRemaining,
+                    accumulator
+                });
             }
         });
     }
@@ -648,6 +715,12 @@ export class Unit extends Phaser.Events.EventEmitter {
                 break;
             case StatusEffect.DAZED:
                 this.accuracy = 1;
+                break;
+            case StatusEffect.STUNNED:
+                this.stunned = false;
+                break;
+            case StatusEffect.SLOWED:
+                this.moveSpeedMultiplier = 1;
                 break;
         }
     }
@@ -728,7 +801,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         return relicMod * this.attackSpeedMultiplier; 
     }
     
+    public isStunned(): boolean { return this.stunned; }
+    public setStunned(value: boolean): void { this.stunned = value; }
+    
     public canAttack(currentTime: number): boolean {
+        if (this.stunned) return false;
         const cooldown = 1000 / this.getAttackSpeed();
         return currentTime - this.lastAttackTime >= cooldown;
     }
@@ -769,6 +846,18 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.RAIDER_BOSS: return 'shotgunner';
             case UnitType.RAIDER_ROGUE: return 'ninja';
             case UnitType.RAIDER_ARCHER: return 'sniper';
+            case UnitType.JADE_AZURE_SPEAR: return 'jade_azure_spear';
+            case UnitType.JADE_STORM_MONKS: return 'jade_storm_monks';
+            case UnitType.JADE_CROSSBOW_GUNNERS: return 'jade_crossbow_gunners';
+            case UnitType.JADE_HALBERD_GUARDIAN: return 'jade_halberd_guardian';
+            case UnitType.JADE_SHRINE_ONI: return 'jade_shrine_oni';
+            case UnitType.JADE_SHIKIGAMI_FOX: return 'jade_shikigami_fox';
+            case UnitType.JADE_CHI_DRAGOON: return 'jade_chi_dragoon'; // placeholder reuse
+            case UnitType.JADE_SHURIKEN_NINJAS: return 'jade_shuriken_ninjas'; // placeholder reuse
+            case UnitType.JADE_SHADOWBLADE_ASSASSINS: return 'jade_shadowblade_assassins'; // placeholder reuse
+            case UnitType.JADE_SPIRIT_LANTERN: return 'jade_spirit_lantern'; // placeholder reuse
+            case UnitType.JADE_PAPER_DOLL: return 'jade_paper_doll'; // placeholder reuse
+            case UnitType.JADE_BLUE_ONI: return 'jade_blue_oni'; // placeholder reuse
             default: return 'warrior';
         }
     }
@@ -778,8 +867,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         const animKey = spriteKey + '_anim';
         
         // Load animation data if it exists
-        if (this.scene.cache.json.exists(animKey)) {
-            const animData = this.scene.cache.json.get(animKey);
+        const animDataKey = this.scene.cache.json.exists(animKey) ? animKey : spriteKey + '_an';
+        if (this.scene.cache.json.exists(animDataKey)) {
+            const animData = this.scene.cache.json.get(animDataKey);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H5',location:'Unit.createAnimations',message:'anim data found',data:{spriteKey,animDataKey,hasAnims:!!animData?.anims},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             
             // Create animations from loaded data
             if (animData.anims) {
@@ -856,5 +949,24 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         const idleFrame = this.idleFrameByDirection[this.lastMoveDirection] ?? 0;
         this.sprite.setFrame(idleFrame);
+
+        // Visuals for status: tint for slow, icon for stun/slow
+        const hasSlow = this.statusEffects.has(StatusEffect.SLOWED);
+        if (hasSlow) {
+            this.sprite.setTint(0x66ccff);
+        } else {
+            this.sprite.setTint(this.team === 1 ? 0xaaccff : 0xffaaaa);
+        }
+        if (this.statusIcon) {
+            if (this.stunned) {
+                this.statusIcon.setText('💫');
+                this.statusIcon.setVisible(true);
+            } else if (hasSlow) {
+                this.statusIcon.setText('⏳');
+                this.statusIcon.setVisible(true);
+            } else {
+                this.statusIcon.setVisible(false);
+            }
+        }
     }
 }

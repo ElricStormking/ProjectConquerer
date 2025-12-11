@@ -289,6 +289,13 @@ export class RelicManager extends Phaser.Events.EventEmitter {
                 }
                 break;
 
+            case 'extra_life':
+                if (trigger === RelicTrigger.ON_RUN_START) {
+                    context.extraLives = (Number(context.extraLives) || 0) + ((effect.value as number) || 1);
+                    return true;
+                }
+                break;
+
             case 'reward_choice_bonus':
                 context.rewardChoiceBonus = (Number(context.rewardChoiceBonus) || 0) + ((effect.value as number) || 0);
                 if (effect.cost) {

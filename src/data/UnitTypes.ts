@@ -17,7 +17,19 @@ export enum UnitType {
     RAIDER_BOMBER = 'raider_bomber',
     RAIDER_BOSS = 'raider_boss',
     RAIDER_ROGUE = 'raider_rogue',
-    RAIDER_ARCHER = 'raider_archer'
+    RAIDER_ARCHER = 'raider_archer',
+    JADE_AZURE_SPEAR = 'jade_azure_spear',
+    JADE_STORM_MONKS = 'jade_storm_monks',
+    JADE_CROSSBOW_GUNNERS = 'jade_crossbow_gunners',
+    JADE_HALBERD_GUARDIAN = 'jade_halberd_guardian',
+    JADE_SHRINE_ONI = 'jade_shrine_oni',
+    JADE_SHIKIGAMI_FOX = 'jade_shikigami_fox',
+    JADE_CHI_DRAGOON = 'jade_chi_dragoon',
+    JADE_SHURIKEN_NINJAS = 'jade_shuriken_ninjas',
+    JADE_SHADOWBLADE_ASSASSINS = 'jade_shadowblade_assassins',
+    JADE_SPIRIT_LANTERN = 'jade_spirit_lantern',
+    JADE_PAPER_DOLL = 'jade_paper_doll',
+    JADE_BLUE_ONI = 'jade_blue_oni'
 }
 
 export interface UnitTemplate {

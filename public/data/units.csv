@@ -15,3 +15,15 @@ raider_bomber,Siege Bomber,siege,iron_raiders,rare,200,40,2,45,0.55,380,110,larg
 raider_boss,Iron Juggernaut,frontline,iron_raiders,legendary,1260,72,10,30,0.33,120,900,large,shotgunner,Massive raider tank with crushing area attacks
 raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,22,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield
 raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,50,0.9,420,58,normal,sniper,Long-range raider marksman supporting the boss
+jade_azure_spear,Azure Spear Chargers,frontline,jade_dynasty,common,190,22,5,70,1.25,45,85,normal,jade_azure_spear,Long reach melee; opener stun and chi gain on kill
+jade_storm_monks,Storm Monks,frontline,jade_dynasty,rare,170,24,4,80,1.5,40,80,normal,jade_storm_monks,Fast combo melee that can stun on dual hits
+jade_crossbow_gunners,Repeating Crossbow Gunners,ranged,jade_dynasty,common,120,16,3,60,1.1,360,70,normal,jade_crossbow_gunners,Ranged support that applies vulnerability and slow
+jade_halberd_guardian,Jade Halberd Guardian,frontline,jade_dynasty,rare,340,28,7,55,0.85,55,120,large,jade_halberd_guardian,Tank with wide cleave and shock slam
+jade_shrine_oni,Shrine Oni Guardian,frontline,jade_dynasty,rare,360,26,8,50,0.8,50,130,large,jade_shrine_oni,Spirit guardian that taunts and gains chi shield
+jade_shikigami_fox,Golden Shikigami Fox,ranged,jade_dynasty,rare,140,20,3,75,1.2,320,60,small,jade_shikigami_fox,Agile spirit firing homing flames with mini-stun
+jade_chi_dragoon,Chi Dragoon,frontline,jade_dynasty,rare,260,30,6,65,1.0,55,110,normal,jade_chi_dragoon,Bruiser that scales damage with chi flow
+jade_shuriken_ninjas,Shuriken Ninjas,ranged,jade_dynasty,common,110,17,2,85,1.4,300,55,small,jade_shuriken_ninjas,Throwing daggers with crit bleed and stealth on kill
+jade_shadowblade_assassins,Shadowblade Assassins,frontline,jade_dynasty,rare,150,26,3,90,1.6,40,60,small,jade_shadowblade_assassins,Stealth assassin with opening crit and brief stun
+jade_spirit_lantern,Spirit Lantern Healer,support,jade_dynasty,common,130,10,2,55,1.0,140,70,normal,jade_spirit_lantern,Healing aura and debuff field spirit
+jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death
+jade_blue_oni,Blue Oni Bruiser,frontline,jade_dynasty,rare,240,32,6,65,1.0,55,105,normal,jade_blue_oni,Bruiser applying frost chi slow that scales with chi flow

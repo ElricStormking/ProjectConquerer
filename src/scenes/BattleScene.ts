@@ -309,7 +309,7 @@ export class BattleScene extends Phaser.Scene {
         if (this.waveManager) {
             this.waveManager.destroy();
         }
-        
+
         this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
         
         // Load waves for this specific encounter (battle/elite/boss node)
@@ -428,7 +428,7 @@ export class BattleScene extends Phaser.Scene {
                 this.hideStartButton();
                 // Between waves: show a Wave Cleared overlay before offering card reward
                 this.showWaveClearedOverlay(() => {
-                    this.showCardRewardScreen();
+                this.showCardRewardScreen();
                 });
             } else {
                 console.log('[BattleScene] No more waves, triggering victory');
@@ -1067,7 +1067,9 @@ export class BattleScene extends Phaser.Scene {
             UnitType.COG_RAILGUNNER,
             UnitType.COG_THUNDER_CANNON,
             UnitType.RAIDER_BOMBER,
-            UnitType.RAIDER_ARCHER
+            UnitType.RAIDER_ARCHER,
+            UnitType.JADE_CROSSBOW_GUNNERS,
+            UnitType.JADE_SHIKIGAMI_FOX
         ].includes(unitType);
     }
 
@@ -1079,7 +1081,14 @@ export class BattleScene extends Phaser.Scene {
             UnitType.COG_SOLDIER,
             UnitType.COG_AEGIS_TANK,
             UnitType.RAIDER_GRUNT,
-            UnitType.RAIDER_ROGUE
+            UnitType.RAIDER_ROGUE,
+            UnitType.JADE_AZURE_SPEAR,
+            UnitType.JADE_STORM_MONKS,
+            UnitType.JADE_HALBERD_GUARDIAN,
+            UnitType.JADE_SHRINE_ONI,
+            UnitType.JADE_CHI_DRAGOON,
+            UnitType.JADE_BLUE_ONI,
+            UnitType.JADE_PAPER_DOLL
         ].includes(unitType);
     }
 

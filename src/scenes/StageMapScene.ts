@@ -19,6 +19,7 @@ export class StageMapScene extends Phaser.Scene {
     private pathGraphics!: Phaser.GameObjects.Graphics;
     private fortressToken?: Phaser.GameObjects.Image;
     private hudText?: Phaser.GameObjects.Text;
+    private hudBg?: Phaser.GameObjects.Rectangle;
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
     private loadSavedRun = false;
@@ -61,10 +62,20 @@ export class StageMapScene extends Phaser.Scene {
     }
 
     private createHud(): void {
-        this.hudText = this.add.text(32, 32, '', {
+        // Dark overlay behind HUD for readability
+        this.hudBg = this.add.rectangle(16, 22, 1100, 52, 0x0b0c10, 0.78)
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(198);
+        this.hudText = this.add.text(32, 30, '', {
             fontSize: '28px',
             color: '#f8f8f8'
-        }).setScrollFactor(0);
+        })
+            .setScrollFactor(0)
+            .setDepth(200);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'lives-overlay',hypothesisId:'H1-H2',location:'StageMapScene.createHud',message:'created HUD overlay',data:{bgWidth:900,bgHeight:48,bgDepth:198,textDepth:200},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         this.refreshHud();
     }
 
@@ -274,8 +285,11 @@ export class StageMapScene extends Phaser.Scene {
         this.runManager.on('node-completed', this.onNodeCompleted, this);
         this.runManager.on('gold-updated', this.refreshHud, this);
         this.runManager.on('fortress-updated', this.refreshHud, this);
+        this.runManager.on('lives-updated', this.refreshHud, this);
+        this.runManager.on('run-failed', this.onRunFailed, this);
         this.runManager.on('stage-completed', this.onStageCompleted, this);
         this.runManager.on('run-completed', this.onRunCompleted, this);
+        this.events.on('battle-failed', this.onBattleFailed, this);
 
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.runManager.off('stage-entered', this.onStageEntered, this);
@@ -283,8 +297,11 @@ export class StageMapScene extends Phaser.Scene {
             this.runManager.off('node-completed', this.onNodeCompleted, this);
             this.runManager.off('gold-updated', this.refreshHud, this);
             this.runManager.off('fortress-updated', this.refreshHud, this);
+            this.runManager.off('lives-updated', this.refreshHud, this);
+            this.runManager.off('run-failed', this.onRunFailed, this);
             this.runManager.off('stage-completed', this.onStageCompleted, this);
             this.runManager.off('run-completed', this.onRunCompleted, this);
+            this.events.off('battle-failed', this.onBattleFailed, this);
         });
     }
 
@@ -495,8 +512,21 @@ export class StageMapScene extends Phaser.Scene {
         const stage = this.runManager.getStageSnapshot(state.currentStageIndex);
         const faction = this.factionRegistry.getFaction(state.factionId);
         this.hudText.setText(
-            `${faction?.name ?? 'Unknown'}  |  Stage: ${stage?.name ?? '-'}  |  HP: ${state.fortressHp}/${state.fortressMaxHp}  |  Gold: ${state.gold}  |  Deck: ${state.deck.length}`
+            `${faction?.name ?? 'Unknown'}  |  Stage: ${stage?.name ?? '-'}  |  HP: ${state.fortressHp}/${state.fortressMaxHp}  |  Lives: ${state.lives}  |  Gold: ${state.gold}  |  Deck: ${state.deck.length}`
         );
+        const textWidth = this.hudText.width;
+        const textHeight = this.hudText.height;
+        const paddingX = 32;
+        const paddingY = 16;
+        if (this.hudBg) {
+            const targetW = textWidth + paddingX * 2;
+            const targetH = textHeight + paddingY * 2;
+            this.hudBg.setVisible(true);
+            this.hudBg.setSize(targetW, targetH);
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'lives-overlay',hypothesisId:'H3',location:'StageMapScene.refreshHud',message:'hud sizing',data:{textWidth,textHeight},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
     }
 
     private onStageEntered = (stage?: IStageConfig) => {
@@ -524,6 +554,20 @@ export class StageMapScene extends Phaser.Scene {
 
     private onRunCompleted = () => {
         this.showBanner('Run Complete! Victory!');
+    };
+
+    private onBattleFailed = (_node?: IMapNode, livesLeft?: number) => {
+        this.refreshHud();
+        const message = livesLeft !== undefined ? `Life lost! Lives left: ${livesLeft}` : 'Life lost!';
+        this.showBanner(message);
+    };
+
+    private onRunFailed = () => {
+        this.showBanner('Run Failed - Out of Lives');
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.time.delayedCall(450, () => {
+            this.scene.start('TitleMenuScene');
+        });
     };
 
     private showBanner(message: string): void {

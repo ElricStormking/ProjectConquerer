@@ -13,7 +13,11 @@ export enum StatusEffect {
     SNARED = 'snared',
     GREASED = 'greased',
     BURNING = 'burning',
-    DAZED = 'dazed'
+    DAZED = 'dazed',
+    STUNNED = 'stunned',
+    SLOWED = 'slowed',
+    DOT = 'dot',
+    HOT = 'hot'
 }
 
 export interface DamageEvent {
@@ -148,6 +152,16 @@ export class CombatSystem {
                 break;
             case StatusEffect.DAZED:
                 target.setAccuracy(0.2);
+                break;
+            case StatusEffect.STUNNED:
+                target.setStunned(true);
+                break;
+            case StatusEffect.SLOWED:
+                target.setMoveSpeedMultiplier(0.6);
+                break;
+            case StatusEffect.DOT:
+            case StatusEffect.HOT:
+                // DOT/HOT are handled by target's status tick; no immediate action here.
                 break;
         }
     }
