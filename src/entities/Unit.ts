@@ -149,8 +149,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Scale relative to a 96px baseline so differently-sized sheets look consistent.
         const frameWidth = Math.max(1, this.sprite.frame.width);
         let baseScale = 0.5 * (96 / frameWidth);
-        if (this.config.unitType === UnitType.JADE_AZURE_SPEAR) {
-            baseScale *= 2.4; // Azure Spear Chargers need to be larger
+        if (
+            this.config.unitType === UnitType.JADE_AZURE_SPEAR ||
+            this.config.unitType === UnitType.JADE_SHRINE_ONI ||
+            this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN
+        ) {
+            baseScale *= 2.4; // Jade heavy units need larger presence
         }
         let scale = baseScale;
         if (this.config.unitType === UnitType.RAIDER_BOSS) {
