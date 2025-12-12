@@ -330,15 +330,19 @@ export class StageMapScene extends Phaser.Scene {
         this.cameras.main.fadeIn(300, 0, 0, 0);
         this.stageDecor = this.add.container(0, 0);
         this.stageDecor.setDepth(0);
-        const bgKey = stage.backgroundKey || 'stage_default';
+        let bgKey = stage.backgroundKey || 'stage_default';
+        const factionId = this.runManager.getRunState()?.factionId;
+        if (factionId === 'frost_clan' && this.textures.exists('stage_frost_map')) {
+            bgKey = 'stage_frost_map';
+        }
         if (this.textures.exists(bgKey)) {
             const bgImage = this.add.image(MAP_WIDTH / 2, MAP_HEIGHT / 2, bgKey);
             bgImage.setDisplaySize(MAP_WIDTH, MAP_HEIGHT);
             bgImage.setDepth(0);
             this.stageDecor.add(bgImage);
         } else {
-            const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
-            this.stageDecor.add(bg);
+        const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
+        this.stageDecor.add(bg);
         }
         const title = this.add.text(MAP_WIDTH / 2, 80, stage.name, {
             fontSize: '48px',
@@ -473,7 +477,7 @@ export class StageMapScene extends Phaser.Scene {
             if (this.textures.exists(imageKey)) {
                 this.fortressToken = this.add.image(position.x, tokenY, imageKey);
                 this.fortressToken.setScale(0.12); // Scale down for map display
-                this.fortressToken.setDepth(10);
+            this.fortressToken.setDepth(10);
             } else {
                 // Fallback to a simple circle if image not found
                 const fallback = this.add.ellipse(position.x, tokenY, 28, 28, 0xf0f4ff, 1);

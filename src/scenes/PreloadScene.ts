@@ -114,6 +114,7 @@ export class PreloadScene extends Phaser.Scene {
 
         // Stage maps (world map backgrounds)
         this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png');
+        this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         
