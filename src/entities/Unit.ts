@@ -6,7 +6,8 @@ import type { CombatSystem } from '../systems/CombatSystem';
 import { UnitType, UNIT_TEMPLATES } from '../data/UnitTypes';
 import { RelicManager } from '../systems/RelicManager';
 import { GameStateManager } from '../systems/GameStateManager';
-import { IRelicContext, NodeType } from '../types/ironwars';
+import { DataManager } from '../systems/DataManager';
+import { IRelicContext, NodeType, UnitSkillTemplate } from '../types/ironwars';
 
 export interface UnitConfig {
     x: number;
@@ -24,6 +25,9 @@ export interface UnitConfig {
         range: number;
         mass: number;
     };
+    skillPrimaryId?: string;
+    skillSecondaryId?: string;
+    passiveSkillId?: string;
 }
 
 export class Unit extends Phaser.Events.EventEmitter {
@@ -46,6 +50,11 @@ export class Unit extends Phaser.Events.EventEmitter {
     private halberdLastSlamTime: number = 0;
     private shadowbladeFirstHitTime: number = 0;
     private oniLastTauntTime: number = 0;
+    private skillPrimary?: UnitSkillTemplate;
+    private skillSecondary?: UnitSkillTemplate;
+    private passiveSkill?: UnitSkillTemplate;
+    private lastSkillUse: Map<string, number> = new Map();
+    private lastPassiveTick: Map<string, number> = new Map();
     private trailPoints: Array<{x: number, y: number, alpha: number}> = [];
     private trailGraphics!: Phaser.GameObjects.Graphics;
     private attackSwingGraphics!: Phaser.GameObjects.Graphics;
@@ -112,6 +121,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.attackSpeed = stats.attackSpeed;
         this.range = stats.range;
         this.mass = stats.mass;
+
+        // Resolve skills from DataManager
+        const dm = DataManager.getInstance();
+        this.skillPrimary = config.skillPrimaryId ? dm.getUnitSkill(config.skillPrimaryId) : undefined;
+        this.skillSecondary = config.skillSecondaryId ? dm.getUnitSkill(config.skillSecondaryId) : undefined;
+        this.passiveSkill = config.passiveSkillId ? dm.getUnitSkill(config.passiveSkillId) : undefined;
         
         this.createPhysicsBody();
         this.createSprite();
@@ -337,6 +352,46 @@ export class Unit extends Phaser.Events.EventEmitter {
                 return false;
         }
     }
+
+    private applySkillEffects(skill: UnitSkillTemplate, targets: Unit[], currentTime: number, combatSystem: any): void {
+        if (!this.canUseSkill(skill, currentTime)) return;
+        const statusDurationSec = (skill.statusDurationMs ?? 0) / 1000;
+        const stunSec = (skill.stunDurationMs ?? skill.statusDurationMs ?? 0) / 1000;
+        const slowSec = (skill.slowDurationMs ?? skill.statusDurationMs ?? 0) / 1000;
+        const dotDurationSec = statusDurationSec;
+        const hotDurationSec = statusDurationSec;
+        targets.forEach(target => {
+            if (skill.statusEffects) {
+                skill.statusEffects.forEach(effect => {
+                    if (effect === 'stun') {
+                        combatSystem.applyStatusEffect(target as any, StatusEffect.STUNNED, Math.max(0.1, stunSec));
+                    } else if (effect === 'slow') {
+                        combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, Math.max(0.1, slowSec));
+                    } else if (effect === 'dot') {
+                        const tick = (skill.dotTickMs ?? 1000) / 1000;
+                        target.addStatusEffect(StatusEffect.DOT, Math.max(0.1, dotDurationSec || (tick * 3)), skill.dotAmount ?? 1, tick);
+                    } else if (effect === 'hot') {
+                        const tick = (skill.hotTickMs ?? 1000) / 1000;
+                        target.addStatusEffect(StatusEffect.HOT, Math.max(0.1, hotDurationSec || (tick * 3)), skill.hotAmount ?? 1, tick);
+                    } else if (effect === 'suppressed') {
+                        combatSystem.applyStatusEffect(target as any, StatusEffect.SUPPRESSED, Math.max(0.1, statusDurationSec || 1));
+                    } else if (effect === 'dazed') {
+                        combatSystem.applyStatusEffect(target as any, StatusEffect.DAZED, Math.max(0.1, statusDurationSec || 1));
+                    } else if (effect === 'snared') {
+                        combatSystem.applyStatusEffect(target as any, StatusEffect.SNARED, Math.max(0.1, statusDurationSec || 1));
+                    }
+                });
+            }
+            if (skill.damageBuffMultiplier && skill.damageBuffMultiplier > 1) {
+                target.addDamageBuff(skill.damageBuffMultiplier, (skill.statusDurationMs ?? 4000));
+            }
+            if (skill.hotAmount && !skill.statusEffects?.includes('hot') && skill.hotTickMs) {
+                const tick = (skill.hotTickMs ?? 1000) / 1000;
+                target.addStatusEffect(StatusEffect.HOT, Math.max(0.1, hotDurationSec || (tick * 3)), skill.hotAmount, tick);
+            }
+        });
+        this.markSkillUsed(skill, currentTime);
+    }
     
     public performMeleeAttack(targetUnit: any, currentTime: number, unitManager?: UnitManager, combatSystem?: CombatSystem): void {
         if (!this.isMeleeUnit() || this.dead || this.isAttacking) return;
@@ -365,6 +420,8 @@ export class Unit extends Phaser.Events.EventEmitter {
                 const radius = Math.max(this.getRange(), 60);
                 const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
                 let appliedStormStun = false;
+                const hitEnemies: Unit[] = [];
+                const meleeSkill = this.skillPrimary && this.skillPrimary.trigger === 'on_attack' ? this.skillPrimary : undefined;
 
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
@@ -377,48 +434,55 @@ export class Unit extends Phaser.Events.EventEmitter {
                     const diff = Phaser.Math.Angle.Wrap(angleToEnemy - this.facing);
                     if (Math.abs(diff) <= swingAngle / 2) {
                         combatSystem.dealDamage(this as any, enemy as any, this.getDamage());
+                        hitEnemies.push(enemy as any);
 
-                        // Jade-specific CC
-                        if (this.config.unitType === UnitType.JADE_AZURE_SPEAR) {
-                            if (currentTime - this.lastAzureStunTime > 1500) {
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.9);
-                                this.lastAzureStunTime = currentTime;
-                            }
-                        } else if (this.config.unitType === UnitType.JADE_STORM_MONKS && !appliedStormStun) {
-                            if (currentTime - this.lastStormComboTime <= 400) {
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.0);
-                                this.lastStormComboTime = 0;
-                                appliedStormStun = true;
-                            } else {
-                                this.lastStormComboTime = currentTime;
-                            }
-                        } else if (this.config.unitType === UnitType.JADE_CHI_DRAGOON) {
-                            this.chiDragoonHitCount++;
-                            if (this.chiDragoonHitCount >= 4) {
-                                this.chiDragoonHitCount = 0;
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.7);
-                            }
-                        } else if (this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN) {
-                            if (currentTime - this.halberdLastSlamTime > 6000) {
-                                this.halberdLastSlamTime = currentTime;
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.2);
-                            }
-                        } else if (this.config.unitType === UnitType.JADE_SHADOWBLADE_ASSASSINS) {
-                            if (currentTime - this.shadowbladeFirstHitTime > 3000) {
-                                this.shadowbladeFirstHitTime = currentTime;
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.5);
-                            }
-                        } else if (this.config.unitType === UnitType.JADE_BLUE_ONI) {
-                            combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 1.5);
-                        } else if (this.config.unitType === UnitType.FROST_BLOODLINE_NOBLE) {
-                            combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 4, 3, 1); // bleed over time
-                        } else if (this.config.unitType === UnitType.FROST_FLESH_CRAWLER) {
-                            if (Math.random() < 0.1) {
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 3, 2, 1);
+                        // Legacy hardcoded CC only if no data-driven skill
+                        if (!meleeSkill) {
+                            if (this.config.unitType === UnitType.JADE_AZURE_SPEAR) {
+                                if (currentTime - this.lastAzureStunTime > 1500) {
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.9);
+                                    this.lastAzureStunTime = currentTime;
+                                }
+                            } else if (this.config.unitType === UnitType.JADE_STORM_MONKS && !appliedStormStun) {
+                                if (currentTime - this.lastStormComboTime <= 400) {
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.0);
+                                    this.lastStormComboTime = 0;
+                                    appliedStormStun = true;
+                                } else {
+                                    this.lastStormComboTime = currentTime;
+                                }
+                            } else if (this.config.unitType === UnitType.JADE_CHI_DRAGOON) {
+                                this.chiDragoonHitCount++;
+                                if (this.chiDragoonHitCount >= 4) {
+                                    this.chiDragoonHitCount = 0;
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.7);
+                                }
+                            } else if (this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN) {
+                                if (currentTime - this.halberdLastSlamTime > 6000) {
+                                    this.halberdLastSlamTime = currentTime;
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.2);
+                                }
+                            } else if (this.config.unitType === UnitType.JADE_SHADOWBLADE_ASSASSINS) {
+                                if (currentTime - this.shadowbladeFirstHitTime > 3000) {
+                                    this.shadowbladeFirstHitTime = currentTime;
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.5);
+                                }
+                            } else if (this.config.unitType === UnitType.JADE_BLUE_ONI) {
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 1.5);
+                            } else if (this.config.unitType === UnitType.FROST_BLOODLINE_NOBLE) {
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 4, 3, 1); // bleed over time
+                            } else if (this.config.unitType === UnitType.FROST_FLESH_CRAWLER) {
+                                if (Math.random() < 0.1) {
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 3, 2, 1);
+                                }
                             }
                         }
                     }
                 });
+
+                if (meleeSkill && hitEnemies.length > 0) {
+                    this.applySkillEffects(meleeSkill, hitEnemies, currentTime, combatSystem);
+                }
             } else if (!targetUnit.isDead()) {
                 // Fallback: single target damage
                 const damage = this.getDamage();
@@ -892,12 +956,36 @@ export class Unit extends Phaser.Events.EventEmitter {
         return currentTime - this.lastAttackTime >= cooldown;
     }
     public setLastAttackTime(time: number): void { this.lastAttackTime = time; }
+    public getPrimarySkill(): UnitSkillTemplate | undefined { return this.skillPrimary; }
+    public getSecondarySkill(): UnitSkillTemplate | undefined { return this.skillSecondary; }
+    public getPassiveSkill(): UnitSkillTemplate | undefined { return this.passiveSkill; }
+    public getSkillTemplates(): UnitSkillTemplate[] {
+        return [this.skillPrimary, this.skillSecondary, this.passiveSkill].filter(Boolean) as UnitSkillTemplate[];
+    }
+    public canUseSkill(skill?: UnitSkillTemplate, currentTime: number = this.scene.time.now): boolean {
+        if (!skill) return false;
+        const cd = skill.cooldownMs ?? 0;
+        const last = this.lastSkillUse.get(skill.id) ?? -Infinity;
+        return currentTime - last >= cd;
+    }
+    public markSkillUsed(skill: UnitSkillTemplate, currentTime: number = this.scene.time.now): void {
+        this.lastSkillUse.set(skill.id, currentTime);
+    }
+    public getLastPassiveTick(skillId: string): number {
+        return this.lastPassiveTick.get(skillId) ?? 0;
+    }
+    public setLastPassiveTick(skillId: string, time: number): void {
+        this.lastPassiveTick.set(skillId, time);
+    }
     
     public setMoveSpeedMultiplier(value: number): void { this.moveSpeedMultiplier = value; }
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
     public addDamageBuff(multiplier: number, durationMs: number): void {
         this.damageMultiplier = Math.max(this.damageMultiplier, multiplier);
         this.damageBuffRemainingMs = Math.max(this.damageBuffRemainingMs, durationMs);
+    }
+    public triggerSkill(skill: UnitSkillTemplate, targets: Unit[], currentTime: number, combatSystem: any): void {
+        this.applySkillEffects(skill, targets, currentTime, combatSystem);
     }
     public clearDebuffs(): void {
         // Remove selected debuffing status effects
