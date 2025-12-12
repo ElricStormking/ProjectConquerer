@@ -525,7 +525,19 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         });
 
         const currentStage = this.stageGraph.get(this.runState.currentStageIndex);
-        if (!currentStage || !currentNode) return;
+        if (!currentStage || !currentNode) {
+            // Fallback: if current node is missing (e.g., new stage entry), jump to stage entry node
+            const entryId = this.findEntryNodeId(this.runState.currentStageIndex);
+            if (entryId) {
+                this.runState.currentNodeId = entryId;
+                const entryNode = this.nodeGraph.get(entryId);
+                if (entryNode) {
+                    entryNode.isAccessible = true;
+                    return;
+                }
+            }
+            return;
+        }
 
         // CASE 1: Player is standing on a node that isn't finished yet.
         // Only that node should be clickable; all other paths are locked out.
