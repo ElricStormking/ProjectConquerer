@@ -1,0 +1,582 @@
+{
+    "anims": [
+        {
+            "key": "idle_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 4,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 5,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 6,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 7,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 8,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 9,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 10,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 11,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 12,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 13,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 14,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 16,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 17,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 18,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 19,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 20,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 21,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 22,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 24,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 25,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 26,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 27,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 28,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 29,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 30,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 32,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 33,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 34,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 35,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 36,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 37,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 38,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 40,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 41,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 42,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 43,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 44,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 45,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 46,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 47,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 48,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 49,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 50,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 51,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 52,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 53,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 54,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 55,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 56,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 57,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 58,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 59,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 60,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 61,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 62,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 63,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 64,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 65,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 66,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 67,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 68,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 69,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 70,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 71,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "die",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 72,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 73,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 74,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 75,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Shade_Servant",
+                    "frame": 76,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 8,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

@@ -102,9 +102,6 @@ export class DataManager {
                     mass: row.mass
                 }
             };
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H3',location:'DataManager.parseUnits',message:'unit loaded',data:{id:row.id},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             this.units.set(row.id, template);
         });
     }

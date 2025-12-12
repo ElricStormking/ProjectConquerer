@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { IsometricRenderer } from '../systems/IsometricRenderer';
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { UnitManager } from '../systems/UnitManager';
-import { CombatSystem } from '../systems/CombatSystem';
+import { CombatSystem, StatusEffect } from '../systems/CombatSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { DeckSystem } from '../systems/DeckSystem';
 import { CardSystem } from '../systems/CardSystem';
@@ -52,6 +52,10 @@ export class BattleScene extends Phaser.Scene {
     private waveIntermissionCameraLock = false;
     private bgm?: Phaser.Sound.BaseSound;
     private medicLastHeal: Map<string, number> = new Map();
+    private frostScientistBuffTimers: Map<string, number> = new Map();
+    private jadeCrossbowHitCounter: Map<string, number> = new Map();
+    private jadeSpiritLanternTick: Map<string, number> = new Map();
+    private jadeOniTauntTick: Map<string, number> = new Map();
     
     // Scene data passed from NodeEncounterSystem
     private encounterId: string = 'default';
@@ -125,6 +129,7 @@ export class BattleScene extends Phaser.Scene {
         this.initializeIronwarsPrototype();
         this.setupPointerBridge();
         this.startBackgroundMusic();
+        this.registerFrostAbilityEvents();
     }
 
     private startBackgroundMusic() {
@@ -150,6 +155,8 @@ export class BattleScene extends Phaser.Scene {
         if (this.battleState === 'running') {
             this.updateUnitAI();
             this.checkCombat();
+            this.updateFrostAuras();
+            this.updateJadeAuras();
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
         }
@@ -917,7 +924,7 @@ export class BattleScene extends Phaser.Scene {
                 if (unitConfig.unitType === UnitType.RAIDER_BOSS) {
                     this.performBossAreaAttack(unit);
                 } else if (this.isRangedUnit(unitConfig.unitType)) {
-                    this.createProjectileAttack(unit, targetEnemy, unitConfig.unitType);
+                    this.handleRangedAttack(unit, targetEnemy);
                 } else if (this.isMeleeUnit(unitConfig.unitType)) {
                     unit.performMeleeAttack(targetEnemy, currentTime, this.unitManager as any, this.combatSystem as any);
                 }
@@ -947,6 +954,223 @@ export class BattleScene extends Phaser.Scene {
                         unit.performMeleeAttack(fortressTargetStub as any, currentTime);
                         this.attackFortress(unit);
                         unit.setLastAttackTime(currentTime);
+                    }
+                }
+            }
+        });
+    }
+
+    private handleRangedAttack(attacker: any, target: any): void {
+        const unitType = attacker.getConfig().unitType as UnitType;
+        const damage = attacker.getDamage();
+        this.combatSystem.dealDamage(attacker as any, target as any, damage);
+
+        if (unitType === UnitType.FROST_PUTRID_ARCHER) {
+            this.applySlowCloud(target.getPosition(), attacker.getTeam());
+        } else if (unitType === UnitType.FROST_AGONY_SCREAMER) {
+            const center = target.getPosition();
+            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1);
+            enemies.forEach(enemy => {
+                if (enemy.isDead()) return;
+                const pos = enemy.getPosition();
+                const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+                if (dist <= 120) {
+                    this.combatSystem.dealDamage(attacker as any, enemy as any, Math.round(damage * 0.6));
+                }
+            });
+        } else if (unitType === UnitType.JADE_CROSSBOW_GUNNERS) {
+            const id = attacker.getId();
+            const count = (this.jadeCrossbowHitCounter.get(id) ?? 0) + 1;
+            if (count >= 5) {
+                this.jadeCrossbowHitCounter.set(id, 0);
+                this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 2);
+            } else {
+                this.jadeCrossbowHitCounter.set(id, count);
+            }
+        } else if (unitType === UnitType.JADE_SHURIKEN_NINJAS) {
+            if (Math.random() < 0.3) {
+                this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 1.5);
+            }
+        } else if (unitType === UnitType.JADE_SHIKIGAMI_FOX) {
+            this.combatSystem.applyStatusEffect(target as any, StatusEffect.STUNNED, 0.2);
+        }
+
+        // Visual projectile
+        this.createProjectileAttack(attacker, target, unitType);
+    }
+
+    private applySlowCloud(center: { x: number; y: number }, attackerTeam: number): void {
+        const enemies = this.unitManager.getUnitsByTeam(attackerTeam === 1 ? 2 : 1);
+        enemies.forEach(enemy => {
+            if (enemy.isDead()) return;
+            const pos = enemy.getPosition();
+            const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+            if (dist <= 120) {
+                this.combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 2);
+            }
+        });
+    }
+
+    private updateJadeAuras(): void {
+        const now = this.time.now;
+        const units = this.unitManager.getAllUnits();
+        units.forEach(unit => {
+            const type = unit.getConfig().unitType as UnitType;
+            const team = unit.getTeam();
+            const pos = unit.getPosition();
+
+            if (type === UnitType.JADE_SPIRIT_LANTERN) {
+                const last = this.jadeSpiritLanternTick.get(unit.getId()) ?? 0;
+                if (now - last > 1500) {
+                    this.jadeSpiritLanternTick.set(unit.getId(), now);
+                    const allies = this.unitManager.getUnitsByTeam(team);
+                    allies.forEach(a => {
+                        if (a.isDead()) return;
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, a.getPosition().x, a.getPosition().y);
+                        if (dist <= 200) {
+                            (a as any).heal?.(6);
+                        }
+                    });
+                    const enemies = this.unitManager.getUnitsByTeam(team === 1 ? 2 : 1);
+                    enemies.forEach(e => {
+                        if (e.isDead()) return;
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, e.getPosition().x, e.getPosition().y);
+                        if (dist <= 200) {
+                            this.combatSystem.applyStatusEffect(e as any, StatusEffect.SLOWED, 1.5);
+                        }
+                    });
+                }
+            } else if (type === UnitType.JADE_SHRINE_ONI) {
+                const last = this.jadeOniTauntTick.get(unit.getId()) ?? 0;
+                if (now - last > 7000) {
+                    this.jadeOniTauntTick.set(unit.getId(), now);
+                    (unit as any).heal?.(30);
+                }
+            }
+        });
+    }
+
+    private registerFrostAbilityEvents(): void {
+        this.events.on('unit-spawned', this.onUnitSpawned, this);
+        this.events.on('unit-death', this.onUnitDeath, this);
+    }
+
+    private onUnitSpawned(unit: any): void {
+        const type = unit.getConfig().unitType as UnitType;
+        if (type === UnitType.FROST_ABOMINATION) {
+            const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+            const nearby = allies.filter(a => a.getId() !== unit.getId() && !a.isDead());
+            const shareBase = Math.max(1, Math.floor(unit.getMaxHealth() * 0.2));
+            const sharePerAlly = Math.max(3, Math.floor(shareBase / Math.max(1, nearby.length)));
+            nearby.forEach(ally => {
+                const posA = ally.getPosition();
+                const dist = Phaser.Math.Distance.Between(posA.x, posA.y, unit.getPosition().x, unit.getPosition().y);
+                if (dist <= 180) {
+                    ally.heal(sharePerAlly);
+                }
+            });
+        }
+    }
+
+    private onUnitDeath(unit: any): void {
+        const type = unit.getConfig?.().unitType as UnitType | undefined;
+        if (!type) return;
+
+        if (type === UnitType.FROST_FLESH_WEAVER) {
+            const center = unit.getPosition();
+            const all = this.unitManager.getAllUnits();
+            all.forEach(other => {
+                if (other.isDead()) return;
+                const pos = other.getPosition();
+                const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+                if (dist <= 90) {
+                    this.combatSystem.dealDamage(unit as any, other as any, 20);
+                }
+            });
+        }
+
+        // Eternal Watcher temp HP on nearby death (friendly only)
+        const watchers = this.unitManager.getUnitsByTeam(unit.getTeam()).filter(u => u.getConfig().unitType === UnitType.FROST_ETERNAL_WATCHER);
+        watchers.forEach(w => {
+            if (w.isDead()) return;
+            const dist = Phaser.Math.Distance.Between(unit.getPosition().x, unit.getPosition().y, w.getPosition().x, w.getPosition().y);
+            if (dist <= 200) {
+                w.heal(25);
+            }
+        });
+
+        // Jade Paper Doll root on death
+        if (type === UnitType.JADE_PAPER_DOLL) {
+            const center = unit.getPosition();
+            const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            enemies.forEach(e => {
+                if (e.isDead()) return;
+                const dist = Phaser.Math.Distance.Between(center.x, center.y, e.getPosition().x, e.getPosition().y);
+                if (dist <= 140) {
+                    this.combatSystem.applyStatusEffect(e as any, StatusEffect.SNARED, 1.5);
+                }
+            });
+        }
+    }
+
+    private updateFrostAuras(): void {
+        const allUnits = this.unitManager.getAllUnits();
+        allUnits.forEach(unit => {
+            const type = unit.getConfig().unitType as UnitType;
+            const team = unit.getTeam();
+            const pos = unit.getPosition();
+
+            if (type === UnitType.FROST_BOUND_SPECTRE) {
+                const enemies = this.unitManager.getUnitsByTeam(team === 1 ? 2 : 1);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, enemy.getPosition().x, enemy.getPosition().y);
+                    if (dist <= 170) {
+                        this.combatSystem.applyStatusEffect(enemy as any, StatusEffect.SUPPRESSED, 1.2);
+                    }
+                });
+            } else if (type === UnitType.FROST_SCREAMING_COFFIN) {
+                const enemies = this.unitManager.getUnitsByTeam(team === 1 ? 2 : 1);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, enemy.getPosition().x, enemy.getPosition().y);
+                    if (dist <= 200) {
+                        this.combatSystem.applyStatusEffect(enemy as any, StatusEffect.DAZED, 1.5);
+                    }
+                });
+            } else if (type === UnitType.FROST_CURSED_WALKER) {
+                const allies = this.unitManager.getUnitsByTeam(team);
+                allies.forEach(ally => {
+                    if (ally.isDead()) return;
+                    if (ally.getId && ally.getId() === unit.getId()) return;
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, ally.getPosition().x, ally.getPosition().y);
+                    if (dist <= 160) {
+                        (ally as any).clearDebuffs?.();
+                    }
+                });
+            } else if (type === UnitType.FROST_FORBIDDEN_SCIENTIST) {
+                const last = this.frostScientistBuffTimers.get(unit.getId()) ?? 0;
+                const now = this.time.now;
+                if (now - last > 4000) {
+                    const allies = this.unitManager.getUnitsByTeam(team)
+                        .filter(a => a.getId() !== unit.getId() && !a.isDead());
+                    let target: any = null;
+                    let closest = Infinity;
+                    allies.forEach(a => {
+                        const d = Phaser.Math.Distance.Between(pos.x, pos.y, a.getPosition().x, a.getPosition().y);
+                        if (d <= 140 && d < closest) {
+                            closest = d;
+                            target = a;
+                        }
+                    });
+                    if (target) {
+                        const hpLoss = Math.floor(target.getMaxHealth() * 0.05);
+                        const safeLoss = Math.min(hpLoss, Math.max(0, target.getHealth() - 1));
+                        if (safeLoss > 0) {
+                            target.takeDamage(safeLoss);
+                        }
+                        target.addDamageBuff?.(1.2, 6000);
+                        this.frostScientistBuffTimers.set(unit.getId(), now);
                     }
                 }
             }
@@ -1069,7 +1293,9 @@ export class BattleScene extends Phaser.Scene {
             UnitType.RAIDER_BOMBER,
             UnitType.RAIDER_ARCHER,
             UnitType.JADE_CROSSBOW_GUNNERS,
-            UnitType.JADE_SHIKIGAMI_FOX
+            UnitType.JADE_SHIKIGAMI_FOX,
+            UnitType.FROST_PUTRID_ARCHER,
+            UnitType.FROST_AGONY_SCREAMER
         ].includes(unitType);
     }
 
@@ -1088,7 +1314,18 @@ export class BattleScene extends Phaser.Scene {
             UnitType.JADE_SHRINE_ONI,
             UnitType.JADE_CHI_DRAGOON,
             UnitType.JADE_BLUE_ONI,
-            UnitType.JADE_PAPER_DOLL
+            UnitType.JADE_PAPER_DOLL,
+            UnitType.FROST_SHADE_SERVANT,
+            UnitType.FROST_BLOODLINE_NOBLE,
+            UnitType.FROST_ETERNAL_WATCHER,
+            UnitType.FROST_CURSED_WALKER,
+            UnitType.FROST_FLESH_WEAVER,
+            UnitType.FROST_BOUND_SPECTRE,
+            UnitType.FROST_ABOMINATION,
+            UnitType.FROST_FORBIDDEN_SCIENTIST,
+            UnitType.FROST_SCREAMING_COFFIN,
+            UnitType.FROST_FLESH_CRAWLER,
+            UnitType.FROST_FLESH_TITAN
         ].includes(unitType);
     }
 

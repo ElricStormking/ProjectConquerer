@@ -59,9 +59,6 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             factionId: this.runState.factionId,
             lives: this.runState.lives
         };
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H1',location:'RunProgressionManager.getRunState',message:'snapshot',data:{deck: snapshot.deck.map(c=>c.id), node:snapshot.currentNodeId},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         return snapshot;
     }
 

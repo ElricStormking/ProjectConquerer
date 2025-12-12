@@ -41,6 +41,30 @@ card_jade_destroy_improve,Destroy To Improve Surrounding,spell,4,chi_flow,jade_d
 card_jade_paper_doll,Paper Doll Guardian,unit,2,chi_flow,jade_paper_doll,card_jade_paper_doll,Evasive tank; dodge chance; roots on death.,common
 card_jade_blue_oni,Blue Oni Bruiser,unit,3,chi_flow,jade_blue_oni,card_jade_blue_oni,Bruiser applying Frost Chi slow; scales with Chi Flow.,rare
 card_jade_shikigami_fox,Golden Shikigami Fox,unit,3,chi_flow,jade_shikigami_fox,card_jade_shikigami_fox,Agile ranged spirit with homing flames and mini-stun.,rare
+
+# Eternal Frost Clan – Azariel (sample set)
+card_azariel_screaming_coffin,Screaming Coffin,structure,2,soulfrost,screaming_coffin,card_frost_screaming_coffin,Structure that adds fear aura causing misses.,common
+card_azariel_putrid_archer,Putrid Archer,unit,3,soulfrost,putrid_archer,card_frost_putrid_archer,Ranged undead archer that slows enemies with decay gas.,common
+card_azariel_cursed_walker,Cursed Walker,unit,4,soulfrost,cursed_walker,card_frost_cursed_walker,Support lich granting debuff immunity to nearby undead.,rare
+card_azariel_agony_screamer,Agony Screamer,unit,3,soulfrost,agony_screamer,card_frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage.,rare
+card_azariel_living_sacrifice,Living Sacrifice,spell,4,soulfrost,living_sacrifice,card_frost_spell_living_sacrifice,Auto-sacrifice low-cost unit to grant global damage buff.,rare
+card_azariel_soul_shackles,Soul Shackles,spell,3,soulfrost,soul_shackles,card_frost_spell_soul_shackles,Chains a random enemy reducing armor over time.,common
+
+# Eternal Frost Clan – Bellucci (sample set)
+card_bellucci_bound_spectre,Bound Spectre,unit,2,soulfrost,bound_spectre,card_frost_bound_spectre,Flying curse aura reducing enemy damage output.,common
+card_bellucci_bloodline_noble,Bloodline Noble,unit,3,soulfrost,bloodline_noble,card_frost_bloodline_noble,Vampire melee applying bleed on hit.,rare
+card_bellucci_forbidden_scientist,Forbidden Scientist,unit,4,soulfrost,forbidden_scientist,card_frost_forbidden_scientist,Sacrifices ally HP cap to boost their damage.,rare
+card_bellucci_shade_servant,Shade Servant,unit,2,soulfrost,shade_servant,card_frost_shade_servant,Chance to convert killed enemy into Flesh Weaver.,common
+card_bellucci_eternal_watcher,Eternal Watcher,unit,5,soulfrost,eternal_watcher,card_frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths.,epic
+card_bellucci_pact_of_blood,Pact of Blood,spell,2,soulfrost,pact_of_blood,card_frost_spell_pact_of_blood,Blood pool heals allies when high-cost unit dies.,common
+
+# Eternal Frost Clan – Zhaquille (sample set)
+card_zhaquille_flesh_weaver,Flesh Weaver,unit,1,soulfrost,flesh_weaver,card_frost_flesh_weaver,Low-cost abomination with self-sacrifice AoE on death.,common
+card_zhaquille_abomination,Abomination,unit,5,soulfrost,abomination,card_frost_abomination,Heavy tank distributing max HP to nearby allies.,rare
+card_zhaquille_flesh_crawler,Flesh Crawler,unit,1,soulfrost,flesh_crawler,card_frost_flesh_crawler,Fast abomination with chance to inflict Corrupt.,common
+card_zhaquille_flesh_titan,Flesh Titan,unit,6,soulfrost,flesh_titan,card_frost_flesh_titan,Berserk core bruiser that self-bleeds below half HP.,epic
+card_zhaquille_living_altar,Living Altar,structure,3,soulfrost,living_altar,card_frost_living_altar,Sacrifices allies periodically to generate Essence.,common
+card_zhaquille_abominable_hatchery,Abominable Hatchery,structure,5,soulfrost,abominable_hatchery,card_frost_abominable_hatchery,Produces Flesh Weavers faster when allies die nearby.,rare
 card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_jade_smoke_bomb,Smoke field reduces enemy accuracy; boosts ninja dodge.,common
 card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_jade_archer_turret,Piercing arrows; periodic AoE stun.,rare
 card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_jade_feng_shui_ward,Healing aura; increased healing received.,common

@@ -1,0 +1,534 @@
+{
+    "anims": [
+        {
+            "key": "idle_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 4,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 5,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 6,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 7,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 8,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 9,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 10,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 11,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 12,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 13,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 14,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 15,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 16,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 17,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 18,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 19,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 20,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 21,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 22,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 23,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 24,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 25,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 26,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 27,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 28,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 29,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 30,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 31,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 32,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 33,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 34,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 35,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 36,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 37,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 38,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 39,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 40,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 41,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 42,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 43,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 44,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 48,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 49,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 50,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 51,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 52,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 56,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 57,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 58,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 59,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 60,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 64,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 65,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 66,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 67,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 68,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "die",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 72,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 73,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 74,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 75,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Agony_Screamer",
+                    "frame": 76,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 8,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

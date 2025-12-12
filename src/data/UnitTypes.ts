@@ -29,7 +29,20 @@ export enum UnitType {
     JADE_SHADOWBLADE_ASSASSINS = 'jade_shadowblade_assassins',
     JADE_SPIRIT_LANTERN = 'jade_spirit_lantern',
     JADE_PAPER_DOLL = 'jade_paper_doll',
-    JADE_BLUE_ONI = 'jade_blue_oni'
+    JADE_BLUE_ONI = 'jade_blue_oni',
+    FROST_SHADE_SERVANT = 'shade_servant',
+    FROST_PUTRID_ARCHER = 'putrid_archer',
+    FROST_ETERNAL_WATCHER = 'eternal_watcher',
+    FROST_CURSED_WALKER = 'cursed_walker',
+    FROST_BLOODLINE_NOBLE = 'bloodline_noble',
+    FROST_AGONY_SCREAMER = 'agony_screamer',
+    FROST_FLESH_WEAVER = 'flesh_weaver',
+    FROST_BOUND_SPECTRE = 'bound_spectre',
+    FROST_ABOMINATION = 'abomination',
+    FROST_FORBIDDEN_SCIENTIST = 'forbidden_scientist',
+    FROST_SCREAMING_COFFIN = 'screaming_coffin',
+    FROST_FLESH_CRAWLER = 'flesh_crawler',
+    FROST_FLESH_TITAN = 'flesh_titan'
 }
 
 export interface UnitTemplate {

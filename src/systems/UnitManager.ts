@@ -31,6 +31,7 @@ export class UnitManager {
         const unit = new Unit(this.scene, unitId, config, this.physicsManager);
         
         this.units.set(unitId, unit);
+        this.scene.events.emit('unit-spawned', unit);
         return unit;
     }
     

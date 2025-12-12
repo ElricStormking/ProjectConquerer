@@ -264,12 +264,13 @@ export class FactionSelectionScene extends Phaser.Scene {
             container.add(this.add.text(120, 0, 'Sample cards coming soon', { fontSize: '14px', color: '#c0c0c0' }));
             return;
         }
-        const cards = this.commanderManager.getCardsForCommander(selectedId).slice(0, 3);
+        const cards = this.commanderManager.getCardsForCommander(selectedId).slice(0, 6);
 
         const startX = 100;
         const cardWidth = 80;
         const cardHeight = 110;
         const gap = 20;
+        const cols = 3;
 
         const label = this.add.text(startX + 60, -40, 'Sample Cards:', {
             fontFamily: 'Arial, sans-serif',
@@ -289,8 +290,10 @@ export class FactionSelectionScene extends Phaser.Scene {
         }
 
         cards.forEach((card, i) => {
-            const x = startX + i * (cardWidth + gap);
-            const y = 40;
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = startX + col * (cardWidth + gap);
+            const y = 40 + row * (cardHeight + 30);
 
             const cardBg = this.add.graphics();
             cardBg.fillStyle(0x2a2d3a, 1);

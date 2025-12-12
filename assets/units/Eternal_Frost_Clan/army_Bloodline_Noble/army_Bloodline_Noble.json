@@ -1,0 +1,27 @@
+{
+    "section1": {
+        "files": [
+            {
+                "url": "assets/army_anim/Eternal Frost Clan/army_Bloodline_Noble/army_Bloodline_Noble.png",
+                "frameConfig": {
+                    "frameWidth": 192,
+                    "frameHeight": 192,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "army_Bloodline_Noble"
+            }
+        ]
+    },
+    "meta": {
+        "app": "Phaser Editor 2D - Asset Pack Editor",
+        "contentType": "phasereditor2d.pack.core.AssetContentType",
+        "url": "https://phasereditor2d.com",
+        "version": 2,
+        "showAllFilesInBlocks": false,
+        "visible": true
+    }
+}

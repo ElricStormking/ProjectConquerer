@@ -27,3 +27,16 @@ jade_shadowblade_assassins,Shadowblade Assassins,frontline,jade_dynasty,rare,150
 jade_spirit_lantern,Spirit Lantern Healer,support,jade_dynasty,common,130,10,2,55,1.0,140,70,normal,jade_spirit_lantern,Healing aura and debuff field spirit
 jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death
 jade_blue_oni,Blue Oni Bruiser,frontline,jade_dynasty,rare,240,32,6,65,1.0,55,105,normal,jade_blue_oni,Bruiser applying frost chi slow that scales with chi flow
+shade_servant,Shade Servant,frontline,frost_clan,common,160,20,3,75,1.4,45,80,small,frost_shade_servant,Vampire melee with chance to convert kills into Flesh Weavers
+putrid_archer,Putrid Archer,ranged,frost_clan,common,130,22,2,65,1.0,360,70,normal,frost_putrid_archer,Ranged undead archer that slows enemies with decay gas
+eternal_watcher,Eternal Watcher,frontline,frost_clan,epic,520,34,8,45,0.7,60,160,large,frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths
+cursed_walker,Cursed Walker,support,frost_clan,rare,260,12,4,55,0.9,160,90,normal,frost_cursed_walker,Lich aura makes nearby undead immune to debuffs
+bloodline_noble,Bloodline Noble,frontline,frost_clan,rare,220,28,5,80,1.2,55,100,normal,frost_bloodline_noble,Vampire melee applying bleed on hit
+agony_screamer,Agony Screamer,ranged,frost_clan,rare,150,24,3,70,1.1,260,90,normal,frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage
+flesh_weaver,Flesh Weaver,frontline,frost_clan,common,150,18,2,70,1.2,35,75,small,frost_shade_servant,Fodder abomination that explodes on death
+bound_spectre,Bound Spectre,frontline,frost_clan,common,140,14,2,85,1.3,45,65,small,frost_shade_servant,Curse aura that weakens nearby enemy damage
+abomination,Abomination,frontline,frost_clan,rare,600,32,9,45,0.65,55,200,large,frost_eternal_watcher,Heavy tank that shares max HP to allies on deploy
+forbidden_scientist,Forbidden Scientist,support,frost_clan,rare,180,10,3,70,1.0,120,80,normal,frost_putrid_archer,Support that trades ally HP cap for damage
+screaming_coffin,Screaming Coffin,frontline,frost_clan,common,240,8,6,35,0.5,30,180,large,frost_eternal_watcher,Fear aura structure causing misses nearby
+flesh_crawler,Flesh Crawler,frontline,frost_clan,common,130,16,2,85,1.3,40,70,small,frost_shade_servant,Fast abomination with chance to corrupt on hit
+flesh_titan,Flesh Titan,frontline,frost_clan,epic,820,42,10,55,0.8,55,220,large,frost_eternal_watcher,Core bruiser that enrages below half HP but self-bleeds

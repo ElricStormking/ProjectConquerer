@@ -38,6 +38,14 @@ export class Unit extends Phaser.Events.EventEmitter {
     private teamFlag!: Phaser.GameObjects.Graphics;
     private statusIcon?: Phaser.GameObjects.Text;
     private classLabel!: Phaser.GameObjects.Text;
+    private damageMultiplier: number = 1;
+    private damageBuffRemainingMs: number = 0;
+    private rampageActive: boolean = false;
+    private rampageBleedAccumulator: number = 0;
+    private chiDragoonHitCount: number = 0;
+    private halberdLastSlamTime: number = 0;
+    private shadowbladeFirstHitTime: number = 0;
+    private oniLastTauntTime: number = 0;
     private trailPoints: Array<{x: number, y: number, alpha: number}> = [];
     private trailGraphics!: Phaser.GameObjects.Graphics;
     private attackSwingGraphics!: Phaser.GameObjects.Graphics;
@@ -313,6 +321,17 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.JADE_CHI_DRAGOON:
             case UnitType.JADE_BLUE_ONI:
             case UnitType.JADE_PAPER_DOLL:
+            case UnitType.FROST_SHADE_SERVANT:
+            case UnitType.FROST_BLOODLINE_NOBLE:
+            case UnitType.FROST_ETERNAL_WATCHER:
+            case UnitType.FROST_CURSED_WALKER:
+            case UnitType.FROST_FLESH_WEAVER:
+            case UnitType.FROST_BOUND_SPECTRE:
+            case UnitType.FROST_ABOMINATION:
+            case UnitType.FROST_FORBIDDEN_SCIENTIST:
+            case UnitType.FROST_SCREAMING_COFFIN:
+            case UnitType.FROST_FLESH_CRAWLER:
+            case UnitType.FROST_FLESH_TITAN:
                 return true;
             default:
                 return false;
@@ -373,6 +392,30 @@ export class Unit extends Phaser.Events.EventEmitter {
                             } else {
                                 this.lastStormComboTime = currentTime;
                             }
+                        } else if (this.config.unitType === UnitType.JADE_CHI_DRAGOON) {
+                            this.chiDragoonHitCount++;
+                            if (this.chiDragoonHitCount >= 4) {
+                                this.chiDragoonHitCount = 0;
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.7);
+                            }
+                        } else if (this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN) {
+                            if (currentTime - this.halberdLastSlamTime > 6000) {
+                                this.halberdLastSlamTime = currentTime;
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 1.2);
+                            }
+                        } else if (this.config.unitType === UnitType.JADE_SHADOWBLADE_ASSASSINS) {
+                            if (currentTime - this.shadowbladeFirstHitTime > 3000) {
+                                this.shadowbladeFirstHitTime = currentTime;
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.STUNNED, 0.5);
+                            }
+                        } else if (this.config.unitType === UnitType.JADE_BLUE_ONI) {
+                            combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 1.5);
+                        } else if (this.config.unitType === UnitType.FROST_BLOODLINE_NOBLE) {
+                            combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 4, 3, 1); // bleed over time
+                        } else if (this.config.unitType === UnitType.FROST_FLESH_CRAWLER) {
+                            if (Math.random() < 0.1) {
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 3, 2, 1);
+                            }
                         }
                     }
                 });
@@ -380,6 +423,15 @@ export class Unit extends Phaser.Events.EventEmitter {
                 // Fallback: single target damage
                 const damage = this.getDamage();
                 targetUnit.takeDamage(damage);
+            }
+
+            // Post-hit conversions (Shade Servant)
+            if (this.config.unitType === UnitType.FROST_SHADE_SERVANT && targetUnit.isDead && targetUnit.isDead()) {
+                if (Math.random() < 0.1 && unitManager) {
+                    const pos = targetUnit.getPosition ? targetUnit.getPosition() : this.getPosition();
+                    const newConfig = unitManager.createUnitConfig(UnitType.FROST_FLESH_WEAVER, this.team, pos.x, pos.y);
+                    unitManager.spawnUnit(newConfig);
+                }
             }
             this.isAttacking = false;
         });
@@ -464,6 +516,32 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.dead) {
             this.deathTimer += deltaTime;
             return;
+        }
+
+        // Flesh Titan rampage activation
+        if (!this.rampageActive && this.config.unitType === UnitType.FROST_FLESH_TITAN && this.health > 0 && this.health <= this.maxHealth * 0.5) {
+            this.rampageActive = true;
+            this.attackSpeedMultiplier *= 1.4;
+            this.damageMultiplier *= 1.5;
+        }
+
+        // Tick temporary damage buffs
+        if (this.damageBuffRemainingMs > 0) {
+            this.damageBuffRemainingMs -= deltaTime * 1000;
+            if (this.damageBuffRemainingMs <= 0) {
+                this.damageMultiplier = 1;
+                this.damageBuffRemainingMs = 0;
+            }
+        }
+
+        // Flesh Titan rampage bleed
+        if (this.rampageActive) {
+            this.rampageBleedAccumulator += deltaTime;
+            const bleedInterval = 1.0;
+            while (this.rampageBleedAccumulator >= bleedInterval) {
+                this.rampageBleedAccumulator -= bleedInterval;
+                this.takeDamage(2);
+            }
         }
         
         this.sprite.x = this.body.position.x;
@@ -776,7 +854,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public getDamage(): number { 
         const baseDamage = this.damage;
-        return RelicManager.getInstance().applyDamageModifier(baseDamage, this.getRelicContext());
+        return RelicManager.getInstance().applyDamageModifier(baseDamage * this.damageMultiplier, this.getRelicContext());
     }
     
     public getArmor(): number { 
@@ -817,6 +895,20 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public setMoveSpeedMultiplier(value: number): void { this.moveSpeedMultiplier = value; }
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
+    public addDamageBuff(multiplier: number, durationMs: number): void {
+        this.damageMultiplier = Math.max(this.damageMultiplier, multiplier);
+        this.damageBuffRemainingMs = Math.max(this.damageBuffRemainingMs, durationMs);
+    }
+    public clearDebuffs(): void {
+        // Remove selected debuffing status effects
+        ['STUNNED','SLOWED','SUPPRESSED','SNARED','DAZED','DOT'].forEach(key => {
+            const effect = (StatusEffect as any)[key] as StatusEffect | undefined;
+            if (effect && this.statusEffects.has(effect)) {
+                this.removeStatusEffect(effect);
+                this.statusEffects.delete(effect);
+            }
+        });
+    }
     public setFriction(value: number): void { this.friction = value; }
     public setAccuracy(value: number): void { this.accuracy = value; }
     public getConfig(): UnitConfig { return this.config; }
@@ -862,6 +954,19 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.JADE_SPIRIT_LANTERN: return 'jade_spirit_lantern'; // placeholder reuse
             case UnitType.JADE_PAPER_DOLL: return 'jade_paper_doll'; // placeholder reuse
             case UnitType.JADE_BLUE_ONI: return 'jade_blue_oni'; // placeholder reuse
+            case UnitType.FROST_SHADE_SERVANT: return 'frost_shade_servant';
+            case UnitType.FROST_PUTRID_ARCHER: return 'frost_putrid_archer';
+            case UnitType.FROST_ETERNAL_WATCHER: return 'frost_eternal_watcher';
+            case UnitType.FROST_CURSED_WALKER: return 'frost_cursed_walker';
+            case UnitType.FROST_BLOODLINE_NOBLE: return 'frost_bloodline_noble';
+            case UnitType.FROST_AGONY_SCREAMER: return 'frost_agony_screamer';
+            case UnitType.FROST_FLESH_WEAVER: return 'frost_shade_servant'; // placeholder
+            case UnitType.FROST_BOUND_SPECTRE: return 'frost_shade_servant'; // placeholder
+            case UnitType.FROST_ABOMINATION: return 'frost_eternal_watcher'; // placeholder
+            case UnitType.FROST_FORBIDDEN_SCIENTIST: return 'frost_putrid_archer'; // placeholder
+            case UnitType.FROST_SCREAMING_COFFIN: return 'frost_eternal_watcher'; // placeholder
+            case UnitType.FROST_FLESH_CRAWLER: return 'frost_shade_servant'; // placeholder
+            case UnitType.FROST_FLESH_TITAN: return 'frost_eternal_watcher'; // placeholder
             default: return 'warrior';
         }
     }
@@ -874,9 +979,6 @@ export class Unit extends Phaser.Events.EventEmitter {
         const animDataKey = this.scene.cache.json.exists(animKey) ? animKey : spriteKey + '_an';
         if (this.scene.cache.json.exists(animDataKey)) {
             const animData = this.scene.cache.json.get(animDataKey);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'jade-unit-fail',hypothesisId:'H5',location:'Unit.createAnimations',message:'anim data found',data:{spriteKey,animDataKey,hasAnims:!!animData?.anims},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             
             // Create animations from loaded data
             if (animData.anims) {

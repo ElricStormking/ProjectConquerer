@@ -78,6 +78,11 @@ export class PreloadScene extends Phaser.Scene {
         // Commander portraits (Jade Dynasty starters)
         this.load.image('commander_long_jin', 'assets/commanders/jade_commanders/Long_Jin.png');
         this.load.image('commander_hanami_reika', 'assets/commanders/jade_commanders/Hanami_Reika.png');
+        this.load.image('commander_kasumi_nightwind', 'assets/commanders/jade_commanders/Kasumi_Nightwind.png');
+        // Commander portraits (Eternal Frost Clan)
+        this.load.image('commander_azariel', 'assets/commanders/nightborn_commander/Azariel_Lich_King.png');
+        this.load.image('commander_bellucci', 'assets/commanders/nightborn_commander/Bellucci_The Blood_Queen.png');
+        this.load.image('commander_zhaquille', 'assets/commanders/nightborn_commander/Zhaquille_Frankenstein.png');
         // Jade Dynasty unit card art
         this.load.image('card_jade_azure_spear', 'assets/cards/Jade_dynasty/units/Azure_Spear_Chargers.png');
         this.load.image('card_jade_chi_dragoon', 'assets/cards/Jade_dynasty/units/Chi_Dragoon.png');
@@ -135,7 +140,51 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_cannon_tower', 'assets/cards/card_cannon_tower.png');
         this.load.image('card_thunder_mage', 'assets/cards/card_thunder_mage.png');
         this.load.image('card_spell_barrier', 'assets/cards/card_spell_barrier.png');
-        this.load.image('card_spell_overclock', 'assets/cards/card_spell_overclock.png');
+        // Overclock uses the barrier art as a placeholder (missing dedicated art)
+        this.load.image('card_spell_overclock', 'assets/cards/card_spell_barrier.png');
+
+        // Eternal Frost Clan card art (units / spells / buildings / modules)
+        // Units
+        this.load.image('card_frost_flesh_weaver', 'assets/cards/Eternal_frost_clan/units/Flesh_Weaver.png');
+        this.load.image('card_frost_bound_spectre', 'assets/cards/Eternal_frost_clan/units/Bound_Spectre.png');
+        this.load.image('card_frost_bloodline_noble', 'assets/cards/Eternal_frost_clan/units/Bloodline_Noble.png');
+        this.load.image('card_frost_abomination', 'assets/cards/Eternal_frost_clan/units/Abomination.png');
+        this.load.image('card_frost_forbidden_scientist', 'assets/cards/Eternal_frost_clan/units/Forbidden_Scientist.png');
+        this.load.image('card_frost_screaming_coffin', 'assets/cards/Eternal_frost_clan/units/Screaming_Coffin.png');
+        this.load.image('card_frost_flesh_crawler', 'assets/cards/Eternal_frost_clan/units/Flesh_Crawler.png');
+        this.load.image('card_frost_shade_servant', 'assets/cards/Eternal_frost_clan/units/Shade_Servant.png');
+        this.load.image('card_frost_putrid_archer', 'assets/cards/Eternal_frost_clan/units/Putrid_Archer.png');
+        this.load.image('card_frost_cursed_walker', 'assets/cards/Eternal_frost_clan/units/Cursed Walker.png');
+        this.load.image('card_frost_agony_screamer', 'assets/cards/Eternal_frost_clan/units/Agony_Screamer.png');
+        this.load.image('card_frost_eternal_watcher', 'assets/cards/Eternal_frost_clan/units/Eternal_Watcher.png');
+        this.load.image('card_frost_flesh_titan', 'assets/cards/Eternal_frost_clan/units/Flesh_Titan.png');
+
+        // Spells
+        this.load.image('card_frost_spell_living_sacrifice', 'assets/cards/Eternal_frost_clan/spell/Spell_Living_Sacrifice.png');
+        this.load.image('card_frost_spell_soul_shackles', 'assets/cards/Eternal_frost_clan/spell/Spell_Soul_Shackles.png');
+        this.load.image('card_frost_spell_pact_of_blood', 'assets/cards/Eternal_frost_clan/spell/Spell_Pact_of_Blood.png');
+        this.load.image('card_frost_spell_plague_infestation', 'assets/cards/Eternal_frost_clan/spell/Spell_Plague_Infestation.png');
+        this.load.image('card_frost_spell_forbidden_transmutation', 'assets/cards/Eternal_frost_clan/spell/Spell_Forbidden_Transmutation.png');
+        this.load.image('card_frost_spell_essence_burst', 'assets/cards/Eternal_frost_clan/spell/Spell_Essence_Burst.png');
+        this.load.image('card_frost_spell_blood_rite', 'assets/cards/Eternal_frost_clan/spell/Spell_Blood_Rite.png');
+
+        // Buildings / Structures
+        this.load.image('card_frost_living_altar', 'assets/cards/Eternal_frost_clan/buildings/Living_Altar.png');
+        this.load.image('card_frost_taboo_blood_pool', 'assets/cards/Eternal_frost_clan/buildings/Taboo_Blood_Pool.png');
+        this.load.image('card_frost_torment_spire', 'assets/cards/Eternal_frost_clan/buildings/Torment_Spire.png');
+        this.load.image('card_frost_flesh_repair_device', 'assets/cards/Eternal_frost_clan/buildings/Flesh_Repair_ Device.png');
+        this.load.image('card_frost_soul_harvester', 'assets/cards/Eternal_frost_clan/buildings/Soul_Harvester.png');
+        this.load.image('card_frost_abominable_hatchery', 'assets/cards/Eternal_frost_clan/buildings/Abominable_Hatchery.png');
+        this.load.image('card_frost_wall_of_screams', 'assets/cards/Eternal_frost_clan/buildings/Wall_of_Screams.png');
+
+        // Modules
+        this.load.image('card_frost_necrotic_weaving', 'assets/cards/Eternal_frost_clan/modules/NecroticWeaving.png');
+        this.load.image('card_frost_eternal_servitude', 'assets/cards/Eternal_frost_clan/modules/EternalServitude.png');
+        this.load.image('card_frost_blood_enhancement', 'assets/cards/Eternal_frost_clan/modules/BloodEnhancement.png');
+        this.load.image('card_frost_agony_core', 'assets/cards/Eternal_frost_clan/modules/AgonyCore.png');
+        this.load.image('card_frost_plague_infusion', 'assets/cards/Eternal_frost_clan/modules/Plague Infusion.png');
+        this.load.image('card_frost_forbidden_regeneration', 'assets/cards/Eternal_frost_clan/modules/ForbiddenRegeneration.png');
+        this.load.image('card_frost_soul_pact', 'assets/cards/Eternal_frost_clan/modules/SoulPact.png');
 
         // Victory / SFX
         this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
@@ -170,42 +219,61 @@ export class PreloadScene extends Phaser.Scene {
         this.load.json('camp1_soldier3_anim', 'assets/units/Cog_Dominion/cog_railgunner/camp1_soldier3_an.json');
 
         // Jade Dynasty units
-        this.load.spritesheet('jade_azure_spear', 'assets/units/Jade Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers.png', { frameWidth: 160, frameHeight: 160 });
-        this.load.json('jade_azure_spear_anim', 'assets/units/Jade Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers_an.json');
+        this.load.spritesheet('jade_azure_spear', 'assets/units/Jade_Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('jade_azure_spear_anim', 'assets/units/Jade_Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers_an.json');
 
-        this.load.spritesheet('jade_storm_monks', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_storm_monks_anim', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
+        this.load.spritesheet('jade_storm_monks', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_storm_monks_anim', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
 
-        this.load.spritesheet('jade_crossbow_gunners', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_crossbow_gunners_anim', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
+        this.load.spritesheet('jade_crossbow_gunners', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_crossbow_gunners_anim', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
 
-        this.load.spritesheet('jade_halberd_guardian', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
-        this.load.json('jade_halberd_guardian_anim', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
+        this.load.spritesheet('jade_halberd_guardian', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.json('jade_halberd_guardian_anim', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
 
-        this.load.spritesheet('jade_shrine_oni', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('jade_shrine_oni_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+        this.load.spritesheet('jade_shrine_oni', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_shrine_oni_anim', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
 
-        this.load.spritesheet('jade_shikigami_fox', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_shikigami_fox_anim', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
+        this.load.spritesheet('jade_shikigami_fox', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shikigami_fox_anim', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
 
         // Placeholder: reuse existing sheets for other Jade units until unique sheets provided
-        this.load.spritesheet('jade_chi_dragoon', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
-        this.load.json('jade_chi_dragoon_anim', 'assets/units/Jade Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
+        this.load.spritesheet('jade_chi_dragoon', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.json('jade_chi_dragoon_anim', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
 
-        this.load.spritesheet('jade_shuriken_ninjas', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_shuriken_ninjas_anim', 'assets/units/Jade Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
+        this.load.spritesheet('jade_shuriken_ninjas', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shuriken_ninjas_anim', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
 
-        this.load.spritesheet('jade_shadowblade_assassins', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_shadowblade_assassins_anim', 'assets/units/Jade Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
+        this.load.spritesheet('jade_shadowblade_assassins', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_shadowblade_assassins_anim', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
 
-        this.load.spritesheet('jade_spirit_lantern', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
-        this.load.json('jade_spirit_lantern_anim', 'assets/units/Jade Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
+        this.load.spritesheet('jade_spirit_lantern', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('jade_spirit_lantern_anim', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
 
-        this.load.spritesheet('jade_paper_doll', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('jade_paper_doll_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+        this.load.spritesheet('jade_paper_doll', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_paper_doll_anim', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
 
-        this.load.spritesheet('jade_blue_oni', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
-        this.load.json('jade_blue_oni_anim', 'assets/units/Jade Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+        this.load.spritesheet('jade_blue_oni', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('jade_blue_oni_anim', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
+
+        // Eternal Frost Clan units
+        this.load.spritesheet('frost_shade_servant', 'assets/units/Eternal_Frost_Clan/army_Shade_Servant/army_Shade_Servant.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('frost_shade_servant_anim', 'assets/units/Eternal_Frost_Clan/army_Shade_Servant/army_Shade_Servant_an.json');
+
+        this.load.spritesheet('frost_putrid_archer', 'assets/units/Eternal_Frost_Clan/army_Putrid_Archer/army_Putrid_Archer.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('frost_putrid_archer_anim', 'assets/units/Eternal_Frost_Clan/army_Putrid_Archer/army_Putrid_Archer_an.json');
+
+        this.load.spritesheet('frost_eternal_watcher', 'assets/units/Eternal_Frost_Clan/army_Eternal_Watcher/army_Eternal_Watcher.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('frost_eternal_watcher_anim', 'assets/units/Eternal_Frost_Clan/army_Eternal_Watcher/army_Eternal_Watcher_an.json');
+
+        this.load.spritesheet('frost_cursed_walker', 'assets/units/Eternal_Frost_Clan/army_Cursed_Walker/army_Cursed_Walker.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('frost_cursed_walker_anim', 'assets/units/Eternal_Frost_Clan/army_Cursed_Walker/army_Cursed_Walker_an.json');
+
+        this.load.spritesheet('frost_bloodline_noble', 'assets/units/Eternal_Frost_Clan/army_Bloodline_Noble/army_Bloodline_Noble.png', { frameWidth: 192, frameHeight: 192 });
+        this.load.json('frost_bloodline_noble_anim', 'assets/units/Eternal_Frost_Clan/army_Bloodline_Noble/army_Bloodline_Noble_an.json');
+
+        this.load.spritesheet('frost_agony_screamer', 'assets/units/Eternal_Frost_Clan/army_Agony_Screamer/army_Agony_Screamer.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('frost_agony_screamer_anim', 'assets/units/Eternal_Frost_Clan/army_Agony_Screamer/army_Agony_Screamer_an.json');
     }
 
     create() {

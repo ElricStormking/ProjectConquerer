@@ -73,9 +73,6 @@ export class StageMapScene extends Phaser.Scene {
         })
             .setScrollFactor(0)
             .setDepth(200);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'lives-overlay',hypothesisId:'H1-H2',location:'StageMapScene.createHud',message:'created HUD overlay',data:{bgWidth:900,bgHeight:48,bgDepth:198,textDepth:200},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         this.refreshHud();
     }
 
@@ -525,7 +522,7 @@ export class StageMapScene extends Phaser.Scene {
             this.hudBg.setSize(targetW, targetH);
         }
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/200b3f18-cffb-4f61-b5f7-19a9d85de236',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'lives-overlay',hypothesisId:'H3',location:'StageMapScene.refreshHud',message:'hud sizing',data:{textWidth,textHeight},timestamp:Date.now()})}).catch(()=>{});
+        // logging disabled (previously posted HUD sizing to local ingest)
         // #endregion
     }
 
