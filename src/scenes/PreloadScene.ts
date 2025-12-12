@@ -63,6 +63,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('cards_data', 'data/cards.csv');
         this.load.text('waves_data', 'data/waves.csv');
         this.load.text('skills_data', 'data/skills.csv');
+        this.load.text('unit_skills_data', 'data/unit_skills.csv');
         this.load.text('buildings_data', 'data/buildings.csv');
         this.load.text('stages_data', 'data/stages.csv');
         this.load.text('relics_data', 'data/relics.csv');
@@ -221,7 +222,7 @@ export class PreloadScene extends Phaser.Scene {
         // Jade Dynasty units
         this.load.spritesheet('jade_azure_spear', 'assets/units/Jade_Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers.png', { frameWidth: 160, frameHeight: 160 });
         this.load.json('jade_azure_spear_anim', 'assets/units/Jade_Dynasty/army_Azure_Spear_Chargers/army_Azure_Spear_Chargers_an.json');
-
+        
         this.load.spritesheet('jade_storm_monks', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('jade_storm_monks_anim', 'assets/units/Jade_Dynasty/army_Storm_Monks/army_Storm_Monks_an.json');
 
@@ -240,7 +241,7 @@ export class PreloadScene extends Phaser.Scene {
         // Placeholder: reuse existing sheets for other Jade units until unique sheets provided
         this.load.spritesheet('jade_chi_dragoon', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian.png', { frameWidth: 128, frameHeight: 128 });
         this.load.json('jade_chi_dragoon_anim', 'assets/units/Jade_Dynasty/army_Jade_Halberd_Guardian/army_Jade_Halberd_Guardian_an.json');
-
+        
         this.load.spritesheet('jade_shuriken_ninjas', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('jade_shuriken_ninjas_anim', 'assets/units/Jade_Dynasty/army_Repeating_Crossbow_Gunners/army_Repeating_Crossbow_Gunners_an.json');
 
@@ -249,7 +250,7 @@ export class PreloadScene extends Phaser.Scene {
 
         this.load.spritesheet('jade_spirit_lantern', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('jade_spirit_lantern_anim', 'assets/units/Jade_Dynasty/army_Golden_Shikigami_Fox/army_Golden_Shikigami_Fox_an.json');
-
+        
         this.load.spritesheet('jade_paper_doll', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian.png', { frameWidth: 96, frameHeight: 96 });
         this.load.json('jade_paper_doll_anim', 'assets/units/Jade_Dynasty/army_Shrine_Oni_Guardian/army_Shrine_Oni_Guardian_an.json');
 
@@ -259,7 +260,7 @@ export class PreloadScene extends Phaser.Scene {
         // Eternal Frost Clan units
         this.load.spritesheet('frost_shade_servant', 'assets/units/Eternal_Frost_Clan/army_Shade_Servant/army_Shade_Servant.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('frost_shade_servant_anim', 'assets/units/Eternal_Frost_Clan/army_Shade_Servant/army_Shade_Servant_an.json');
-
+        
         this.load.spritesheet('frost_putrid_archer', 'assets/units/Eternal_Frost_Clan/army_Putrid_Archer/army_Putrid_Archer.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('frost_putrid_archer_anim', 'assets/units/Eternal_Frost_Clan/army_Putrid_Archer/army_Putrid_Archer_an.json');
 

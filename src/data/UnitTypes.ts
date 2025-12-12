@@ -61,6 +61,9 @@ export interface UnitTemplate {
         range: number;
         mass: number;
     };
+    skillPrimaryId?: string;
+    skillSecondaryId?: string;
+    passiveSkillId?: string;
 }
 
 // Deprecated: Use DataManager.getInstance().getUnitTemplate() instead
@@ -106,7 +109,10 @@ export class UnitFactory {
                 attackSpeed: template.baseStats.attackSpeed,
                 range: template.baseStats.range,
                 mass: template.baseStats.mass
-            }
+            },
+            skillPrimaryId: template.skillPrimaryId,
+            skillSecondaryId: template.skillSecondaryId,
+            passiveSkillId: template.passiveSkillId
         };
     }
     

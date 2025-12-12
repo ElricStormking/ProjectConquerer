@@ -155,8 +155,7 @@ export class BattleScene extends Phaser.Scene {
         if (this.battleState === 'running') {
             this.updateUnitAI();
             this.checkCombat();
-            this.updateFrostAuras();
-            this.updateJadeAuras();
+            this.processPassiveSkills();
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
         }
@@ -965,34 +964,44 @@ export class BattleScene extends Phaser.Scene {
         const damage = attacker.getDamage();
         this.combatSystem.dealDamage(attacker as any, target as any, damage);
 
-        if (unitType === UnitType.FROST_PUTRID_ARCHER) {
-            this.applySlowCloud(target.getPosition(), attacker.getTeam());
-        } else if (unitType === UnitType.FROST_AGONY_SCREAMER) {
-            const center = target.getPosition();
+        const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
+        if (skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now)) {
             const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1);
-            enemies.forEach(enemy => {
-                if (enemy.isDead()) return;
-                const pos = enemy.getPosition();
-                const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
-                if (dist <= 120) {
-                    this.combatSystem.dealDamage(attacker as any, enemy as any, Math.round(damage * 0.6));
+            const center = target.getPosition();
+            const targets = skill.aoeRadius
+                ? enemies.filter((e: any) => !e.isDead() && Phaser.Math.Distance.Between(center.x, center.y, e.getPosition().x, e.getPosition().y) <= (skill.aoeRadius || 0))
+                : [target];
+            attacker.triggerSkill(skill, targets, this.time.now, this.combatSystem);
+        } else {
+            if (unitType === UnitType.FROST_PUTRID_ARCHER) {
+                this.applySlowCloud(target.getPosition(), attacker.getTeam());
+            } else if (unitType === UnitType.FROST_AGONY_SCREAMER) {
+                const center = target.getPosition();
+                const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead()) return;
+                    const pos = enemy.getPosition();
+                    const dist = Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y);
+                    if (dist <= 120) {
+                        this.combatSystem.dealDamage(attacker as any, enemy as any, Math.round(damage * 0.6));
+                    }
+                });
+            } else if (unitType === UnitType.JADE_CROSSBOW_GUNNERS) {
+                const id = attacker.getId();
+                const count = (this.jadeCrossbowHitCounter.get(id) ?? 0) + 1;
+                if (count >= 5) {
+                    this.jadeCrossbowHitCounter.set(id, 0);
+                    this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 2);
+                } else {
+                    this.jadeCrossbowHitCounter.set(id, count);
                 }
-            });
-        } else if (unitType === UnitType.JADE_CROSSBOW_GUNNERS) {
-            const id = attacker.getId();
-            const count = (this.jadeCrossbowHitCounter.get(id) ?? 0) + 1;
-            if (count >= 5) {
-                this.jadeCrossbowHitCounter.set(id, 0);
-                this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 2);
-            } else {
-                this.jadeCrossbowHitCounter.set(id, count);
+            } else if (unitType === UnitType.JADE_SHURIKEN_NINJAS) {
+                if (Math.random() < 0.3) {
+                    this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 1.5);
+                }
+            } else if (unitType === UnitType.JADE_SHIKIGAMI_FOX) {
+                this.combatSystem.applyStatusEffect(target as any, StatusEffect.STUNNED, 0.2);
             }
-        } else if (unitType === UnitType.JADE_SHURIKEN_NINJAS) {
-            if (Math.random() < 0.3) {
-                this.combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, 1.5);
-            }
-        } else if (unitType === UnitType.JADE_SHIKIGAMI_FOX) {
-            this.combatSystem.applyStatusEffect(target as any, StatusEffect.STUNNED, 0.2);
         }
 
         // Visual projectile
@@ -1009,6 +1018,60 @@ export class BattleScene extends Phaser.Scene {
                 this.combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 2);
             }
         });
+    }
+
+    private processPassiveSkills(): void {
+        const now = this.time.now;
+        const units = this.unitManager.getAllUnits();
+        units.forEach(unit => {
+            const skills = unit.getSkillTemplates().filter(s => s.trigger === 'passive_tick');
+            skills.forEach(skill => {
+                const tickMs = skill.auraTickMs ?? 1000;
+                const lastMap: Map<string, number> = (unit as any).lastPassiveTick ?? (unit as any).lastPassiveTick; // not directly accessible; store on unit via map
+            });
+        });
+        // Apply via helper below
+        this.applyPassiveTick(now);
+    }
+
+    // Helper using the unit's stored lastPassiveTick map via public methods
+    private applyPassiveTick(currentTime: number): void {
+        const units = this.unitManager.getAllUnits();
+        units.forEach(unit => {
+            const u: any = unit;
+            if (!u.getSkillTemplates) return;
+            const skills = u.getSkillTemplates().filter((s: any) => s.trigger === 'passive_tick');
+            skills.forEach((skill: any) => {
+                const tickMs = skill.auraTickMs ?? skill.cooldownMs ?? 1000;
+                const last = u.getLastPassiveTick ? u.getLastPassiveTick(skill.id) : 0;
+                if (currentTime - last < tickMs) return;
+                if (u.setLastPassiveTick) u.setLastPassiveTick(skill.id, currentTime);
+
+                const targetType = skill.target || this.inferTarget(skill);
+                const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+                const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+                const origin = unit.getPosition();
+                let targets: any[] = [];
+                const radius = skill.auraRadius ?? skill.aoeRadius ?? 0;
+                const inRadius = (list: any[]) => radius > 0 ? list.filter(u2 => !u2.isDead() && Phaser.Math.Distance.Between(origin.x, origin.y, u2.getPosition().x, u2.getPosition().y) <= radius) : list;
+
+                if (targetType === 'ally') targets = inRadius(allies);
+                else if (targetType === 'self') targets = [unit];
+                else if (targetType === 'both') targets = inRadius(allies).concat(inRadius(enemies));
+                else targets = inRadius(enemies);
+
+                if (targets.length > 0 && unit.triggerSkill) {
+                    unit.triggerSkill(skill, targets, currentTime, this.combatSystem);
+                }
+            });
+        });
+    }
+
+    private inferTarget(skill: any): 'ally' | 'enemy' {
+        if (skill.hotAmount || (skill.statusEffects && skill.statusEffects.includes('hot')) || skill.damageBuffMultiplier) {
+            return 'ally';
+        }
+        return 'enemy';
     }
 
     private updateJadeAuras(): void {
@@ -1056,6 +1119,24 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private onUnitSpawned(unit: any): void {
+        const skills = unit.getSkillTemplates ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_spawn') : [];
+        skills.forEach((skill: any) => {
+            const targetType = skill.target || this.inferTarget(skill);
+            const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+            const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            const origin = unit.getPosition();
+            const radius = skill.auraRadius ?? skill.aoeRadius ?? 0;
+            const inRadius = (list: any[]) => radius > 0 ? list.filter(u2 => !u2.isDead() && Phaser.Math.Distance.Between(origin.x, origin.y, u2.getPosition().x, u2.getPosition().y) <= radius) : list;
+            let targets: any[] = [];
+            if (targetType === 'ally') targets = inRadius(allies);
+            else if (targetType === 'self') targets = [unit];
+            else if (targetType === 'both') targets = inRadius(allies).concat(inRadius(enemies));
+            else targets = inRadius(enemies);
+            if (targets.length > 0) {
+                unit.triggerSkill(skill, targets, this.time.now, this.combatSystem);
+            }
+        });
+
         const type = unit.getConfig().unitType as UnitType;
         if (type === UnitType.FROST_ABOMINATION) {
             const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
@@ -1075,6 +1156,24 @@ export class BattleScene extends Phaser.Scene {
     private onUnitDeath(unit: any): void {
         const type = unit.getConfig?.().unitType as UnitType | undefined;
         if (!type) return;
+
+        const skills = unit.getSkillTemplates ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_death') : [];
+        skills.forEach((skill: any) => {
+            const origin = unit.getPosition();
+            const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+            const radius = skill.aoeRadius ?? skill.auraRadius ?? 0;
+            const targetType = skill.target || this.inferTarget(skill);
+            const inRadius = (list: any[]) => radius > 0 ? list.filter(u2 => !u2.isDead() && Phaser.Math.Distance.Between(origin.x, origin.y, u2.getPosition().x, u2.getPosition().y) <= radius) : list;
+            let targets: any[] = [];
+            if (targetType === 'ally') targets = inRadius(allies);
+            else if (targetType === 'self') targets = [unit];
+            else if (targetType === 'both') targets = inRadius(allies).concat(inRadius(enemies));
+            else targets = inRadius(enemies);
+            if (targets.length > 0) {
+                unit.triggerSkill(skill, targets, this.time.now, this.combatSystem);
+            }
+        });
 
         if (type === UnitType.FROST_FLESH_WEAVER) {
             const center = unit.getPosition();

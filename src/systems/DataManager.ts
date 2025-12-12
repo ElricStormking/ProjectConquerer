@@ -19,7 +19,8 @@ import {
     ICommanderFullConfig,
     IFortressGridConfig,
     IFortressCell,
-    FortressCellType
+    FortressCellType,
+    UnitSkillTemplate
 } from '../types/ironwars';
 
 export class DataManager {
@@ -42,6 +43,7 @@ export class DataManager {
     // Faction and commander data
     private factions: Map<string, IFactionConfig> = new Map();
     private commanders: Map<string, ICommanderFullConfig> = new Map();
+    private unitSkills: Map<string, UnitSkillTemplate> = new Map();
     
     // Fortress grid data
     private fortressGrids: Map<string, IFortressGridConfig> = new Map();
@@ -60,6 +62,7 @@ export class DataManager {
         this.parseCards(cache.text.get('cards_data'));
         this.parseWaves(cache.text.get('waves_data'));
         this.parseSkills(cache.text.get('skills_data'));
+        if (cache.text.exists('unit_skills_data')) this.parseUnitSkills(cache.text.get('unit_skills_data'));
         
         // Optional future data
         if (cache.text.exists('buildings_data')) this.parseBuildings(cache.text.get('buildings_data'));
@@ -77,7 +80,7 @@ export class DataManager {
         
         console.log('DataManager: Parsing complete.');
         const totalWaves = Array.from(this.wavesByEncounter.values()).reduce((sum, m) => sum + m.size, 0);
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.unitSkills.size} unit skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
     }
 
     private parseUnits(csv: string): void {
@@ -100,9 +103,55 @@ export class DataManager {
                     attackSpeed: row.attack_speed,
                     range: row.range,
                     mass: row.mass
-                }
+                },
+                skillPrimaryId: row.skill_primary_id || undefined,
+                skillSecondaryId: row.skill_secondary_id || undefined,
+                passiveSkillId: row.passive_skill_id || undefined
             };
             this.units.set(row.id, template);
+        });
+    }
+
+    private parseUnitSkills(csv: string): void {
+        if (!csv) return;
+        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        result.data.forEach((row: any) => {
+            const statusList = row.status_effects ? String(row.status_effects).split('|').filter(Boolean) : [];
+            const skill: UnitSkillTemplate = {
+                id: row.id,
+                name: row.name,
+                skillType: row.skill_type,
+                trigger: row.trigger,
+                target: row.target,
+                damage: row.damage,
+                damageType: row.damage_type,
+                range: row.range,
+                aoeRadius: row.aoe_radius,
+                projectileSpeed: row.projectile_speed,
+                statusEffects: statusList.length ? statusList : undefined,
+                statusDurationMs: row.status_duration_ms,
+                statusMagnitude: row.status_magnitude,
+                dotTickMs: row.dot_tick_ms,
+                dotAmount: row.dot_amount,
+                hotTickMs: row.hot_tick_ms,
+                hotAmount: row.hot_amount,
+                stunDurationMs: row.stun_duration_ms,
+                slowAmount: row.slow_amount,
+                slowDurationMs: row.slow_duration_ms,
+                cooldownMs: row.cooldown_ms,
+                windupMs: row.windup_ms,
+                followupMs: row.followup_ms,
+                maxTargets: row.max_targets,
+                chainCount: row.chain_count,
+                chainRadius: row.chain_radius,
+                auraRadius: row.aura_radius,
+                auraTickMs: row.aura_tick_ms,
+                resourceCost: row.resource_cost,
+                damageBuffMultiplier: row.damage_buff_multiplier,
+                notes: row.notes,
+                target: row.target
+            };
+            this.unitSkills.set(skill.id, skill);
         });
     }
 
@@ -418,6 +467,14 @@ export class DataManager {
             allWaves.push(...encounterWaves.values());
         });
         return allWaves.sort((a, b) => a.index - b.index);
+    }
+
+    public getUnitSkill(id: string): UnitSkillTemplate | undefined {
+        return this.unitSkills.get(id);
+    }
+
+    public getAllUnitSkills(): UnitSkillTemplate[] {
+        return Array.from(this.unitSkills.values());
     }
 
     public getSkillTemplate(id: string): Omit<Skill, 'currentRank'> | undefined {

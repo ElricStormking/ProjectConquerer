@@ -297,6 +297,44 @@ export interface IRunState {
     factionId: string;
 }
 
+export type UnitSkillTrigger = 'on_attack' | 'on_hit' | 'on_kill' | 'passive_tick' | 'on_death' | 'on_spawn';
+export type UnitSkillType = 'melee_swing' | 'projectile' | 'aura' | 'dash' | 'summon' | 'channel' | 'on_death';
+export type UnitSkillTarget = 'enemy' | 'ally' | 'self' | 'both';
+
+export interface UnitSkillTemplate {
+    id: string;
+    name: string;
+    skillType: UnitSkillType;
+    trigger: UnitSkillTrigger;
+    target?: UnitSkillTarget;
+    damage?: number;
+    damageType?: 'physical' | 'magic' | 'true';
+    range?: number;
+    aoeRadius?: number;
+    projectileSpeed?: number;
+    statusEffects?: string[]; // maps to StatusEffect enum
+    statusDurationMs?: number;
+    statusMagnitude?: number;
+    dotTickMs?: number;
+    dotAmount?: number;
+    hotTickMs?: number;
+    hotAmount?: number;
+    stunDurationMs?: number;
+    slowAmount?: number;
+    slowDurationMs?: number;
+    cooldownMs?: number;
+    windupMs?: number;
+    followupMs?: number;
+    maxTargets?: number;
+    chainCount?: number;
+    chainRadius?: number;
+    auraRadius?: number;
+    auraTickMs?: number;
+    resourceCost?: number;
+    damageBuffMultiplier?: number;
+    notes?: string;
+}
+
 // Faction configuration
 export interface IFactionConfig {
     id: string;
