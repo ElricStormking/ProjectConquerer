@@ -23,6 +23,8 @@ export class StageMapScene extends Phaser.Scene {
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
     private loadSavedRun = false;
+    private stageBgm?: Phaser.Sound.BaseSound;
+    private stageBgmKey: string = '';
 
     constructor() {
         super({ key: 'StageMapScene' });
@@ -59,6 +61,15 @@ export class StageMapScene extends Phaser.Scene {
         this.createHudButtons();
         this.registerRunEvents();
         this.renderCurrentStage();
+
+        this.events.on(Phaser.Scenes.Events.WAKE, this.onSceneWake, this);
+        this.events.on(Phaser.Scenes.Events.RESUME, this.onSceneWake, this);
+
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.events.off(Phaser.Scenes.Events.WAKE, this.onSceneWake, this);
+            this.events.off(Phaser.Scenes.Events.RESUME, this.onSceneWake, this);
+            this.stopStageBgm();
+        });
     }
 
     private createHud(): void {
@@ -318,6 +329,9 @@ export class StageMapScene extends Phaser.Scene {
         this.pathGraphics.clear();
         this.currentStageIndex = stage.index;
 
+        // Stage-specific BGM
+        this.playStageBgm();
+
         this.drawBackground(stage);
         this.drawPaths(stage);
         stage.nodes.forEach(node => this.createNodeContainer(node));
@@ -326,15 +340,46 @@ export class StageMapScene extends Phaser.Scene {
         this.refreshHud();
     }
 
+    private playStageBgm(): void {
+        const state = this.runManager.getRunState();
+        const stageIndex = state?.currentStageIndex ?? 0;
+        const key = stageIndex === 0 ? 'bgm_stage_jade' : 'bgm_stage_frost';
+        this.stageBgmKey = key;
+
+        // If already playing correct track, keep it.
+        const existing = this.sound.get(key);
+        if (existing && existing.isPlaying) {
+            this.stageBgm = existing;
+            return;
+        }
+
+        // Stop other music and start the correct map track.
+        this.sound.stopAll();
+        this.stageBgm?.destroy();
+        this.stageBgm = this.sound.add(key, { loop: true, volume: 0.6 });
+        this.stageBgm.play();
+    }
+
+    private stopStageBgm(): void {
+        if (this.stageBgm) {
+            this.stageBgm.stop();
+            this.stageBgm.destroy();
+            this.stageBgm = undefined;
+        }
+        if (this.stageBgmKey) {
+            this.sound.removeByKey(this.stageBgmKey);
+        }
+    }
+
+    private onSceneWake(): void {
+        this.playStageBgm();
+    }
+
     private drawBackground(stage: IStageConfig): void {
         this.cameras.main.fadeIn(300, 0, 0, 0);
         this.stageDecor = this.add.container(0, 0);
         this.stageDecor.setDepth(0);
-        let bgKey = stage.backgroundKey || 'stage_default';
-        const factionId = this.runManager.getRunState()?.factionId;
-        if (factionId === 'frost_clan' && this.textures.exists('stage_frost_map')) {
-            bgKey = 'stage_frost_map';
-        }
+        const bgKey = stage.backgroundKey || 'stage_default';
         if (this.textures.exists(bgKey)) {
             const bgImage = this.add.image(MAP_WIDTH / 2, MAP_HEIGHT / 2, bgKey);
             bgImage.setDisplaySize(MAP_WIDTH, MAP_HEIGHT);
@@ -355,6 +400,8 @@ export class StageMapScene extends Phaser.Scene {
 
     private drawPaths(stage: IStageConfig): void {
         this.pathGraphics.clear();
+        const currentNode = this.runManager.getCurrentNode();
+        const currentNodeId = currentNode?.id;
         stage.nodes.forEach(snapshotNode => {
             const liveSource = this.runManager.getNodeSnapshot(snapshotNode.id) ?? snapshotNode;
             liveSource.nextNodeIds.forEach(nextId => {
@@ -362,20 +409,18 @@ export class StageMapScene extends Phaser.Scene {
                 if (!targetSnapshot) return;
                 const liveTarget = this.runManager.getNodeSnapshot(nextId) ?? targetSnapshot;
 
-                // Default: locked path
+                // Default: dimmed paths
                 let color = 0x353c4f;
-                let alpha = 0.25;
-                let thickness = 4;
+                let alpha = 0.3;
+                let thickness = 3;
 
-                if (liveSource.isCompleted) {
-                    // Path already taken
-                    color = 0x22c55e;
-                    alpha = 0.95;
-                    thickness = 7;
-                } else if (liveSource.isAccessible && !liveSource.isCompleted && !liveTarget.isCompleted) {
-                    // Next step options from current accessible node
+                // Highlight only the paths leading out of the current fortress node.
+                // Use completion to avoid highlighting already-cleared nodes.
+                const isFromCurrent = currentNodeId && liveSource.id === currentNodeId;
+                const isNextReachable = isFromCurrent && !liveTarget.isCompleted;
+                if (isNextReachable) {
                     color = 0xfbbf24;
-                    alpha = 0.9;
+                    alpha = 0.95;
                     thickness = 6;
                 }
 
@@ -392,22 +437,22 @@ export class StageMapScene extends Phaser.Scene {
         const container = this.add.container(position.x, position.y);
         container.setDepth(5);
 
-        const circle = this.add.circle(0, 0, 28, 0x4e566d, 0.95);
-        circle.setStrokeStyle(4, 0x0b0e16);
-        container.add(circle);
+        const iconBase = node.iconKey || 'node_battle';
+        const icon = this.add.image(0, 0, `${iconBase}_off`);
+        icon.setOrigin(0.5);
+        icon.setDisplaySize(96, 96);
+        container.add(icon);
 
-        const label = this.add.text(0, 40, node.type.toUpperCase(), {
+        const label = this.add.text(0, 58, node.type.toUpperCase(), {
             fontSize: '16px',
             color: '#d7e0ff'
         }).setOrigin(0.5);
         container.add(label);
 
-        // Interactive on the circle itself instead of the container.
-        // Let Phaser infer the hit area from the circle shape.
-        circle.setInteractive({ useHandCursor: true });
-        circle.on('pointerdown', () => this.handleNodeClick(node.id));
-        circle.on('pointerover', () => container.setScale(1.1));
-        circle.on('pointerout', () => container.setScale(1));
+        icon.setInteractive({ useHandCursor: true });
+        icon.on('pointerdown', () => this.handleNodeClick(node.id));
+        icon.on('pointerover', () => container.setScale(1.1));
+        icon.on('pointerout', () => container.setScale(1));
 
         this.nodeContainers.set(node.id, container);
     }
@@ -436,20 +481,21 @@ export class StageMapScene extends Phaser.Scene {
         this.nodeContainers.forEach((container, nodeId) => {
             const node = this.runManager.getNodeSnapshot(nodeId);
             if (!node) return;
-            const circle = container.list[0] as Phaser.GameObjects.Arc;
+            const icon = container.list[0] as Phaser.GameObjects.Image;
+            const iconBase = node.iconKey || 'node_battle';
+            const onKey = `${iconBase}_on`;
+            const offKey = `${iconBase}_off`;
+
             if (node.isCompleted) {
-                circle.setFillStyle(0x16a34a, 1);
-                circle.setStrokeStyle(4, 0x22c55e, 1);
+                icon.setTexture(onKey);
                 container.setAlpha(1);
                 container.setScale(1);
             } else if (node.isAccessible) {
-                circle.setFillStyle(0xf97316, 1);
-                circle.setStrokeStyle(4, 0xfff7c2, 1);
+                icon.setTexture(onKey);
                 container.setAlpha(1);
                 container.setScale(1.08);
             } else {
-                circle.setFillStyle(0x374151, 0.6);
-                circle.setStrokeStyle(2, 0x111827, 0.7);
+                icon.setTexture(offKey);
                 container.setAlpha(0.55);
                 container.setScale(1);
             }

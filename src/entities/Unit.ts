@@ -3,7 +3,7 @@ import { PhysicsManager } from '../systems/PhysicsManager';
 import { StatusEffect } from '../systems/CombatSystem';
 import type { UnitManager } from '../systems/UnitManager';
 import type { CombatSystem } from '../systems/CombatSystem';
-import { UnitType, UNIT_TEMPLATES } from '../data/UnitTypes';
+import { UnitType, UNIT_TEMPLATES, UnitTemplate } from '../data/UnitTypes';
 import { RelicManager } from '../systems/RelicManager';
 import { GameStateManager } from '../systems/GameStateManager';
 import { DataManager } from '../systems/DataManager';
@@ -16,6 +16,9 @@ export interface UnitConfig {
     unitType: UnitType;
     type: 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner';
     size: 'small' | 'normal' | 'large';
+    spriteScale?: number;
+    spriteOffsetY?: number;
+    unitTemplate?: UnitTemplate;
     stats: {
         maxHealth: number;
         damage: number;
@@ -83,11 +86,13 @@ export class Unit extends Phaser.Events.EventEmitter {
     private attackSpeedMultiplier: number = 1;
     private friction: number = 0.2;
     
+    // Status effect timers are tracked in SECONDS (remaining, tickInterval, accumulator).
     private statusEffects: Map<StatusEffect, { remaining: number; magnitude?: number; tickInterval?: number; accumulator?: number }> = new Map();
     private stunned: boolean = false;
     private lastAttackTime: number = 0;
     private lastAzureStunTime: number = 0;
     private lastStormComboTime: number = 0;
+    private spriteOffsetY: number = 0;
 
     // Visual indicator for building-based buffs (Armor Shop / Overclock
     // Stable) shown as a yellow square next to the unit name.
@@ -121,6 +126,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.attackSpeed = stats.attackSpeed;
         this.range = stats.range;
         this.mass = stats.mass;
+
+        // Visual-only offset for aligning sprite to the isometric grid.
+        // Positive moves sprite DOWN (larger y), negative moves sprite UP.
+        const rawOffsetY = this.config.unitTemplate?.spriteOffsetY ?? this.config.spriteOffsetY ?? 0;
+        this.spriteOffsetY = Number.isFinite(Number(rawOffsetY)) ? Number(rawOffsetY) : 0;
 
         // Resolve skills from DataManager
         const dm = DataManager.getInstance();
@@ -169,21 +179,34 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Set origin to center-bottom for proper positioning (feet at position)
         this.sprite.setOrigin(0.5, 0.8);
         
-        // Scale relative to a 96px baseline so differently-sized sheets look consistent.
-        const frameWidth = Math.max(1, this.sprite.frame.width);
-        let baseScale = 0.5 * (96 / frameWidth);
-        if (
-            this.config.unitType === UnitType.JADE_AZURE_SPEAR ||
-            this.config.unitType === UnitType.JADE_SHRINE_ONI ||
-            this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN
-        ) {
-            baseScale *= 2.4; // Jade heavy units need larger presence
+        // Scale: designer-controlled via spriteScale; fallback to legacy heuristics
+        let scale: number | undefined;
+        const templateScale = this.config.unitTemplate?.spriteScale ?? this.config.spriteScale;
+        if (typeof templateScale === 'number' && Number.isFinite(templateScale) && templateScale > 0) {
+            scale = templateScale;
         }
-        let scale = baseScale;
-        if (this.config.unitType === UnitType.RAIDER_BOSS) {
-            scale *= 3;
+        if (scale === undefined) {
+            // Legacy heuristic: normalize to ~96px baseline, then adjust known specials
+            const frameWidth = Math.max(1, this.sprite.frame.width);
+            let baseScale = 0.5 * (96 / frameWidth);
+            if (
+                this.config.unitType === UnitType.JADE_AZURE_SPEAR ||
+                this.config.unitType === UnitType.JADE_SHRINE_ONI ||
+                this.config.unitType === UnitType.JADE_HALBERD_GUARDIAN
+            ) {
+                baseScale *= 2.4; // Jade heavy units need larger presence
+            }
+            scale = baseScale;
+            if (this.config.unitType === UnitType.RAIDER_BOSS) {
+                scale *= 3;
+            }
         }
-        this.sprite.setScale(scale);
+        this.sprite.setScale(scale ?? 1);
+
+        // Apply designer-provided vertical offset (pixels, positive moves sprite down)
+        if (this.spriteOffsetY !== 0) {
+            this.sprite.y += this.spriteOffsetY;
+        }
         
         // Set depth for proper layering
         this.sprite.setDepth(this.config.y);
@@ -388,6 +411,12 @@ export class Unit extends Phaser.Events.EventEmitter {
             if (skill.hotAmount && !skill.statusEffects?.includes('hot') && skill.hotTickMs) {
                 const tick = (skill.hotTickMs ?? 1000) / 1000;
                 target.addStatusEffect(StatusEffect.HOT, Math.max(0.1, hotDurationSec || (tick * 3)), skill.hotAmount, tick);
+            }
+            if (skill.healAmount && (target as any).heal) {
+                (target as any).heal(skill.healAmount);
+            }
+            if (skill.cleanse && (target as any).clearDebuffs) {
+                (target as any).clearDebuffs();
             }
         });
         this.markSkillUsed(skill, currentTime);
@@ -608,25 +637,28 @@ export class Unit extends Phaser.Events.EventEmitter {
             }
         }
         
-        this.sprite.x = this.body.position.x;
-        this.sprite.y = this.body.position.y;
+        const visualX = this.body.position.x;
+        const visualY = this.body.position.y + this.spriteOffsetY;
+
+        this.sprite.x = visualX;
+        this.sprite.y = visualY;
         
         // Update health bar and team flag positions
-        this.healthBarBg.x = this.body.position.x;
-        this.healthBarBg.y = this.body.position.y;
-        this.healthBar.x = this.body.position.x;
-        this.healthBar.y = this.body.position.y;
-        this.teamFlag.x = this.body.position.x;
-        this.teamFlag.y = this.body.position.y;
+        this.healthBarBg.x = visualX;
+        this.healthBarBg.y = visualY;
+        this.healthBar.x = visualX;
+        this.healthBar.y = visualY;
+        this.teamFlag.x = visualX;
+        this.teamFlag.y = visualY;
         if (this.statusIcon) {
-            this.statusIcon.x = this.body.position.x;
-            this.statusIcon.y = this.body.position.y - 130;
-            this.statusIcon.setDepth(this.body.position.y + 4000);
+            this.statusIcon.x = visualX;
+            this.statusIcon.y = visualY - 130;
+            this.statusIcon.setDepth(visualY + 4000);
         }
         if (this.classLabel) {
-            this.classLabel.x = this.body.position.x;
-            this.classLabel.y = this.body.position.y - 110;
-            this.classLabel.setDepth(this.body.position.y + 2000);
+            this.classLabel.x = visualX;
+            this.classLabel.y = visualY - 110;
+            this.classLabel.setDepth(visualY + 2000);
         }
 
         if (this.buffSquare && this.buildingBuffActive) {
@@ -747,11 +779,14 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public takeDamage(amount: number): void {
         if (this.dead) return;
+        const dmg = Number(amount);
+        if (!Number.isFinite(dmg) || dmg <= 0) return;
         
-        this.health = Math.max(0, this.health - amount);
+        this.health = Math.max(0, this.health - dmg);
         this.updateHealthBar();
         
-        if (this.health === 0) {
+        if (!Number.isFinite(this.health) || this.health <= 0) {
+            this.health = 0;
             this.die();
         }
         
@@ -760,7 +795,9 @@ export class Unit extends Phaser.Events.EventEmitter {
 
     public heal(amount: number): void {
         if (this.dead || amount <= 0) return;
-        this.health = Math.min(this.maxHealth, this.health + amount);
+        const healVal = Number(amount);
+        if (!Number.isFinite(healVal) || healVal <= 0) return;
+        this.health = Math.min(this.maxHealth, this.health + healVal);
         this.updateHealthBar();
     }
     
@@ -801,15 +838,16 @@ export class Unit extends Phaser.Events.EventEmitter {
         (this.scene.matter.body as any).setVelocity(this.body, { x: 0, y: 0 });
         // Immediately sync visuals to avoid one-frame delay
         this.sprite.x = x;
-        this.sprite.y = y;
-        if (this.healthBarBg) { this.healthBarBg.x = x; this.healthBarBg.y = y; }
-        if (this.healthBar) { this.healthBar.x = x; this.healthBar.y = y; }
-        if (this.teamFlag) { this.teamFlag.x = x; this.teamFlag.y = y; }
-        if (this.classLabel) { this.classLabel.x = x; this.classLabel.y = y - 110; }
+        this.sprite.y = y + this.spriteOffsetY;
+        if (this.healthBarBg) { this.healthBarBg.x = x; this.healthBarBg.y = y + this.spriteOffsetY; }
+        if (this.healthBar) { this.healthBar.x = x; this.healthBar.y = y + this.spriteOffsetY; }
+        if (this.teamFlag) { this.teamFlag.x = x; this.teamFlag.y = y + this.spriteOffsetY; }
+        if (this.classLabel) { this.classLabel.x = x; this.classLabel.y = y + this.spriteOffsetY - 110; }
     }
     
     public addStatusEffect(effect: StatusEffect, duration: number, magnitude?: number, tickIntervalSeconds?: number): void {
-        this.statusEffects.set(effect, { remaining: duration * 1000, magnitude, tickInterval: tickIntervalSeconds ? tickIntervalSeconds * 1000 : undefined, accumulator: 0 });
+        // Duration and tickInterval are in seconds; update loop also uses seconds.
+        this.statusEffects.set(effect, { remaining: duration, magnitude, tickInterval: tickIntervalSeconds, accumulator: 0 });
         if (effect === StatusEffect.STUNNED) {
             this.stunned = true;
         }
@@ -817,7 +855,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public updateStatusEffects(deltaTime: number): void {
         this.statusEffects.forEach((entry, effect) => {
-            const newRemaining = entry.remaining - deltaTime;
+            const newRemaining = entry.remaining - deltaTime; // all in seconds
             let accumulator = entry.accumulator ?? 0;
 
             // Handle periodic effects
@@ -825,10 +863,13 @@ export class Unit extends Phaser.Events.EventEmitter {
                 accumulator += deltaTime;
                 while (accumulator >= entry.tickInterval) {
                     accumulator -= entry.tickInterval;
-                    if (effect === StatusEffect.DOT && entry.magnitude) {
-                        this.takeDamage(entry.magnitude);
-                    } else if (effect === StatusEffect.HOT && entry.magnitude) {
-                        this.heal(entry.magnitude);
+                    const mag = Number(entry.magnitude ?? 0);
+                    if (mag > 0) {
+                        if (effect === StatusEffect.DOT) {
+                            this.takeDamage(mag);
+                        } else if (effect === StatusEffect.HOT) {
+                            this.heal(mag);
+                        }
                     }
                 }
             }
@@ -844,6 +885,12 @@ export class Unit extends Phaser.Events.EventEmitter {
                 });
             }
         });
+
+        // Safety: ensure death triggers if health fell to/below zero from any effect
+        if (!this.dead && (!Number.isFinite(this.health) || this.health <= 0)) {
+            this.health = 0;
+            this.die();
+        }
     }
     
     private removeStatusEffect(effect: StatusEffect): void {
@@ -868,6 +915,15 @@ export class Unit extends Phaser.Events.EventEmitter {
             case StatusEffect.SLOWED:
                 this.moveSpeedMultiplier = 1;
                 break;
+        }
+
+        // If no remaining stun/slow, hide status icon immediately
+        if (this.statusIcon) {
+            const hasSlow = this.statusEffects.has(StatusEffect.SLOWED);
+            if (!this.stunned && !hasSlow) {
+                this.statusIcon.setText('');
+                this.statusIcon.setVisible(false);
+            }
         }
     }
     
@@ -1159,6 +1215,7 @@ export class Unit extends Phaser.Events.EventEmitter {
                 this.statusIcon.setText('⏳');
                 this.statusIcon.setVisible(true);
             } else {
+                this.statusIcon.setText('');
                 this.statusIcon.setVisible(false);
             }
         }

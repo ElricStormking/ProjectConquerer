@@ -1,2 +1,2 @@
-id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height
-fortress_jade_dynasty_01,jade_dynasty,Cloud Fortress,fortress_jade_dynasty_01,1000,128,64
+id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height,image_offset_x,image_offset_y,image_scale
+fortress_jade_dynasty_01,jade_dynasty,Cloud Fortress,fortress_jade_dynasty_01,1000,128,64,0,0,1

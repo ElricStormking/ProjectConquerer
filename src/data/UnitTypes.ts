@@ -52,6 +52,8 @@ export interface UnitTemplate {
     unitClass: 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner';
     size: 'small' | 'normal' | 'large';
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    spriteScale?: number;
+    spriteOffsetY?: number;
     baseStats: {
         maxHealth: number;
         damage: number;
@@ -101,6 +103,9 @@ export class UnitFactory {
             unitType: type,
             type: template.unitClass,
             size: template.size,
+            spriteScale: template.spriteScale,
+            spriteOffsetY: template.spriteOffsetY,
+            unitTemplate: template,
             stats: {
                 maxHealth: Math.round(template.baseStats.maxHealth * rankMultiplier),
                 damage: Math.round(template.baseStats.damage * rankMultiplier),

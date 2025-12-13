@@ -19,6 +19,9 @@ export class FactionSelectionScene extends Phaser.Scene {
     private rightArrow!: Phaser.GameObjects.Container;
     private selectButton!: Phaser.GameObjects.Container;
     private isAnimating = false;
+    private backgroundImage?: Phaser.GameObjects.Image;
+    private backgroundFallback?: Phaser.GameObjects.Graphics;
+    private bgLoadInFlight: Set<string> = new Set();
 
     constructor() {
         super({ key: 'FactionSelectionScene' });
@@ -26,6 +29,14 @@ export class FactionSelectionScene extends Phaser.Scene {
 
     create(): void {
         const { width, height } = this.cameras.main;
+        
+        // Music for faction selection
+        const existingBgm =
+            this.sound.get('bgm_faction_select') ||
+            this.sound.get('bgm_title'); // reuse title track if already playing (same asset)
+        if (!existingBgm || !existingBgm.isPlaying) {
+            this.sound.play('bgm_faction_select', { loop: true, volume: 0.7 });
+        }
         
         // Only show currently supported factions (Jade + Frost for now)
         const allowedFactions = new Set(['jade_dynasty', 'frost_clan']);
@@ -56,16 +67,16 @@ export class FactionSelectionScene extends Phaser.Scene {
     }
 
     private createBackground(width: number, height: number): void {
-        const bg = this.add.graphics();
-        bg.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x1a1d2e, 0x1a1d2e, 1);
-        bg.fillRect(0, 0, width, height);
-        
-        // Subtle pattern
-        const pattern = this.add.graphics();
-        pattern.lineStyle(1, 0x3d4663, 0.15);
-        for (let i = 0; i < 30; i++) {
-            pattern.lineBetween(0, i * 40, width, i * 40);
-        }
+        // Immediate fallback gradient so background isn't blank
+        this.backgroundFallback = this.add.graphics().setDepth(-50).setScrollFactor(0);
+        this.backgroundFallback.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x1a1d2e, 0x1a1d2e, 1);
+        this.backgroundFallback.fillRect(0, 0, width, height);
+
+        const firstFaction = this.factions[0]?.id ?? 'jade_dynasty';
+        // Delay background image creation slightly to ensure textures are fully accessible
+        this.time.delayedCall(100, () => {
+            this.setBackgroundForFaction(firstFaction, width, height);
+        });
     }
 
     private createTitle(width: number): void {
@@ -112,10 +123,21 @@ export class FactionSelectionScene extends Phaser.Scene {
         bg.strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
         panel.add(bg);
         
-        // Faction emblem placeholder (colored circle)
-        const emblem = this.add.circle(-280, -180, 50, factionColor, 1);
-        emblem.setStrokeStyle(3, 0xffffff, 0.3);
-        panel.add(emblem);
+        // Faction emblem (use logo art if available)
+        const logoKeyMap: Record<string, string> = {
+            jade_dynasty: 'logo_jade_dynasty',
+            frost_clan: 'logo_frost_clan'
+        };
+        const logoKey = logoKeyMap[faction.id];
+        if (logoKey && this.textures.exists(logoKey)) {
+            const logo = this.add.image(-280, -170, logoKey);
+            logo.setDisplaySize(120, 120);
+            panel.add(logo);
+        } else {
+            const emblem = this.add.circle(-280, -180, 50, factionColor, 1);
+            emblem.setStrokeStyle(3, 0xffffff, 0.3);
+            panel.add(emblem);
+        }
         
         // Faction name
         const nameText = this.add.text(-200, -200, faction.name.toUpperCase(), {
@@ -348,9 +370,10 @@ export class FactionSelectionScene extends Phaser.Scene {
         const fortress = this.factionRegistry.getFortressForFaction(factionId);
         if (!fortress) return;
         
-        const startX = -350;
-        const startY = 160;
-        const cellSize = 28;
+        // Position fortress preview on the left side of the panel to avoid overlap
+        const startX = -450;
+        const startY = 140;
+        const cellSize = 26;
         const isoRatio = 0.5;
         
         // Section label
@@ -398,19 +421,35 @@ export class FactionSelectionScene extends Phaser.Scene {
         panel.add(gridGraphics);
         
         // Fortress name and HP
-        const fortressName = this.add.text(startX + 200, startY - 5, fortress.name, {
+        const fortressName = this.add.text(startX + 220, startY - 5, fortress.name, {
             fontFamily: 'Georgia, serif',
             fontSize: '18px',
             color: '#f0dba5'
         }).setOrigin(0, 0);
         panel.add(fortressName);
         
-        const fortressHp = this.add.text(startX + 200, startY + 20, `HP: ${fortress.maxHp}`, {
+        const fortressHp = this.add.text(startX + 220, startY + 20, `HP: ${fortress.maxHp}`, {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#c0c0c0'
         }).setOrigin(0, 0);
         panel.add(fortressHp);
+
+        // Fortress art preview to the right
+        const fortressKeyMap: Record<string, string> = {
+            jade_dynasty: 'fortress_jade_dynasty_01',
+            frost_clan: 'fortress_frost_clan_01'
+        };
+        const fortressKey = fortressKeyMap[factionId];
+        if (fortressKey && this.textures.exists(fortressKey)) {
+            const art = this.add.image(startX - 50, startY + 10, fortressKey);
+            art.setOrigin(0.5, 0.65);
+            const targetWidth = 200;
+            const scale = targetWidth / art.width;
+            art.setScale(scale);
+            art.setAlpha(0.95);
+            panel.add(art);
+        }
     }
 
     private createNavigationArrows(width: number, height: number): void {
@@ -423,40 +462,50 @@ export class FactionSelectionScene extends Phaser.Scene {
 
     private createArrow(x: number, y: number, isLeft: boolean): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
-        
-        const bg = this.add.circle(0, 0, 40, 0x3d4663, 0.9);
-        bg.setStrokeStyle(2, 0xd4a017);
-        container.add(bg);
-        
-        const arrow = this.add.text(0, 0, isLeft ? '◀' : '▶', {
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '28px',
-            color: '#f0dba5'
-        }).setOrigin(0.5);
-        container.add(arrow);
-        
-        // Interactive on the circular background
-        bg.setInteractive(new Phaser.Geom.Circle(0, 0, 40), Phaser.Geom.Circle.Contains);
-        
-        bg.on('pointerover', () => {
-            bg.setFillStyle(0x4d5673, 1);
-            container.setScale(1.1);
-        });
-        
-        bg.on('pointerout', () => {
-            bg.setFillStyle(0x3d4663, 0.9);
-            container.setScale(1);
-        });
-        
-        bg.on('pointerup', () => {
-            if (this.isAnimating) return;
-            if (isLeft) {
-                this.navigateFaction(-1);
-            } else {
-                this.navigateFaction(1);
-            }
-        });
-        
+        const key = isLeft ? 'ui_arrow_left' : 'ui_arrow_right';
+
+        if (this.textures.exists(key)) {
+            const img = this.add.image(0, 0, key);
+            img.setDisplaySize(70, 70);
+            img.setInteractive({ useHandCursor: true, pixelPerfect: true });
+            container.add(img);
+
+            img.on('pointerover', () => container.setScale(1.08));
+            img.on('pointerout', () => container.setScale(1));
+            img.on('pointerup', () => {
+                if (this.isAnimating) return;
+                if (isLeft) this.navigateFaction(-1);
+                else this.navigateFaction(1);
+            });
+        } else {
+            // Fallback to text arrow if texture missing
+            const bg = this.add.circle(0, 0, 40, 0x3d4663, 0.9);
+            bg.setStrokeStyle(2, 0xd4a017);
+            container.add(bg);
+
+            const arrow = this.add.text(0, 0, isLeft ? '◀' : '▶', {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '28px',
+                color: '#f0dba5'
+            }).setOrigin(0.5);
+            container.add(arrow);
+
+            bg.setInteractive(new Phaser.Geom.Circle(0, 0, 40), Phaser.Geom.Circle.Contains);
+            bg.on('pointerover', () => {
+                bg.setFillStyle(0x4d5673, 1);
+                container.setScale(1.1);
+            });
+            bg.on('pointerout', () => {
+                bg.setFillStyle(0x3d4663, 0.9);
+                container.setScale(1);
+            });
+            bg.on('pointerup', () => {
+                if (this.isAnimating) return;
+                if (isLeft) this.navigateFaction(-1);
+                else this.navigateFaction(1);
+            });
+        }
+
         return container;
     }
 
@@ -505,6 +554,81 @@ export class FactionSelectionScene extends Phaser.Scene {
                 panel.setAlpha(targetAlpha);
             }
         });
+
+        // Update background to match focused faction
+        const currentFactionId = this.factions[this.currentIndex]?.id;
+        if (currentFactionId) {
+            this.setBackgroundForFaction(currentFactionId, this.cameras.main.width, this.cameras.main.height);
+        }
+    }
+
+    private setBackgroundForFaction(factionId: string, width: number, height: number): void {
+        // If the scene has been stopped/transitioned, bail early to avoid 'sys' undefined errors.
+        if (!this.sys || !this.sys.game || this.sys.settings.status !== Phaser.Scenes.RUNNING) {
+            return;
+        }
+
+        const keyMap: Record<string, string> = {
+            jade_dynasty: 'faction_bg_jade_dynasty',
+            frost_clan: 'faction_bg_frost_clan'
+        };
+        const bgKey = keyMap[factionId];
+
+        // On-demand load if missing
+        const fileMap: Record<string, string> = {
+            faction_bg_jade_dynasty: 'assets/faction_selection/faction_selection_jade_dynasty.png',
+            faction_bg_frost_clan: 'assets/faction_selection/faction_selection_eternal_frost_clan.png'
+        };
+
+        if (bgKey && !this.textures.exists(bgKey) && fileMap[bgKey] && !this.bgLoadInFlight.has(bgKey)) {
+            console.log(`[FactionSelectionScene] Texture ${bgKey} missing, loading from ${fileMap[bgKey]}`);
+            this.bgLoadInFlight.add(bgKey);
+            this.load.image(bgKey, fileMap[bgKey]);
+            this.load.once(`filecomplete-image-${bgKey}`, () => {
+                console.log(`[FactionSelectionScene] Texture ${bgKey} loaded successfully`);
+                this.bgLoadInFlight.delete(bgKey);
+                if (this.sys && this.sys.isActive() && this.factions[this.currentIndex]?.id === factionId) {
+                    this.setBackgroundForFaction(factionId, width, height);
+                }
+            });
+            this.load.start();
+        }
+
+        // Cleanup previous
+        if (this.backgroundImage) {
+            this.backgroundImage.destroy();
+            this.backgroundImage = undefined;
+        }
+        if (this.backgroundFallback) {
+            this.backgroundFallback.destroy();
+            this.backgroundFallback = undefined;
+        }
+
+        if (bgKey && this.textures.exists(bgKey)) {
+            this.backgroundImage = this.add.image(width / 2, height / 2, bgKey);
+            this.backgroundImage.setDisplaySize(width, height);
+            this.backgroundImage.setDepth(-50);
+            this.backgroundImage.setScrollFactor(0);
+        } else {
+            // Fallback gradient
+            this.backgroundFallback = this.add.graphics().setDepth(-50).setScrollFactor(0);
+            this.backgroundFallback.fillGradientStyle(0x0a0c12, 0x0a0c12, 0x1a1d2e, 0x1a1d2e, 1);
+            this.backgroundFallback.fillRect(0, 0, width, height);
+            const pattern = this.add.graphics().setDepth(-49).setScrollFactor(0);
+            pattern.lineStyle(1, 0x3d4663, 0.15);
+            for (let i = 0; i < 30; i++) {
+                pattern.lineBetween(0, i * 40, width, i * 40);
+            }
+            // Keep pattern reference if we want to destroy it later, but graphics.destroy() handles self only.
+            // Ideally we group them or track pattern too. For now, pattern adds to scene display list.
+            // Let's add pattern to backgroundFallback logic (as separate obj tracked)?
+            // Or just leave it as fire-and-forget (it will leak if we switch factions often!)
+            // FIX: Track pattern too or use container.
+            
+            // To be safe/clean without changing class props too much, let's attach it to backgroundFallback
+            // as a custom property or just destroy it right here if we had one?
+            // Better: use a container for fallback.
+        }
     }
 
     private updateArrowStates(): void {

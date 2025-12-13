@@ -113,7 +113,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_jade_chi_reactor', 'assets/cards/Jade_dynasty/Modules/Chi_Reactor.png.png');
 
         // Stage maps (world map backgrounds)
-        this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png');
+        this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png'); // legacy key
+        this.load.image('stage_jade_map', 'assets/stage_map/map_stage_jade.png'); // current stage 1 key
         this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
@@ -121,6 +122,8 @@ export class PreloadScene extends Phaser.Scene {
         // Fortress grid CSVs (metadata + tilemap pairs)
         this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');
         this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv');
+        this.load.text('fortress_grid_frost_clan_01_meta', 'data/fortress_grids/fortress_eternal_frost_clan_01.csv');
+        this.load.text('fortress_grid_frost_clan_01_tilemap', 'data/fortress_grids/fortress_eternal_frost_clan_01_grid.csv');
 
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
@@ -128,6 +131,38 @@ export class PreloadScene extends Phaser.Scene {
         // Fortress images
         // Default testing fortress art now uses Jade Dynasty
         this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
+        this.load.image('fortress_frost_clan_01', 'assets/fortress/Fortress_eternal_frost_clan_01.png');
+        // Faction selection backgrounds
+        this.load.image('faction_bg_jade_dynasty', 'assets/faction_selection/faction_selection_jade_dynasty.png');
+        this.load.image('faction_bg_frost_clan', 'assets/faction_selection/faction_selection_eternal_frost_clan.png');
+        this.load.image('ui_arrow_left', 'assets/ui/ui_faction_selection/arrow_L.png');
+        this.load.image('ui_arrow_right', 'assets/ui/ui_faction_selection/arrow_R.png');
+        this.load.image('logo_jade_dynasty', 'assets/ui/ui_faction_selection/Logo_Jade_Dynasty.png');
+        this.load.image('logo_frost_clan', 'assets/ui/ui_faction_selection/Logo_Eternal_Frost_Clans.png');
+
+        // Stage map node icons
+        this.load.image('node_battle_on', 'assets/nodes/node_battle_on.png');
+        this.load.image('node_battle_off', 'assets/nodes/node_battle_off.png');
+        this.load.image('node_elite_on', 'assets/nodes/node_elite_on.png');
+        this.load.image('node_elite_off', 'assets/nodes/node_elite_off.png');
+        this.load.image('node_event_on', 'assets/nodes/node_event_on.png');
+        this.load.image('node_event_off', 'assets/nodes/node_event_off.png');
+        this.load.image('node_shop_on', 'assets/nodes/node_store_on.png');
+        this.load.image('node_shop_off', 'assets/nodes/node_store_off.png');
+        this.load.image('node_recruit_on', 'assets/nodes/node_recruitment_on.png');
+        this.load.image('node_recruit_off', 'assets/nodes/node_recruitment_off.png');
+        this.load.image('node_rest_on', 'assets/nodes/node_rest_on.png');
+        this.load.image('node_rest_off', 'assets/nodes/node_rest_off.png');
+        this.load.image('node_boss_on', 'assets/nodes/node_boss_on.png');
+        this.load.image('node_boss_off', 'assets/nodes/node_boss_off.png');
+
+        // Audio - BGM
+        this.load.audio('bgm_title', 'assets/audio/bgm/bgm_01_dragonbattle_title.mp3');
+        this.load.audio('bgm_faction_select', 'assets/audio/bgm/bgm_01_dragonbattle_title.mp3');
+        this.load.audio('bgm_stage_jade', 'assets/audio/bgm/bgm_01_jade_dynasty_map.mp3');
+        this.load.audio('bgm_stage_frost', 'assets/audio/bgm/bgm_02_eternal_frost_clan.mp3');
+        this.load.audio('bgm_battle_jade', 'assets/audio/bgm/battle/bgm_01_jade_dynasty_battle.mp3');
+        this.load.audio('bgm_battle_frost', 'assets/audio/bgm/battle/bgm_02_eternal_frost_clan_battle.mp3');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

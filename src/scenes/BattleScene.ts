@@ -11,7 +11,7 @@ import { FortressSystem } from '../systems/FortressSystem';
 import { WaveManager } from '../systems/WaveManager';
 import { CommanderSystem } from '../systems/CommanderSystem';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
-import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState } from '../types/ironwars';
+import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig } from '../types/ironwars';
 
 type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
 type CommanderCastPayload = { screenX: number; screenY: number };
@@ -51,6 +51,7 @@ export class BattleScene extends Phaser.Scene {
     private hasStartedFirstWave = false;
     private waveIntermissionCameraLock = false;
     private bgm?: Phaser.Sound.BaseSound;
+    private bgmKey: string = '';
     private medicLastHeal: Map<string, number> = new Map();
     private frostScientistBuffTimers: Map<string, number> = new Map();
     private jadeCrossbowHitCounter: Map<string, number> = new Map();
@@ -130,18 +131,41 @@ export class BattleScene extends Phaser.Scene {
         this.setupPointerBridge();
         this.startBackgroundMusic();
         this.registerFrostAbilityEvents();
+
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.stopBackgroundMusic();
+            // Ensure no battle music leaks into other scenes.
+            this.sound.stopAll();
+        });
     }
 
     private startBackgroundMusic() {
-        const key = 'bgm_dragonbattle';
+        const runManager = RunProgressionManager.getInstance();
+        const stageIndex = runManager.getRunState()?.currentStageIndex ?? 0;
+        const key = stageIndex === 0 ? 'bgm_battle_jade' : 'bgm_battle_frost';
+        this.bgmKey = key;
+
+        this.sound.stopAll();
+
         // Avoid stacking multiple instances if scene is restarted.
         const existing = this.sound.get(key);
         if (existing && existing.isPlaying) {
             this.bgm = existing;
             return;
         }
-        this.bgm = this.sound.add(key, { loop: true, volume: 0.4 });
+        this.bgm = this.sound.add(key, { loop: true, volume: 0.45 });
         this.bgm.play();
+    }
+
+    private stopBackgroundMusic() {
+        if (this.bgm) {
+            this.bgm.stop();
+            this.bgm.destroy();
+            this.bgm = undefined;
+        }
+        if (this.bgmKey) {
+            this.sound.removeByKey(this.bgmKey);
+        }
     }
 
     public update(_time: number, delta: number) {
@@ -248,9 +272,11 @@ export class BattleScene extends Phaser.Scene {
         this.gameState.initialize(this.starterData, 10, 40);
 
         // Get fortress config from FactionRegistry (uses DataManager CSV grids if available)
-        // Default to Jade Dynasty fortress for testing
+        // Use current run faction fortress if available, fallback to Jade Dynasty
         const factionRegistry = FactionRegistry.getInstance();
-        const testFortressId = 'fortress_jade_dynasty_01';
+        const runState = RunProgressionManager.getInstance().getRunState();
+        const factionIdForFortress = runState?.factionId ?? 'jade_dynasty';
+        const testFortressId = `fortress_${factionIdForFortress}_01`;
         let fortressConfig = factionRegistry.getFortressConfig(testFortressId);
         
         // Fallback to starterData if no CSV fortress found
@@ -283,7 +309,7 @@ export class BattleScene extends Phaser.Scene {
         this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
         
         // Create fortress image behind the grid (needs fortressCoreWorld to be set)
-        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth);
+        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth, gridConfig);
         
         this.createFortressCorePlaceholder();
 
@@ -657,7 +683,7 @@ export class BattleScene extends Phaser.Scene {
      * Create the fortress image behind the spawn grid.
      * The image is positioned at the grid center and scaled to fit the grid.
      */
-    private createFortressImage(imageKey: string, gridWidth: number) {
+    private createFortressImage(imageKey: string, gridWidth: number, gridConfig?: IFortressGridConfig) {
         if (this.fortressImage) {
             this.fortressImage.destroy();
         }
@@ -673,8 +699,8 @@ export class BattleScene extends Phaser.Scene {
         const coreY = this.fortressCoreWorld.y;
 
         // Nudge the art upward so the fortress floor lines up with the grid
-        const verticalOffset = -320;
-        const horizontalOffset = -60; // shift left to match grid alignment
+        const verticalOffset = -320 + (gridConfig?.imageOffsetY ?? 0);
+        const horizontalOffset = -60 + (gridConfig?.imageOffsetX ?? 0); // shift left to match grid alignment
         const fortress = this.add.image(coreX + horizontalOffset, coreY + verticalOffset, imageKey);
         
         // Position the fortress so the grid appears on top of it
@@ -687,7 +713,8 @@ export class BattleScene extends Phaser.Scene {
         const gridVisualWidth = gridWidth * cellWidth;
         // Existing scale boosted by 1.5x to make the fortress visually larger
         const targetScale = gridVisualWidth / fortress.width * 1.3;
-        fortress.setScale(targetScale * 1.25);
+        const scaleMultiplier = gridConfig?.imageScale ?? 1;
+        fortress.setScale(targetScale * 1.25 * scaleMultiplier);
 
         // Place behind the grid graphics but in front of background
         // Use a depth that's below the grid lines but above world background
@@ -1061,6 +1088,20 @@ export class BattleScene extends Phaser.Scene {
                 else targets = inRadius(enemies);
 
                 if (targets.length > 0 && unit.triggerSkill) {
+                    // Visualize aura tick
+                    if (skill.auraRadius && skill.target === 'ally') {
+                        const g = this.add.graphics();
+                        g.setDepth(origin.y + 3000);
+                        g.setBlendMode(Phaser.BlendModes.ADD);
+                        g.lineStyle(2, 0x66ffcc, 0.55);
+                        g.strokeCircle(origin.x, origin.y, skill.auraRadius);
+                        this.tweens.add({
+                            targets: g,
+                            alpha: 0,
+                            duration: 300,
+                            onComplete: () => g.destroy()
+                        });
+                    }
                     unit.triggerSkill(skill, targets, currentTime, this.combatSystem);
                 }
             });

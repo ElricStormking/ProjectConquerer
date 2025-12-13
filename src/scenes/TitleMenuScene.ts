@@ -18,6 +18,12 @@ export class TitleMenuScene extends Phaser.Scene {
     create(): void {
         const { width, height } = this.cameras.main;
         
+        // Music
+        this.sound.stopAll();
+        if (!this.sound.get('bgm_title')) {
+            this.sound.play('bgm_title', { loop: true, volume: 0.7 });
+        }
+        
         // Background gradient
         this.createBackground(width, height);
         

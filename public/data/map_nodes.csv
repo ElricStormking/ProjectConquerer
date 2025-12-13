@@ -1,51 +1,73 @@
-id,stage_index,type,tier,encounter_id,pos_x,pos_y,icon_key,reward_tier,next_node_ids_json,,,,,,,,,,,,,,,,,,,,
-1C,0,battle,1,battle_tier1,0.05,0.5,node_battle,1,"[""2B"", ""2C"", ""2D""]",,,,,,,,,,,,,,,,,,,,
-2D,0,event,1,event_shrine_s1,0.11,0.3,node_event,1,"[""3D""]",,,,,,,,,,,,,,,,,,,,
-2C,0,shop,1,shop_greaseworks,0.11,0.5,node_shop,1,"[""3B"",""3C"", ""3D""]",,,,,,,,,,,,,,,,,,,,
-2B,0,battle,1,battle_tier2,0.11,0.7,node_battle,2,"[""3B""]",,,,,,,,,,,,,,,,,,,,
-3D,0,rest,1,rest_s1_camp,0.17,0.3,node_rest,1,"[""4C"", ""4D"",""4E""]",,,,,,,,,,,,,,,,,,,,
-3C,0,elite,1,elite_tier2,0.17,0.5,node_elite,2,"[""4C""]",,,,,,,,,,,,,,,,,,,,
-3B,0,recruitment,2,recruit_engineer,0.17,0.7,node_recruit,2,"[""4A""]",,,,,,,,,,,,,,,,,,,,
-4E,0,battle,2,battle_tier2,0.23,0.1,node_battle,3,"[""5D""]",,,,,,,,,,,,,,,,,,,,
-4D,0,event,2,event_cache_s1,0.23,0.3,node_event,2,"[""5D""]",,,,,,,,,,,,,,,,,,,,
-4C,0,recruitment,2,recruit_engineer,0.23,0.5,node_recruit,3,"[""5B""]",,,,,,,,,,,,,,,,,,,,
-4A,0,rest,2,rest_s1_camp,0.23,0.9,node_rest,2,"[""5A"",""5B""]",,,,,,,,,,,,,,,,,,,,
-5D,0,elite,2,elite_tier2,0.29,0.3,node_elite,3,"[""6C"", ""6D""]",,,,,,,,,,,,,,,,,,,,
-5B,0,battle,2,battle_tier1,0.29,0.7,node_battle,3,"[""6A"", ""6C""]",,,,,,,,,,,,,,,,,,,,
-5A,0,event,2,event_shrine_s1,0.29,0.9,node_battle,3,"[""6A""]",,,,,,,,,,,,,,,,,,,,
-6D,0,event,2,event_shrine_s1,0.35,0.3,node_event,4,"[""7C""]",,,,,,,,,,,,,,,,,,,,
-6C,0,shop,2,shop_greaseworks,0.35,0.5,node_shop,3,"[""7C""]",,,,,,,,,,,,,,,,,,,,
-6A,0,battle,2,battle_tier2,0.35,0.9,node_battle,4,"[""7B""]",,,,,,,,,,,,,,,,,,,,
-7C,0,rest,3,rest_s1_camp,0.41,0.5,node_rest,4,"[""8D""]",,,,,,,,,,,,,,,,,,,,
-7B,0,elite,3,elite_tier3,0.41,0.7,node_elite,3,"[""8C""]",,,,,,,,,,,,,,,,,,,,
-8D,0,recruitment,3,recruit_engineer,0.47,0.3,node_recruit,4,"[""9D""]",,,,,,,,,,,,,,,,,,,,
-8C,0,battle,3,battle_tier3,0.47,0.5,node_battle,3,"[""9D""]",,,,,,,,,,,,,,,,,,,,
-9D,0,event,3,event_cache_s1,0.53,0.3,node_event,4,"[""10C""]",,,,,,,,,,,,,,,,,,,,
-10C,0,battle,3,battle_tier3,0.59,0.5,node_battle,4,"[""11B"", ""11D""]",,,,,,,,,,,,,,,,,,,,
-11D,0,rest,4,rest_s1_camp,0.65,0.3,node_rest,4,"[""12C""]",,,,,,,,,,,,,,,,,,,,
-11B,0,recruitment,3,recruit_engineer,0.65,0.7,node_recruit,4,"[""12A"",""12C""]",,,,,,,,,,,,,,,,,,,,
-12C,0,battle,4,battle_tier4,0.71,0.5,node_battle,5,"[""13B""]",,,,,,,,,,,,,,,,,,,,
-12A,0,recruitment,4,recruit_engineer,0.71,0.9,node_recruit,4,"[""13B""]",,,,,,,,,,,,,,,,,,,,
-13B,0,elite,5,elite_tier5,0.77,0.7,node_elite,4,"[""14A""]",,,,,,,,,,,,,,,,,,,,
-14A,0,event,4,event_shrine_s1,0.83,0.9,node_event,4,"[""15A""]",,,,,,,,,,,,,,,,,,,,
-15A,0,boss,5,boss_forgeheart,0.89,0.9,node_boss,5,[],,,,,,,,,,,,,,,,,,,,
-s2_entry,1,battle,2,battle_tier2,0.05,0.48,node_battle,2,"[""s2_split_left"",""s2_split_right""]",,,,,,,,,,,,,,,,,,,,
-s2_split_left,1,event,2,event_geyser_s2,0.18,0.3,node_event,2,"[""s2_mid_left""]",,,,,,,,,,,,,,,,,,,,
-s2_split_right,1,rest,2,rest_s2_outpost,0.18,0.66,node_rest,2,"[""s2_mid_right""]",,,,,,,,,,,,,,,,,,,,
-s2_mid_left,1,battle,2,battle_tier2,0.35,0.32,node_battle,2,"[""s2_crossroads""]",,,,,,,,,,,,,,,,,,,,
-s2_mid_right,1,shop,2,shop_brimstone,0.35,0.68,node_shop,2,"[""s2_crossroads""]",,,,,,,,,,,,,,,,,,,,
-s2_crossroads,1,recruitment,2,recruit_tactician,0.52,0.5,node_recruit,2,"[""s2_elite_top"",""s2_elite_bottom""]",,,,,,,,,,,,,,,,,,,,
-s2_elite_top,1,elite,3,elite_tier3,0.68,0.34,node_elite,3,"[""s2_preboss""]",,,,,,,,,,,,,,,,,,,,
-s2_elite_bottom,1,battle,3,battle_tier3,0.68,0.64,node_battle,3,"[""s2_preboss""]",,,,,,,,,,,,,,,,,,,,
-s2_preboss,1,event,3,event_magma_s2,0.82,0.5,node_event,3,"[""s2_boss""]",,,,,,,,,,,,,,,,,,,,
-s2_boss,1,boss,3,boss_lavacrown,0.95,0.5,node_boss,3,[],,,,,,,,,,,,,,,,,,,,
-s3_entry,2,battle,3,battle_tier3,0.05,0.5,node_battle,3,"[""s3_wind_top"",""s3_wind_bottom""]",,,,,,,,,,,,,,,,,,,,
-s3_wind_top,2,event,3,event_tempest,0.2,0.28,node_event,3,"[""s3_mid_top""]",,,,,,,,,,,,,,,,,,,,
-s3_wind_bottom,2,shop,3,shop_cloudbazaar,0.2,0.72,node_shop,3,"[""s3_mid_bottom""]",,,,,,,,,,,,,,,,,,,,
-s3_mid_top,2,elite,3,elite_tier3,0.38,0.3,node_elite,3,"[""s3_aerie""]",,,,,,,,,,,,,,,,,,,,
-s3_mid_bottom,2,rest,3,rest_s3_sanctum,0.38,0.7,node_rest,3,"[""s3_aerie""]",,,,,,,,,,,,,,,,,,,,
-s3_aerie,2,battle,3,battle_tier3,0.55,0.5,node_battle,3,"[""s3_choice""]",,,,,,,,,,,,,,,,,,,,
-s3_choice,2,recruitment,3,recruit_skycaptain,0.7,0.5,node_recruit,3,"[""s3_guardian"",""s3_ritual""]",,,,,,,,,,,,,,,,,,,,
-s3_guardian,2,elite,3,elite_tier3,0.82,0.36,node_elite,3,"[""s3_boss""]",,,,,,,,,,,,,,,,,,,,
-s3_ritual,2,event,3,event_stormaltar,0.82,0.64,node_event,3,"[""s3_boss""]",,,,,,,,,,,,,,,,,,,,
-s3_boss,2,boss,3,boss_tempestqueen,0.96,0.5,node_boss,3,[],,,,,,,,,,,,,,,,,,,,
+id,stage_index,type,tier,encounter_id,pos_x,pos_y,icon_key,reward_tier,next_node_ids_json
+1C_1,0,battle,1,battle_jade_t1,0.05,0.5,node_battle,1,"[""2B_1"", ""2C_1"", ""2D_1""]"
+2D_1,0,event,1,event_shrine_s1,0.11,0.3,node_event,1,"[""3D_1""]"
+2C_1,0,shop,1,shop_greaseworks,0.11,0.5,node_shop,1,"[""3B_1"",""3C_1"", ""3D_1""]"
+2B_1,0,battle,1,battle_jade_t2,0.11,0.7,node_battle,2,"[""3B_1""]"
+3D_1,0,rest,1,rest_s1_camp,0.17,0.3,node_rest,1,"[""4C_1"", ""4D_1"",""4E_1""]"
+3C_1,0,elite,1,elite_jade_t2,0.17,0.5,node_elite,2,"[""4C_1""]"
+3B_1,0,recruitment,2,recruit_engineer,0.17,0.7,node_recruit,2,"[""4A_1""]"
+4E_1,0,battle,2,battle_jade_t2,0.23,0.1,node_battle,3,"[""5D_1""]"
+4D_1,0,event,2,event_cache_s1,0.23,0.3,node_event,2,"[""5D_1""]"
+4C_1,0,recruitment,2,recruit_engineer,0.23,0.5,node_recruit,3,"[""5B_1""]"
+4A_1,0,rest,2,rest_s1_camp,0.23,0.9,node_rest,2,"[""5A_1"",""5B_1""]"
+5D_1,0,elite,2,elite_jade_t2,0.29,0.3,node_elite,3,"[""6C_1"", ""6D_1""]"
+5B_1,0,battle,2,battle_jade_t1,0.29,0.7,node_battle,3,"[""6A_1"", ""6C_1""]"
+5A_1,0,event,2,event_shrine_s1,0.29,0.9,node_battle,3,"[""6A_1""]"
+6D_1,0,event,2,event_shrine_s1,0.35,0.3,node_event,3,"[""7C_1""]"
+6C_1,0,shop,2,shop_greaseworks,0.35,0.5,node_shop,3,"[""7C_1""]"
+6A_1,0,battle,2,battle_jade_t2,0.35,0.9,node_battle,3,"[""7B_1""]"
+7C_1,0,rest,3,rest_s1_camp,0.41,0.5,node_rest,3,"[""8D_1""]"
+7B_1,0,elite,3,elite_jade_t3,0.41,0.7,node_elite,3,"[""8C_1""]"
+8D_1,0,recruitment,3,recruit_engineer,0.47,0.3,node_recruit,3,"[""9D_1""]"
+8C_1,0,battle,3,battle_jade_t3,0.47,0.5,node_battle,3,"[""9D_1""]"
+9D_1,0,event,3,event_cache_s1,0.53,0.3,node_event,3,"[""10C_1""]"
+10C_1,0,battle,3,battle_jade_t3,0.59,0.5,node_battle,3,"[""11B_1"", ""11D_1""]"
+11D_1,0,rest,3,rest_s1_camp,0.65,0.3,node_rest,3,"[""12C_1""]"
+11B_1,0,recruitment,3,recruit_engineer,0.65,0.7,node_recruit,3,"[""12A_1"",""12C_1""]"
+12C_1,0,battle,3,battle_jade_t3,0.71,0.5,node_battle,3,"[""13B_1""]"
+12A_1,0,recruitment,3,recruit_engineer,0.71,0.9,node_recruit,3,"[""13B_1""]"
+13B_1,0,elite,3,elite_jade_t3,0.77,0.7,node_elite,3,"[""14A_1""]"
+14A_1,0,event,3,event_shrine_s1,0.83,0.9,node_event,3,"[""15A_1""]"
+15A_1,0,boss,3,boss_jade_palace,0.89,0.9,node_boss,3,[]
+1C_2,1,battle,1,battle_frost_t1,0.05,0.5,node_battle,1,"[""2B_2"", ""2C_2"", ""2D_2""]"
+2B_2,1,event,1,event_geyser_s1,0.11,0.7,node_event,1,"[""3B_2""]"
+2C_2,1,shop,1,shop_greaseworks,0.11,0.5,node_shop,1,"[""3D_2"",""3B_2""]"
+2D_2,1,battle,1,battle_frost_t2,0.11,0.3,node_battle,2,"[""3D_2""]"
+3B_2,1,rest,1,rest_s1_camp,0.17,0.7,node_rest,1,"[""4A_2""]"
+3D_2,1,elite,1,elite_frost_t2,0.17,0.3,node_elite,2,"[""4D_2""]"
+4A_2,1,recruitment,2,recruit_engineer,0.23,0.9,node_recruit,2,"[""5B_2""]"
+4D_2,1,battle,2,battle_frost_t2,0.23,0.3,node_battle,3,"[""5C_2"",""5D_2""]"
+5B_2,1,event,2,event_magma_s1,0.29,0.7,node_event,2,"[""6C_2""]"
+5C_2,1,recruitment,2,recruit_engineer,0.29,0.5,node_recruit,3,"[""6C_2""]"
+5D_2,1,rest,2,rest_s1_camp,0.29,0.3,node_rest,2,"[""6C_2""]"
+6C_2,1,elite,2,elite_frost_t2,0.35,0.5,node_elite,3,"[""7B_2"", ""7D_2""]"
+7B_2,1,battle,2,battle_frost_t1,0.41,0.7,node_battle,3,"[""8B_2"", ""8C_2""]"
+7D_2,1,event,2,event_geyser_s2,0.41,0.3,node_battle,3,"[""8C_2"",""8D_2""]"
+8B_2,1,event,3,event_geyser_s2,0.47,0.7,node_event,4,"[""9C_2""]"
+8C_2,1,shop,3,shop_brimstone,0.47,0.5,node_shop,3,"[""9C_2""]"
+8D_2,1,battle,3,battle_frost_t2,0.47,0.3,node_battle,4,"[""9C_2""]"
+9C_2,1,rest,3,rest_s1_camp,0.53,0.5,node_rest,3,"[""10B_2"",""10D_2""]"
+10B_2,1,elite,3,elite_frost_t3,0.59,0.7,node_elite,3,"[""11A_2"",""11C_2""]"
+10D_2,1,recruitment,3,recruit_engineer,0.59,0.3,node_recruit,3,"[""11C_2"",""11E_2""]"
+11A_2,1,battle,3,battle_frost_t3,0.65,0.9,node_battle,3,"[""12B_2""]"
+11C_2,1,event,3,event_magma_s2,0.65,0.5,node_event,3,"[""12B_2""]"
+11E_2,1,battle,3,battle_frost_t3,0.65,0.1,node_battle,3,"[""12E_2""]"
+12B_2,1,rest,3,rest_s1_camp,0.71,0.7,node_rest,3,"[""13C_2""]"
+12E_2,1,battle,3,battle_frost_t3,0.71,0.1,node_battle,3,"[""13D_2""]"
+13C_2,1,shop,3,shop_brimstone,0.77,0.5,node_shop,3,"[""14B_2"",""14D_2""]"
+13D_2,1,battle,3,battle_frost_t3,0.77,0.3,node_battle,3,"[""14D_2"",""14E_2""]"
+14B_2,1,recruitment,3,recruit_engineer,0.83,0.7,node_recruit,3,"[""15A_2""]"
+14D_2,1,elite,3,elite_frost_t3,0.83,0.3,node_elite,3,"[""15E_2""]"
+14E_2,1,event,3,event_geyser_s2,0.83,0.1,node_event,3,"[""15E_2""]"
+15A_2,1,boss,3,boss_frost_necropolis,0.89,0.9,node_boss,3,[]
+15E_2,1,boss,3,boss_frost_necropolis,0.89,0.1,node_boss,3,[]
+s3_entry,2,battle,3,battle_jade_t3,0.05,0.5,node_battle,3,"[""s3_wind_top"",""s3_wind_bottom""]"
+s3_wind_top,2,event,3,event_tempest,0.2,0.28,node_event,3,"[""s3_mid_top""]"
+s3_wind_bottom,2,shop,3,shop_cloudbazaar,0.2,0.72,node_shop,3,"[""s3_mid_bottom""]"
+s3_mid_top,2,elite,3,elite_jade_t3,0.38,0.3,node_elite,3,"[""s3_aerie""]"
+s3_mid_bottom,2,rest,3,rest_s3_sanctum,0.38,0.7,node_rest,3,"[""s3_aerie""]"
+s3_aerie,2,battle,3,battle_jade_t3,0.55,0.5,node_battle,3,"[""s3_choice""]"
+s3_choice,2,recruitment,3,recruit_skycaptain,0.7,0.5,node_recruit,3,"[""s3_guardian"",""s3_ritual""]"
+s3_guardian,2,elite,3,elite_jade_t3,0.82,0.36,node_elite,3,"[""s3_boss""]"
+s3_ritual,2,event,3,event_stormaltar,0.82,0.64,node_event,3,"[""s3_boss""]"
+s3_boss,2,boss,3,boss_jade_palace,0.96,0.5,node_boss,3,[]

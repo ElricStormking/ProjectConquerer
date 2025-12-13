@@ -1,0 +1,3 @@
+id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height,image_offset_x,image_offset_y,image_scale
+fortress_frost_clan_01,frost_clan,Undead Necropolis,fortress_frost_clan_01,1000,128,64,30,120,1
+

@@ -65,6 +65,9 @@ export interface IFortressGridConfig {
     maxHp: number;
     cellSizeWidth: number;
     cellSizeHeight: number;
+    imageOffsetX?: number;
+    imageOffsetY?: number;
+    imageScale?: number;
     gridWidth: number;
     gridHeight: number;
     cells: IFortressCell[];
@@ -332,6 +335,14 @@ export interface UnitSkillTemplate {
     auraTickMs?: number;
     resourceCost?: number;
     damageBuffMultiplier?: number;
+    healAmount?: number;
+    shieldAmount?: number;
+    cleanse?: boolean;
+    taunt?: boolean;
+    statModType?: 'attack' | 'attack_speed' | 'move_speed' | 'armor' | 'damage_taken' | 'crit_chance' | 'crit_multiplier';
+    statModAmount?: number;
+    statModDurationMs?: number;
+    stacking?: boolean;
     notes?: string;
 }
 

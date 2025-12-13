@@ -3,8 +3,8 @@ import { IEnemySpawn, IWaveConfig, RelicTrigger, IRelicContext } from '../types/
 import { UnitManager } from './UnitManager';
 import { GameStateManager } from './GameStateManager';
 import { RelicManager } from './RelicManager';
-import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { UnitType } from '../data/UnitTypes';
+import { DataManager } from './DataManager';
 
 export class WaveManager extends Phaser.Events.EventEmitter {
     private waves: IWaveConfig[] = [];
@@ -14,6 +14,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     private timers: Phaser.Time.TimerEvent[] = [];
     private readonly relicManager = RelicManager.getInstance();
     private unitDeathHandler: (unit: any) => void;
+    private readonly dataManager: DataManager;
 
     constructor(
         private scene: Phaser.Scene,
@@ -33,6 +34,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
             }
         };
         this.scene.events.on('unit-death', this.unitDeathHandler);
+        this.dataManager = DataManager.getInstance();
     }
     
     public destroy(): void {
@@ -101,16 +103,21 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     }
 
     private spawnEnemy(spawn: IEnemySpawn): void {
-        const starter = this.gameState.getStarterData();
-        if (!starter) return;
-        const unitTemplate = starter.units[spawn.unitId];
-        if (!unitTemplate) return;
+        const unitTemplate = this.dataManager.getUnitTemplate(spawn.unitId);
+        if (!unitTemplate) {
+            console.warn(`[WaveManager] Missing unit template for ${spawn.unitId}, skipping spawn`);
+            return;
+        }
         const lanePoint = this.getLanePoint(spawn.lane);
         for (let i = 0; i < spawn.count; i++) {
             const offsetX = Phaser.Math.Between(-20, 20);
             const offsetY = Phaser.Math.Between(-20, 20);
-            const config = toUnitConfig(unitTemplate, 2, lanePoint.x + offsetX, lanePoint.y + offsetY);
-            config.unitType = spawn.unitId as UnitType;
+            const config = this.unitManager.createUnitConfig(
+                unitTemplate.type as UnitType,
+                2,
+                lanePoint.x + offsetX,
+                lanePoint.y + offsetY
+            );
             const unit = this.unitManager.spawnUnit(config);
             if (unit) {
                 this.activeEnemyIds.add(unit.getId());

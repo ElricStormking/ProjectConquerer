@@ -95,6 +95,8 @@ export class DataManager {
                 unitClass: row.role, // 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner'
                 size: row.size, // 'small' | 'normal' | 'large'
                 rarity: row.rarity,
+                spriteScale: row.sprite_scale ? Number(row.sprite_scale) : undefined,
+                spriteOffsetY: row.sprite_offset_y ? Number(row.sprite_offset_y) : undefined,
                 baseStats: {
                     maxHealth: row.max_hp,
                     damage: row.damage,
@@ -148,6 +150,14 @@ export class DataManager {
                 auraTickMs: row.aura_tick_ms,
                 resourceCost: row.resource_cost,
                 damageBuffMultiplier: row.damage_buff_multiplier,
+                healAmount: row.heal_amount,
+                shieldAmount: row.shield_amount,
+                cleanse: row.cleanse === true || row.cleanse === 'true',
+                taunt: row.taunt === true || row.taunt === 'true',
+                statModType: row.stat_mod_type,
+                statModAmount: row.stat_mod_amount,
+                statModDurationMs: row.stat_mod_duration_ms,
+                stacking: row.stacking === true || row.stacking === 'true',
                 notes: row.notes,
                 target: row.target
             };
@@ -564,7 +574,7 @@ export class DataManager {
      */
     private parseFortressGridsFromCache(cache: Phaser.Cache.CacheManager): void {
         // Known fortress grid IDs - add more here as they're created
-        const fortressIds = ['jade_dynasty_01'];
+        const fortressIds = ['jade_dynasty_01', 'frost_clan_01'];
         
         for (const id of fortressIds) {
             const metaKey = `fortress_grid_${id}_meta`;
@@ -628,6 +638,9 @@ export class DataManager {
             maxHp: Number(meta.max_hp) || 1000,
             cellSizeWidth: Number(meta.cell_size_width) || 64,
             cellSizeHeight: Number(meta.cell_size_height) || 32,
+            imageOffsetX: Number(meta.image_offset_x) || 0,
+            imageOffsetY: Number(meta.image_offset_y) || 0,
+            imageScale: Number(meta.image_scale) || 1,
             gridWidth,
             gridHeight,
             cells
