@@ -28,7 +28,7 @@ id,stage_index,type,tier,encounter_id,pos_x,pos_y,icon_key,reward_tier,next_node
 12A_1,0,recruitment,3,recruit_engineer,0.71,0.9,node_recruit,3,"[""13B_1""]"
 13B_1,0,elite,3,elite_jade_t3,0.77,0.7,node_elite,3,"[""14A_1""]"
 14A_1,0,event,3,event_shrine_s1,0.83,0.9,node_event,3,"[""15A_1""]"
-15A_1,0,boss,3,boss_jade_palace,0.89,0.9,node_boss,3,[]
+15A_1,0,boss,3,boss_jade_palace,0.89,0.9,node_boss,3,"[""1C_2""]"
 1C_2,1,battle,1,battle_frost_t1,0.05,0.5,node_battle,1,"[""2B_2"", ""2C_2"", ""2D_2""]"
 2B_2,1,event,1,event_geyser_s1,0.11,0.7,node_event,1,"[""3B_2""]"
 2C_2,1,shop,1,shop_greaseworks,0.11,0.5,node_shop,1,"[""3D_2"",""3B_2""]"
