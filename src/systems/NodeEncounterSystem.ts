@@ -25,6 +25,11 @@ export class NodeEncounterSystem {
     constructor(private readonly hostScene: Phaser.Scene) {}
 
     public resolveNode(node: IMapNode): void {
+        // Prevent double-resolve (e.g. double-click on a node) which can attach
+        // multiple battle listeners and charge extra lives for a single defeat.
+        if (this.resolving) {
+            return;
+        }
         this.resolving = true;
 
         switch (node.type) {

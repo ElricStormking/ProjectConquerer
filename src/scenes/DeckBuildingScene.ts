@@ -9,6 +9,8 @@ const MAX_DECK_SIZE = 40;
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 200;
 const CARD_GAP = 14;
+// Enlarged hover panel for card details (roughly 2x previous height)
+const HOVER_PANEL_HEIGHT = 420;
 
 interface DeckBuildingSceneData {
     factionId?: string;
@@ -49,6 +51,14 @@ export class DeckBuildingScene extends Phaser.Scene {
     private cardGridScrollY = 0;
     private deckScrollY = 0;
 
+    // Hover card detail panel (lower-left)
+    private hoverCardPanel!: Phaser.GameObjects.Container;
+    private hoverCardNameText!: Phaser.GameObjects.Text;
+    private hoverCardTypeText!: Phaser.GameObjects.Text;
+    private hoverCardCostText!: Phaser.GameObjects.Text;
+    private hoverCardDescText!: Phaser.GameObjects.Text;
+    private hoverCardArt?: Phaser.GameObjects.GameObject;
+
     constructor() {
         super({ key: 'DeckBuildingScene' });
     }
@@ -74,6 +84,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.createCardGridPanel();
         this.createDeckPanel();
         this.createBottomButtons(width, height);
+        this.createHoverCardPanel(width, height);
         
         // Initial render
         this.renderCommanders();
@@ -102,6 +113,54 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.cardPanelBounds.y = 90;
         this.cardPanelBounds.width = this.deckBounds.x - this.cardPanelBounds.x - 20;
         this.cardPanelBounds.height = height - verticalMargin;
+    }
+
+    private createHoverCardPanel(width: number, height: number): void {
+        const panelWidth = this.commanderBounds.width;
+        const panelX = this.commanderBounds.x;
+        const panelY = height - HOVER_PANEL_HEIGHT - 90;
+
+        this.hoverCardPanel = this.add.container(panelX, panelY);
+        this.hoverCardPanel.setDepth(9000);
+
+        const bg = this.add.graphics();
+        bg.fillStyle(0x0f111a, 0.96);
+        bg.fillRoundedRect(0, 0, panelWidth, HOVER_PANEL_HEIGHT, 10);
+        bg.lineStyle(2, 0x3d4663, 0.9);
+        bg.strokeRoundedRect(0, 0, panelWidth, HOVER_PANEL_HEIGHT, 10);
+        this.hoverCardPanel.add(bg);
+
+        this.hoverCardNameText = this.add.text(16, 14, '', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '22px',
+            color: '#f0dba5',
+            fontStyle: 'bold'
+        }).setOrigin(0, 0);
+        this.hoverCardPanel.add(this.hoverCardNameText);
+
+        this.hoverCardTypeText = this.add.text(16, 44, '', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '15px',
+            color: '#8a9cc5'
+        }).setOrigin(0, 0);
+        this.hoverCardPanel.add(this.hoverCardTypeText);
+
+        this.hoverCardCostText = this.add.text(16, 66, '', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '15px',
+            color: '#c0c0c0'
+        }).setOrigin(0, 0);
+        this.hoverCardPanel.add(this.hoverCardCostText);
+
+        this.hoverCardDescText = this.add.text(190, 96, '', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: '#d0d4e1',
+            wordWrap: { width: panelWidth - 210 }
+        }).setOrigin(0, 0);
+        this.hoverCardPanel.add(this.hoverCardDescText);
+
+        this.hoverCardPanel.setVisible(false);
     }
 
     private initializeData(): void {
@@ -572,6 +631,14 @@ export class DeckBuildingScene extends Phaser.Scene {
             itemBg.fillRoundedRect(0, 0, 290, 40, 4);
             itemContainer.add(itemBg);
 
+            // Hover over deck row also shows card detail.
+            itemBg.setInteractive(
+                new Phaser.Geom.Rectangle(0, 0, 290, 40),
+                Phaser.Geom.Rectangle.Contains
+            );
+            itemBg.on('pointerover', () => this.showHoverCard(card));
+            itemBg.on('pointerout', () => this.hideHoverCard());
+
             // Cost circle
             const costCircle = this.add.circle(25, 20, 14, this.getRarityColor(card.rarity));
             itemContainer.add(costCircle);
@@ -712,24 +779,26 @@ export class DeckBuildingScene extends Phaser.Scene {
         }).setOrigin(0.5, 0);
         container.add(rarityLabel);
         
-        if (isClickable) {
-            // Attach input to the card background graphics instead of the container.
-            // This avoids any Container-origin quirks and uses a clear 0,0 -> CARD_WIDTH,CARD_HEIGHT rect.
-            bg.setInteractive(
-                new Phaser.Geom.Rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT),
-                Phaser.Geom.Rectangle.Contains
-            );
+        // Attach input to the card background graphics instead of the container.
+        // This avoids any Container-origin quirks and uses a clear 0,0 -> CARD_WIDTH,CARD_HEIGHT rect.
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT),
+            Phaser.Geom.Rectangle.Contains
+        );
 
-            bg.on('pointerover', () => {
-                container.setScale(1.08);
-                container.setDepth(10);
-            });
-            
-            bg.on('pointerout', () => {
-                container.setScale(1);
-                container.setDepth(0);
-            });
-            
+        bg.on('pointerover', () => {
+            container.setScale(1.08);
+            container.setDepth(10);
+            this.showHoverCard(card);
+        });
+        
+        bg.on('pointerout', () => {
+            container.setScale(1);
+            container.setDepth(0);
+            this.hideHoverCard();
+        });
+        
+        if (isClickable) {
             bg.on('pointerup', () => {
                 this.addCardToDeck(card);
             });
@@ -746,6 +815,66 @@ export class DeckBuildingScene extends Phaser.Scene {
             legendary: 0xf1c40f
         };
         return colors[rarity ?? 'common'] ?? 0x888888;
+    }
+
+    private showHoverCard(card: ICard): void {
+        if (!this.hoverCardPanel) {
+            return;
+        }
+
+        // Basic labels
+        this.hoverCardNameText.setText(card.name);
+
+        const typeLabel = card.type ? String(card.type).toUpperCase() : '';
+        const rarityLabel = card.rarity ? card.rarity.charAt(0).toUpperCase() + card.rarity.slice(1) : 'Common';
+        this.hoverCardTypeText.setText(`${typeLabel}  •  ${rarityLabel}`);
+
+        const resourceRaw = card.resourceType ? String(card.resourceType) : '';
+        const resourcePretty = resourceRaw
+            .toLowerCase()
+            .split('_')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+        this.hoverCardCostText.setText(
+            resourcePretty ? `Cost: ${card.cost} ${resourcePretty}` : `Cost: ${card.cost}`
+        );
+
+        this.hoverCardDescText.setText(card.description || 'No description available yet.');
+
+        // Replace portrait art
+        if (this.hoverCardArt) {
+            this.hoverCardArt.destroy();
+            this.hoverCardArt = undefined;
+        }
+
+        const localX = 90;
+        const localY = HOVER_PANEL_HEIGHT / 2 + 6;
+        const boundsW = 160;
+        const boundsH = 260;
+
+        if (card.portraitKey && this.textures.exists(card.portraitKey)) {
+            const img = this.add.image(0, 0, card.portraitKey).setOrigin(0.5);
+            const texW = img.width || boundsW;
+            const texH = img.height || boundsH;
+            const scale = Math.min(boundsW / texW, boundsH / texH);
+            img.setScale(scale);
+            img.x = localX;
+            img.y = localY;
+            this.hoverCardPanel.add(img);
+            this.hoverCardArt = img;
+        } else {
+            const placeholder = this.add.rectangle(localX, localY, boundsW, boundsH, 0x1a1d2e);
+            placeholder.setStrokeStyle(2, this.getRarityColor(card.rarity), 0.9);
+            this.hoverCardPanel.add(placeholder);
+            this.hoverCardArt = placeholder;
+        }
+
+        this.hoverCardPanel.setVisible(true);
+    }
+
+    private hideHoverCard(): void {
+        if (!this.hoverCardPanel) return;
+        this.hoverCardPanel.setVisible(false);
     }
     
     private addCardToDeck(card: ICard): void {
