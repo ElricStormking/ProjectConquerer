@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ICommanderActiveSkill } from './ICommanderActiveSkill';
 import { UnitManager } from '../UnitManager';
 import { Unit } from '../../entities/Unit';
+import { CommanderSkillTemplate } from '../../types/ironwars';
 
 /**
  * Long Jin - Dragon Spear Barrage
@@ -12,16 +13,38 @@ export class DragonSpearBarrage implements ICommanderActiveSkill {
     name = 'Dragon Strike';
     description = 'Rains chi-infused spears from the sky, stunning enemies and leaving a burning trail.';
 
+    private radius = 130;
+    private spearCount = 8;
+    private spearInterval = 120;
+    private damagePerSpear = 18;
+    private impactRadius = 45;
+    private stunDuration = 1000;
+    private trailDuration = 3000;
+    private trailDot = 8;
+    private trailTick = 500;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.spearCount = template.spearCount ?? this.spearCount;
+        this.spearInterval = template.strikeIntervalMs ?? this.spearInterval;
+        this.damagePerSpear = template.damagePerStrike ?? this.damagePerSpear;
+        this.impactRadius = template.impactRadius ?? this.impactRadius;
+        this.stunDuration = template.stunMs ?? this.stunDuration;
+        this.trailDuration = template.trailDurationMs ?? this.trailDuration;
+        this.trailDot = template.trailDot ?? this.trailDot;
+        this.trailTick = template.trailTickMs ?? this.trailTick;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 130;
-        const SPEAR_COUNT = 8;
-        const SPEAR_INTERVAL = 120;
-        const DAMAGE_PER_SPEAR = 18;
-        const IMPACT_RADIUS = 45;
-        const STUN_DURATION = 1000;
-        const TRAIL_DURATION = 3000;
-        const TRAIL_DOT = 8;
-        const TRAIL_TICK = 500;
+        const RADIUS = this.radius;
+        const SPEAR_COUNT = this.spearCount;
+        const SPEAR_INTERVAL = this.spearInterval;
+        const DAMAGE_PER_SPEAR = this.damagePerSpear;
+        const IMPACT_RADIUS = this.impactRadius;
+        const STUN_DURATION = this.stunDuration;
+        const TRAIL_DURATION = this.trailDuration;
+        const TRAIL_DOT = this.trailDot;
+        const TRAIL_TICK = this.trailTick;
 
         // DISTINCTIVE: Cyan/Green Dragon Chi energy field with rotating runes
         const field = scene.add.graphics();
@@ -178,13 +201,29 @@ export class ShikigamiSummoning implements ICommanderActiveSkill {
     name = 'Twelve-Shikigami Ritual';
     description = 'Summons friendly spirit units that fight alongside your army.';
 
+    private summonCount = 3;
+    private summonDuration = 10000;
+    private radius = 80;
+    private healPulseInterval = 2000;
+    private healAmount = 15;
+    private healRadius = 120;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.summonCount = template.summonCount ?? this.summonCount;
+        this.summonDuration = template.summonDurationMs ?? this.summonDuration;
+        this.radius = template.radius ?? this.radius;
+        this.healPulseInterval = template.healPulseIntervalMs ?? this.healPulseInterval;
+        this.healAmount = template.healAmount ?? this.healAmount;
+        this.healRadius = template.healRadius ?? this.healRadius;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const SUMMON_COUNT = 3;
-        const SUMMON_DURATION = 10000;
-        const RADIUS = 80;
-        const HEAL_PULSE_INTERVAL = 2000;
-        const HEAL_AMOUNT = 15;
-        const HEAL_RADIUS = 120;
+        const SUMMON_COUNT = this.summonCount;
+        const SUMMON_DURATION = this.summonDuration;
+        const RADIUS = this.radius;
+        const HEAL_PULSE_INTERVAL = this.healPulseInterval;
+        const HEAL_AMOUNT = this.healAmount;
+        const HEAL_RADIUS = this.healRadius;
 
         // DISTINCTIVE: Pink/Magenta Spirit Ritual Circle with Japanese torii gate symbols
         const ritual = scene.add.graphics();
@@ -312,15 +351,37 @@ export class ShadowCloneAmbush implements ICommanderActiveSkill {
     name = 'Shadowstep Backroll';
     description = 'Deploys shadow clones that taunt enemies and explode on death.';
 
+    private cloneCount = 3;
+    private cloneDuration = 5000;
+    private cloneDamage = 12;
+    private cloneAttackInterval = 800;
+    private attackRange = 100;
+    private explosionDamage = 25;
+    private explosionRadius = 70;
+    private tauntDuration = 2500;
+    private spawnRadius = 50;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.cloneCount = template.cloneCount ?? this.cloneCount;
+        this.cloneDuration = template.durationMs ?? this.cloneDuration;
+        this.cloneDamage = template.cloneDamage ?? this.cloneDamage;
+        this.cloneAttackInterval = template.cloneAttackIntervalMs ?? this.cloneAttackInterval;
+        this.attackRange = template.cloneAttackRange ?? this.attackRange;
+        this.explosionDamage = template.explosionDamage ?? this.explosionDamage;
+        this.explosionRadius = template.explosionRadius ?? this.explosionRadius;
+        this.tauntDuration = template.tauntDurationMs ?? this.tauntDuration;
+        this.spawnRadius = template.summonRadius ?? this.spawnRadius;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const CLONE_COUNT = 3;
-        const CLONE_DURATION = 5000;
-        const CLONE_DAMAGE = 12;
-        const CLONE_ATTACK_INTERVAL = 800;
-        const ATTACK_RANGE = 100;
-        const EXPLOSION_DAMAGE = 25;
-        const EXPLOSION_RADIUS = 70;
-        const TAUNT_DURATION = 2500;
+        const CLONE_COUNT = this.cloneCount;
+        const CLONE_DURATION = this.cloneDuration;
+        const CLONE_DAMAGE = this.cloneDamage;
+        const CLONE_ATTACK_INTERVAL = this.cloneAttackInterval;
+        const ATTACK_RANGE = this.attackRange;
+        const EXPLOSION_DAMAGE = this.explosionDamage;
+        const EXPLOSION_RADIUS = this.explosionRadius;
+        const TAUNT_DURATION = this.tauntDuration;
 
         // DISTINCTIVE: Dark Purple Ninja Smoke Bomb with shadow tendrils
         const smoke = scene.add.graphics();
@@ -373,8 +434,8 @@ export class ShadowCloneAmbush implements ICommanderActiveSkill {
         for (let i = 0; i < CLONE_COUNT; i++) {
             scene.time.delayedCall(i * 150 + 200, () => {
                 const angle = (i / CLONE_COUNT) * Math.PI * 2 + Math.PI / 6;
-                const spawnX = centerX + Math.cos(angle) * 50;
-                const spawnY = centerY + Math.sin(angle) * 50;
+                const spawnX = centerX + Math.cos(angle) * this.spawnRadius;
+                const spawnY = centerY + Math.sin(angle) * this.spawnRadius;
 
                 this.spawnShadowClone(
                     scene,

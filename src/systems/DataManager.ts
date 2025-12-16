@@ -20,7 +20,8 @@ import {
     IFortressGridConfig,
     IFortressCell,
     FortressCellType,
-    UnitSkillTemplate
+    UnitSkillTemplate,
+    CommanderSkillTemplate
 } from '../types/ironwars';
 
 export class DataManager {
@@ -44,6 +45,7 @@ export class DataManager {
     private factions: Map<string, IFactionConfig> = new Map();
     private commanders: Map<string, ICommanderFullConfig> = new Map();
     private unitSkills: Map<string, UnitSkillTemplate> = new Map();
+    private commanderSkills: Map<string, CommanderSkillTemplate> = new Map();
     
     // Fortress grid data
     private fortressGrids: Map<string, IFortressGridConfig> = new Map();
@@ -63,6 +65,7 @@ export class DataManager {
         this.parseWaves(cache.text.get('waves_data'));
         this.parseSkills(cache.text.get('skills_data'));
         if (cache.text.exists('unit_skills_data')) this.parseUnitSkills(cache.text.get('unit_skills_data'));
+        if (cache.text.exists('commander_skills_data')) this.parseCommanderSkills(cache.text.get('commander_skills_data'));
         
         // Optional future data
         if (cache.text.exists('buildings_data')) this.parseBuildings(cache.text.get('buildings_data'));
@@ -80,7 +83,7 @@ export class DataManager {
         
         console.log('DataManager: Parsing complete.');
         const totalWaves = Array.from(this.wavesByEncounter.values()).reduce((sum, m) => sum + m.size, 0);
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.unitSkills.size} unit skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.unitSkills.size} unit skills, ${this.commanderSkills.size} commander skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
     }
 
     private parseUnits(csv: string): void {
@@ -161,6 +164,68 @@ export class DataManager {
                 notes: row.notes
             };
             this.unitSkills.set(skill.id, skill);
+        });
+    }
+
+    private parseCommanderSkills(csv: string): void {
+        if (!csv) return;
+        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const toNum = (val: any): number | undefined => {
+            const n = Number(val);
+            return Number.isFinite(n) ? n : undefined;
+        };
+
+        result.data.forEach((row: any) => {
+            if (!row.id) return;
+            const template: CommanderSkillTemplate = {
+                id: String(row.id),
+                name: row.name,
+                description: row.description,
+                faction: row.faction,
+                radius: toNum(row.radius),
+                durationMs: toNum(row.duration_ms),
+                damage: toNum(row.damage),
+                damagePerStrike: toNum(row.damage_per_strike),
+                strikes: toNum(row.strikes),
+                strikeIntervalMs: toNum(row.strike_interval_ms),
+                impactRadius: toNum(row.impact_radius),
+                stunMs: toNum(row.stun_ms),
+                trailDurationMs: toNum(row.trail_duration_ms),
+                trailDot: toNum(row.trail_dot),
+                trailTickMs: toNum(row.trail_tick_ms),
+                spearCount: toNum(row.spear_count),
+                summonCount: toNum(row.summon_count),
+                summonDurationMs: toNum(row.summon_duration_ms),
+                summonRadius: toNum(row.summon_radius),
+                healAmount: toNum(row.heal_amount),
+                healRadius: toNum(row.heal_radius),
+                healPulseIntervalMs: toNum(row.heal_pulse_interval_ms),
+                cloneCount: toNum(row.clone_count),
+                cloneDamage: toNum(row.clone_damage),
+                cloneAttackIntervalMs: toNum(row.clone_attack_interval_ms),
+                cloneAttackRange: toNum(row.clone_attack_range),
+                explosionDamage: toNum(row.explosion_damage),
+                explosionRadius: toNum(row.explosion_radius),
+                tauntDurationMs: toNum(row.taunt_duration_ms),
+                shieldPercent: toNum(row.shield_percent),
+                shieldDurationMs: toNum(row.shield_duration_ms),
+                attackBuffPercent: toNum(row.attack_buff_percent),
+                attackBuffDurationMs: toNum(row.attack_buff_duration_ms),
+                pullStrength: toNum(row.pull_strength),
+                slowAmount: toNum(row.slow_amount),
+                telegraphDurationMs: toNum(row.telegraph_duration_ms),
+                shellCount: toNum(row.shell_count),
+                shellIntervalMs: toNum(row.shell_interval_ms),
+                damagePerShell: toNum(row.damage_per_shell),
+                knockbackForce: toNum(row.knockback_force),
+                siphonCount: toNum(row.siphon_count),
+                siphonPercent: toNum(row.siphon_percent),
+                dotTickMs: toNum(row.dot_tick_ms),
+                dotDamage: toNum(row.dot_damage),
+                healReverseMs: toNum(row.heal_reverse_ms),
+                damageSharePercent: toNum(row.damage_share_percent)
+            };
+            this.commanderSkills.set(template.id, template);
         });
     }
 
@@ -488,6 +553,10 @@ export class DataManager {
 
     public getSkillTemplate(id: string): Omit<Skill, 'currentRank'> | undefined {
         return this.skills.get(id);
+    }
+
+    public getCommanderSkillTemplate(id: string): CommanderSkillTemplate | undefined {
+        return this.commanderSkills.get(id);
     }
 
     public getStageByIndex(index: number): IStageConfig | undefined {

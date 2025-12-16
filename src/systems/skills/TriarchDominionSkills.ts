@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ICommanderActiveSkill } from './ICommanderActiveSkill';
 import { UnitManager } from '../UnitManager';
+import { CommanderSkillTemplate } from '../../types/ironwars';
 
 /**
  * Rex Aetherfall - Skyfall Cataclysm
@@ -11,14 +12,32 @@ export class SkyfallCataclysm implements ICommanderActiveSkill {
     name = 'Skyfall Cataclysm';
     description = 'Summons a devastating lightning storm that strikes enemies and pulls them inward.';
 
+    private fieldRadius = 160;
+    private impactRadius = 90;
+    private strikes = 6;
+    private strikeInterval = 150;
+    private damagePerStrike = 12;
+    private vortexDuration = 4000;
+    private pullStrength = 15;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.fieldRadius = template.radius ?? this.fieldRadius;
+        this.impactRadius = template.impactRadius ?? this.impactRadius;
+        this.strikes = template.strikes ?? this.strikes;
+        this.strikeInterval = template.strikeIntervalMs ?? this.strikeInterval;
+        this.damagePerStrike = template.damagePerStrike ?? this.damagePerStrike;
+        this.vortexDuration = template.durationMs ?? this.vortexDuration;
+        this.pullStrength = template.pullStrength ?? this.pullStrength;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const FIELD_RADIUS = 160;
-        const IMPACT_RADIUS = 90;
-        const STRIKES = 6;
-        const STRIKE_INTERVAL = 150;
-        const DAMAGE_PER_STRIKE = 12;
-        const VORTEX_DURATION = 4000;
-        const PULL_STRENGTH = 15;
+        const FIELD_RADIUS = this.fieldRadius;
+        const IMPACT_RADIUS = this.impactRadius;
+        const STRIKES = this.strikes;
+        const STRIKE_INTERVAL = this.strikeInterval;
+        const DAMAGE_PER_STRIKE = this.damagePerStrike;
+        const VORTEX_DURATION = this.vortexDuration;
+        const PULL_STRENGTH = this.pullStrength;
 
         // Field indicator
         const field = scene.add.graphics();
@@ -147,14 +166,32 @@ export class JudgmentOfTheDawn implements ICommanderActiveSkill {
     name = 'Judgment of the Dawn';
     description = 'Holy explosion that damages enemies, cleanses allies, and grants protective shields.';
 
+    private radius = 140;
+    private damage = 45;
+    private stunDuration = 1500;
+    private shieldPercent = 0.15;
+    private shieldDuration = 6000;
+    private buffDuration = 5000;
+    private attackBuff = 0.25;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.damage = template.damage ?? this.damage;
+        this.stunDuration = template.stunMs ?? this.stunDuration;
+        this.shieldPercent = template.shieldPercent ?? this.shieldPercent;
+        this.shieldDuration = template.shieldDurationMs ?? this.shieldDuration;
+        this.buffDuration = template.attackBuffDurationMs ?? this.buffDuration;
+        this.attackBuff = template.attackBuffPercent ?? this.attackBuff;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 140;
-        const DAMAGE = 45;
-        const STUN_DURATION = 1500;
-        const SHIELD_PERCENT = 0.15;
-        const SHIELD_DURATION = 6000;
-        const BUFF_DURATION = 5000;
-        const ATTACK_BUFF = 0.25;
+        const RADIUS = this.radius;
+        const DAMAGE = this.damage;
+        const STUN_DURATION = this.stunDuration;
+        const SHIELD_PERCENT = this.shieldPercent;
+        const SHIELD_DURATION = this.shieldDuration;
+        const BUFF_DURATION = this.buffDuration;
+        const ATTACK_BUFF = this.attackBuff;
 
         // Holy circle telegraph
         const telegraph = scene.add.graphics();
@@ -247,14 +284,34 @@ export class GrandBombardment implements ICommanderActiveSkill {
     name = 'Grand Bombardment Protocol';
     description = 'Calls in artillery strikes after a brief warning, devastating the target area.';
 
+    private radius = 180;
+    private telegraphDuration = 3000;
+    private shells = 5;
+    private shellInterval = 500;
+    private damagePerShell = 35;
+    private impactRadius = 60;
+    private knockbackForce = 80;
+    private telegraphSlow = 0.2;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.telegraphDuration = template.telegraphDurationMs ?? this.telegraphDuration;
+        this.shells = template.shellCount ?? this.shells;
+        this.shellInterval = template.shellIntervalMs ?? this.shellInterval;
+        this.damagePerShell = template.damagePerShell ?? this.damagePerShell;
+        this.impactRadius = template.impactRadius ?? this.impactRadius;
+        this.knockbackForce = template.knockbackForce ?? this.knockbackForce;
+        this.telegraphSlow = template.slowAmount ?? this.telegraphSlow;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 180;
-        const TELEGRAPH_DURATION = 3000;
-        const SHELLS = 5;
-        const SHELL_INTERVAL = 500;
-        const DAMAGE_PER_SHELL = 35;
-        const IMPACT_RADIUS = 60;
-        const KNOCKBACK_FORCE = 80;
+        const RADIUS = this.radius;
+        const TELEGRAPH_DURATION = this.telegraphDuration;
+        const SHELLS = this.shells;
+        const SHELL_INTERVAL = this.shellInterval;
+        const DAMAGE_PER_SHELL = this.damagePerShell;
+        const IMPACT_RADIUS = this.impactRadius;
+        const KNOCKBACK_FORCE = this.knockbackForce;
 
         // Telegraph warning zone
         const telegraph = scene.add.graphics();
@@ -293,7 +350,7 @@ export class GrandBombardment implements ICommanderActiveSkill {
                 enemies.forEach(unit => {
                     const pos = unit.getPosition();
                     if (Phaser.Math.Distance.Between(pos.x, pos.y, centerX, centerY) <= RADIUS) {
-                        unit.applySlow(0.2, 250);
+                        unit.applySlow(this.telegraphSlow, 250);
                     }
                 });
             }

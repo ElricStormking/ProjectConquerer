@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ICommanderActiveSkill } from './ICommanderActiveSkill';
 import { UnitManager } from '../UnitManager';
+import { CommanderSkillTemplate } from '../../types/ironwars';
 
 /**
  * Azariel (Lich King) - Soul Blasphemy
@@ -11,11 +12,25 @@ export class SoulBlasphemy implements ICommanderActiveSkill {
     name = 'Soul Blasphemy';
     description = 'Creates a zone of decay where enemy healing is converted to damage.';
 
+    private radius = 150;
+    private duration = 8000;
+    private dotTick = 500;
+    private dotDamage = 6;
+    private healReverseMs = 800;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.duration = template.durationMs ?? this.duration;
+        this.dotTick = template.dotTickMs ?? this.dotTick;
+        this.dotDamage = template.dotDamage ?? this.dotDamage;
+        this.healReverseMs = template.healReverseMs ?? this.healReverseMs;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 150;
-        const DURATION = 8000;
-        const DOT_TICK = 500;
-        const DOT_DAMAGE = 6;
+        const RADIUS = this.radius;
+        const DURATION = this.duration;
+        const DOT_TICK = this.dotTick;
+        const DOT_DAMAGE = this.dotDamage;
 
         // DISTINCTIVE: Dark Purple/Black Necrotic Decay Zone with skull motif
         const field = scene.add.graphics();
@@ -76,7 +91,7 @@ export class SoulBlasphemy implements ICommanderActiveSkill {
                     const pos = unit.getPosition();
                     if (Phaser.Math.Distance.Between(pos.x, pos.y, centerX, centerY) <= RADIUS) {
                         unit.takeDamage(DOT_DAMAGE);
-                        unit.applyHealReverse(DOT_TICK + 100);
+                        unit.applyHealReverse(this.healReverseMs);
                     }
                 });
             }
@@ -141,12 +156,26 @@ export class SacrificialFeast implements ICommanderActiveSkill {
     name = 'Sacrificial Feast';
     description = 'Siphons life from nearby allies to empower all units in the area with increased damage.';
 
+    private radius = 140;
+    private siphonCount = 2;
+    private siphonPercent = 0.3;
+    private attackBuff = 0.5;
+    private buffDuration = 6000;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.siphonCount = template.siphonCount ?? this.siphonCount;
+        this.siphonPercent = template.siphonPercent ?? this.siphonPercent;
+        this.attackBuff = template.attackBuffPercent ?? this.attackBuff;
+        this.buffDuration = template.attackBuffDurationMs ?? this.buffDuration;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 140;
-        const SIPHON_COUNT = 2;
-        const SIPHON_PERCENT = 0.3;
-        const ATTACK_BUFF = 0.5;
-        const BUFF_DURATION = 6000;
+        const RADIUS = this.radius;
+        const SIPHON_COUNT = this.siphonCount;
+        const SIPHON_PERCENT = this.siphonPercent;
+        const ATTACK_BUFF = this.attackBuff;
+        const BUFF_DURATION = this.buffDuration;
 
         // DISTINCTIVE: Crimson Blood Ritual Circle with dripping blood effect
         const ritual = scene.add.graphics();
@@ -295,11 +324,23 @@ export class FleshLink implements ICommanderActiveSkill {
     name = 'Flesh Link';
     description = 'Links all friendly units in range, sharing damage equally and granting a protective shield.';
 
+    private radius = 160;
+    private duration = 4000;
+    private shieldPercent = 0.1;
+    private damageSharePercent = 0.5;
+
+    configure(template: CommanderSkillTemplate): void {
+        this.radius = template.radius ?? this.radius;
+        this.duration = template.durationMs ?? this.duration;
+        this.shieldPercent = template.shieldPercent ?? this.shieldPercent;
+        this.damageSharePercent = template.damageSharePercent ?? this.damageSharePercent;
+    }
+
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
-        const RADIUS = 160;
-        const DURATION = 4000;
-        const SHIELD_PERCENT = 0.1;
-        const DAMAGE_SHARE = 0.5;
+        const RADIUS = this.radius;
+        const DURATION = this.duration;
+        const SHIELD_PERCENT = this.shieldPercent;
+        const DAMAGE_SHARE = this.damageSharePercent;
 
         // Find all allies in range
         const allies = unitManager.getUnitsByTeam(1);

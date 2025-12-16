@@ -139,6 +139,56 @@ export interface IStarterData {
     waves: IWaveConfig[];
 }
 
+// Commander skill tuning loaded from CSV
+export interface CommanderSkillTemplate {
+    id: string;
+    name?: string;
+    description?: string;
+    faction?: string;
+    radius?: number;
+    durationMs?: number;
+    damage?: number;
+    damagePerStrike?: number;
+    strikes?: number;
+    strikeIntervalMs?: number;
+    impactRadius?: number;
+    stunMs?: number;
+    trailDurationMs?: number;
+    trailDot?: number;
+    trailTickMs?: number;
+    spearCount?: number;
+    summonCount?: number;
+    summonDurationMs?: number;
+    summonRadius?: number;
+    healAmount?: number;
+    healRadius?: number;
+    healPulseIntervalMs?: number;
+    cloneCount?: number;
+    cloneDamage?: number;
+    cloneAttackIntervalMs?: number;
+    cloneAttackRange?: number;
+    explosionDamage?: number;
+    explosionRadius?: number;
+    tauntDurationMs?: number;
+    shieldPercent?: number;
+    shieldDurationMs?: number;
+    attackBuffPercent?: number;
+    attackBuffDurationMs?: number;
+    pullStrength?: number;
+    slowAmount?: number;
+    telegraphDurationMs?: number;
+    shellCount?: number;
+    shellIntervalMs?: number;
+    damagePerShell?: number;
+    knockbackForce?: number;
+    siphonCount?: number;
+    siphonPercent?: number;
+    dotTickMs?: number;
+    dotDamage?: number;
+    healReverseMs?: number;
+    damageSharePercent?: number;
+}
+
 export interface IDeckState {
     drawPile: ICard[];
     discardPile: ICard[];
