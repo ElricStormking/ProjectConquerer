@@ -19,11 +19,12 @@ export class SoulBlasphemy implements ICommanderActiveSkill {
     private healReverseMs = 800;
 
     configure(template: CommanderSkillTemplate): void {
-        this.radius = template.radius ?? this.radius;
-        this.duration = template.durationMs ?? this.duration;
-        this.dotTick = template.dotTickMs ?? this.dotTick;
-        this.dotDamage = template.dotDamage ?? this.dotDamage;
-        this.healReverseMs = template.healReverseMs ?? this.healReverseMs;
+        const pick = (val: number | undefined, fallback: number) => (val && val > 0 ? val : fallback);
+        this.radius = pick(template.radius, this.radius);
+        this.duration = pick(template.durationMs, this.duration);
+        this.dotTick = pick(template.dotTickMs, this.dotTick);
+        this.dotDamage = pick(template.dotDamage, this.dotDamage);
+        this.healReverseMs = pick(template.healReverseMs, this.healReverseMs);
     }
 
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
@@ -163,11 +164,12 @@ export class SacrificialFeast implements ICommanderActiveSkill {
     private buffDuration = 6000;
 
     configure(template: CommanderSkillTemplate): void {
-        this.radius = template.radius ?? this.radius;
-        this.siphonCount = template.siphonCount ?? this.siphonCount;
-        this.siphonPercent = template.siphonPercent ?? this.siphonPercent;
-        this.attackBuff = template.attackBuffPercent ?? this.attackBuff;
-        this.buffDuration = template.attackBuffDurationMs ?? this.buffDuration;
+        const pick = (val: number | undefined, fallback: number) => (val && val > 0 ? val : fallback);
+        this.radius = pick(template.radius, this.radius);
+        this.siphonCount = pick(template.siphonCount, this.siphonCount);
+        this.siphonPercent = pick(template.siphonPercent, this.siphonPercent);
+        this.attackBuff = pick(template.attackBuffPercent, this.attackBuff);
+        this.buffDuration = pick(template.attackBuffDurationMs, this.buffDuration);
     }
 
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
@@ -330,10 +332,11 @@ export class FleshLink implements ICommanderActiveSkill {
     private damageSharePercent = 0.5;
 
     configure(template: CommanderSkillTemplate): void {
-        this.radius = template.radius ?? this.radius;
-        this.duration = template.durationMs ?? this.duration;
-        this.shieldPercent = template.shieldPercent ?? this.shieldPercent;
-        this.damageSharePercent = template.damageSharePercent ?? this.damageSharePercent;
+        const pick = (val: number | undefined, fallback: number) => (val && val > 0 ? val : fallback);
+        this.radius = pick(template.radius, this.radius);
+        this.duration = pick(template.durationMs, this.duration);
+        this.shieldPercent = pick(template.shieldPercent, this.shieldPercent);
+        this.damageSharePercent = pick(template.damageSharePercent, this.damageSharePercent);
     }
 
     execute(scene: Phaser.Scene, unitManager: UnitManager, centerX: number, centerY: number): void {
