@@ -52,7 +52,6 @@ export class Unit extends Phaser.Events.EventEmitter {
     private chiDragoonHitCount: number = 0;
     private halberdLastSlamTime: number = 0;
     private shadowbladeFirstHitTime: number = 0;
-    private oniLastTauntTime: number = 0;
     private skillPrimary?: UnitSkillTemplate;
     private skillSecondary?: UnitSkillTemplate;
     private passiveSkill?: UnitSkillTemplate;
@@ -89,6 +88,19 @@ export class Unit extends Phaser.Events.EventEmitter {
     // Status effect timers are tracked in SECONDS (remaining, tickInterval, accumulator).
     private statusEffects: Map<StatusEffect, { remaining: number; magnitude?: number; tickInterval?: number; accumulator?: number }> = new Map();
     private stunned: boolean = false;
+    
+    // Commander skill effect state (prefixed with _ as they are set but not read in this class)
+    private _shieldAmount: number = 0;
+    private _shieldRemainingMs: number = 0;
+    private healReversed: boolean = false;
+    private _healReversedRemainingMs: number = 0;
+    private _tauntTargetX: number = 0;
+    private _tauntTargetY: number = 0;
+    private _tauntRemainingMs: number = 0;
+    private _damageSharePercent: number = 0;
+    private _damageShareLinks: Unit[] = [];
+    private _damageShareRemainingMs: number = 0;
+    private isApplyingDamageShare: boolean = false;
     private lastAttackTime: number = 0;
     private lastAzureStunTime: number = 0;
     private lastStormComboTime: number = 0;
@@ -499,10 +511,10 @@ export class Unit extends Phaser.Events.EventEmitter {
                             } else if (this.config.unitType === UnitType.JADE_BLUE_ONI) {
                                 combatSystem.applyStatusEffect(enemy as any, StatusEffect.SLOWED, 1.5);
                             } else if (this.config.unitType === UnitType.FROST_BLOODLINE_NOBLE) {
-                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 4, 3, 1); // bleed over time
+                                combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 4); // bleed over time
                             } else if (this.config.unitType === UnitType.FROST_FLESH_CRAWLER) {
                                 if (Math.random() < 0.1) {
-                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 3, 2, 1);
+                                    combatSystem.applyStatusEffect(enemy as any, StatusEffect.DOT, 3);
                                 }
                             }
                         }
@@ -627,6 +639,8 @@ export class Unit extends Phaser.Events.EventEmitter {
             }
         }
 
+        this.updateCommanderEffects(deltaTime);
+
         // Flesh Titan rampage bleed
         if (this.rampageActive) {
             this.rampageBleedAccumulator += deltaTime;
@@ -695,6 +709,52 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Update animations based on intended facing/movement; do not let
         // knockback velocity flip unit facing away from enemies.
         this.updateAnimation();
+    }
+
+    private updateCommanderEffects(deltaTime: number): void {
+        const deltaMs = deltaTime * 1000;
+
+        if (this._shieldRemainingMs > 0) {
+            this._shieldRemainingMs -= deltaMs;
+            if (this._shieldRemainingMs <= 0) {
+                this._shieldRemainingMs = 0;
+                const excess = Math.max(0, this.health - this.maxHealth);
+                if (excess > 0) {
+                    this.health = Math.max(this.maxHealth, this.health - Math.min(excess, this._shieldAmount));
+                } else {
+                    this.health = Math.min(this.health, this.maxHealth);
+                }
+                this._shieldAmount = 0;
+                this.updateHealthBar();
+            }
+        }
+
+        if (this._healReversedRemainingMs > 0) {
+            this._healReversedRemainingMs -= deltaMs;
+            if (this._healReversedRemainingMs <= 0) {
+                this._healReversedRemainingMs = 0;
+                this.healReversed = false;
+            }
+        }
+
+        if (this._tauntRemainingMs > 0) {
+            this._tauntRemainingMs -= deltaMs;
+            if (this._tauntRemainingMs > 0 && (this._tauntTargetX !== 0 || this._tauntTargetY !== 0)) {
+                const angle = Math.atan2(this._tauntTargetY - this.body.position.y, this._tauntTargetX - this.body.position.x);
+                this.facing = angle;
+            } else if (this._tauntRemainingMs <= 0) {
+                this._tauntRemainingMs = 0;
+                this._tauntTargetX = 0;
+                this._tauntTargetY = 0;
+            }
+        }
+
+        if (this._damageShareRemainingMs > 0) {
+            this._damageShareRemainingMs -= deltaMs;
+            if (this._damageShareRemainingMs <= 0) {
+                this.clearDamageShare();
+            }
+        }
     }
     
     public move(direction: { x: number; y: number }): void {
@@ -779,9 +839,22 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public takeDamage(amount: number): void {
         if (this.dead) return;
-        const dmg = Number(amount);
+        let dmg = Number(amount);
         if (!Number.isFinite(dmg) || dmg <= 0) return;
-        
+
+        if (!this.isApplyingDamageShare && this._damageSharePercent > 0 && this._damageShareLinks.length > 0) {
+            const recipients = this._damageShareLinks.filter(u => u !== this && u.isAlive());
+            if (recipients.length > 0) {
+                const shareAmount = dmg * this._damageSharePercent;
+                const selfPortion = Math.max(0, dmg - shareAmount);
+                const perTarget = shareAmount / recipients.length;
+                this.isApplyingDamageShare = true;
+                recipients.forEach(u => u.takeDamage(perTarget));
+                this.isApplyingDamageShare = false;
+                dmg = selfPortion;
+            }
+        }
+
         this.health = Math.max(0, this.health - dmg);
         this.updateHealthBar();
         
@@ -790,16 +863,88 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.die();
         }
         
-        this.emit('damage-taken', amount);
+        this.emit('damage-taken', dmg);
     }
 
     public heal(amount: number): void {
         if (this.dead || amount <= 0) return;
+        // Check heal reverse status
+        if (this.healReversed) {
+            this.takeDamage(amount);
+            return;
+        }
         const healVal = Number(amount);
         if (!Number.isFinite(healVal) || healVal <= 0) return;
         this.health = Math.min(this.maxHealth, this.health + healVal);
         this.updateHealthBar();
     }
+
+    // Commander skill support methods
+    public applyStun(durationMs: number): void {
+        if (this.dead) return;
+        const durationSec = durationMs / 1000;
+        this.addStatusEffect(StatusEffect.STUNNED, durationSec);
+    }
+
+    public applyForce(forceX: number, forceY: number): void {
+        if (this.dead) return;
+        this.applyImpulse({ x: forceX * 0.001, y: forceY * 0.001 });
+    }
+
+    public applySlow(amount: number, durationMs: number): void {
+        if (this.dead) return;
+        const durationSec = durationMs / 1000;
+        this.moveSpeedMultiplier = 1 - amount;
+        this.addStatusEffect(StatusEffect.SLOWED, durationSec);
+    }
+
+    public cleanse(): void {
+        this.clearDebuffs();
+    }
+
+    public applyShield(amount: number, durationMs: number): void {
+        if (this.dead) return;
+        // Simple implementation: temporarily increase max health
+        this._shieldAmount = amount;
+        this._shieldRemainingMs = durationMs;
+        this.health = Math.min(this.health + amount, this.maxHealth + amount);
+        this.updateHealthBar();
+    }
+
+    public applyAttackBuff(multiplier: number, durationMs: number): void {
+        if (this.dead) return;
+        this.addDamageBuff(1 + multiplier, durationMs);
+    }
+
+    public applyHealReverse(durationMs: number): void {
+        if (this.dead) return;
+        this.healReversed = true;
+        this._healReversedRemainingMs = durationMs;
+    }
+
+    public applyTaunt(targetX: number, targetY: number, durationMs: number): void {
+        if (this.dead) return;
+        this._tauntTargetX = targetX;
+        this._tauntTargetY = targetY;
+        this._tauntRemainingMs = durationMs;
+    }
+
+    public applyDamageShare(percent: number, linkedUnits: Unit[], durationMs: number): void {
+        if (this.dead) return;
+        this._damageSharePercent = percent;
+        this._damageShareLinks = linkedUnits;
+        this._damageShareRemainingMs = durationMs;
+    }
+
+    public clearDamageShare(): void {
+        this._damageSharePercent = 0;
+        this._damageShareLinks = [];
+        this._damageShareRemainingMs = 0;
+    }
+
+    public getMaxHp(): number { return this.maxHealth; }
+    public getCurrentHp(): number { return this.health; }
+    public isAlive(): boolean { return !this.dead; }
     
     private die(): void {
         this.dead = true;

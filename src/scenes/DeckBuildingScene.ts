@@ -9,6 +9,7 @@ const MAX_DECK_SIZE = 40;
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 200;
 const CARD_GAP = 14;
+const CARDS_PER_ROW = 4;
 // Enlarged hover panel for card details (roughly 2x previous height)
 const HOVER_PANEL_HEIGHT = 420;
 
@@ -84,7 +85,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.createCardGridPanel();
         this.createDeckPanel();
         this.createBottomButtons(width, height);
-        this.createHoverCardPanel(width, height);
+        this.createHoverCardPanel(height);
         
         // Initial render
         this.renderCommanders();
@@ -115,7 +116,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.cardPanelBounds.height = height - verticalMargin;
     }
 
-    private createHoverCardPanel(width: number, height: number): void {
+    private createHoverCardPanel(height: number): void {
         const panelWidth = this.commanderBounds.width;
         const panelX = this.commanderBounds.x;
         const panelY = height - HOVER_PANEL_HEIGHT - 90;

@@ -158,8 +158,7 @@ export class DataManager {
                 statModAmount: row.stat_mod_amount,
                 statModDurationMs: row.stat_mod_duration_ms,
                 stacking: row.stacking === true || row.stacking === 'true',
-                notes: row.notes,
-                target: row.target
+                notes: row.notes
             };
             this.unitSkills.set(skill.id, skill);
         });
@@ -624,7 +623,8 @@ export class DataManager {
                     cells.push({
                         x: col,
                         y: row,
-                        type: cellType
+                        type: cellType,
+                        enhancementLevel: 0
                     });
                 }
             }

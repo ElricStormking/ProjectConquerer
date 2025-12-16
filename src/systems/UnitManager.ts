@@ -94,4 +94,53 @@ export class UnitManager {
             }
         });
     }
+
+    /**
+     * Spawn a temporary unit that auto-despawns after a duration.
+     * Used by commander skills like Shikigami Summoning.
+     */
+    public spawnTemporaryUnit(
+        unitTypeOrId: string,
+        x: number,
+        y: number,
+        team: number,
+        durationMs: number
+    ): string | null {
+        // Map spirit types to actual unit types for summoning
+        const spiritTypeMap: Record<string, UnitType> = {
+            'fox_spirit': UnitType.JADE_SHIKIGAMI_FOX,
+            'blue_oni': UnitType.JADE_BLUE_ONI,
+            'paper_doll': UnitType.JADE_PAPER_DOLL,
+            'spirit_lantern': UnitType.JADE_SPIRIT_LANTERN,
+            'crow_familiar': UnitType.JADE_SHIKIGAMI_FOX // fallback
+        };
+
+        const unitType = spiritTypeMap[unitTypeOrId] || UnitType.JADE_SHIKIGAMI_FOX;
+        const config = this.createUnitConfig(unitType, team, x, y);
+        const unit = this.spawnUnit(config);
+
+        if (!unit) return null;
+
+        // Schedule auto-removal
+        this.scene.time.delayedCall(durationMs, () => {
+            if (!unit.isDead()) {
+                // Fade out effect
+                const sprite = (unit as any).sprite;
+                if (sprite) {
+                    this.scene.tweens.add({
+                        targets: sprite,
+                        alpha: 0,
+                        duration: 300,
+                        onComplete: () => {
+                            this.removeUnit(unit.getId());
+                        }
+                    });
+                } else {
+                    this.removeUnit(unit.getId());
+                }
+            }
+        });
+
+        return unit.getId();
+    }
 }

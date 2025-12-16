@@ -150,12 +150,6 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
     }
 
     private getCardKey(id: string): string {
-        let base = id.replace(/_\d+$/, '');
-        base = base.replace(/_\d+$/, '');
-        return base;
-    }
-
-    private getCardKey(id: string): string {
         // Normalize runtime copies like `card_railgunner_1_1717358234123` back to the base card id
         // 1) Strip trailing timestamp / runtime suffix
         let base = id.replace(/_\d+$/, '');

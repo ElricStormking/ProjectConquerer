@@ -15,7 +15,8 @@ function buildDefaultFortressCells(width: number, height: number): IFortressCell
             cells.push({
                 x,
                 y,
-                type: isCore ? 'core' : isCorner ? 'blocked' : 'buildable'
+                type: isCore ? 'core' : isCorner ? 'blocked' : 'buildable',
+                enhancementLevel: 0
             });
         }
     }

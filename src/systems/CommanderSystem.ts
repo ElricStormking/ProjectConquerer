@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ICommanderConfig } from '../types/ironwars';
 import { UnitManager } from './UnitManager';
+import { CommanderSkillRegistry } from './skills';
 
 export class CommanderSystem extends Phaser.Events.EventEmitter {
     private commander?: ICommanderConfig;
@@ -57,7 +58,24 @@ export class CommanderSystem extends Phaser.Events.EventEmitter {
             return false;
         }
         this.lastCastTime = now;
-        this.castThunderStorm(worldX, worldY);
+
+        // Execute skill via registry (get fresh instance to ensure skills are registered)
+        const skillId = this.commander.activeSkillId;
+        const registry = CommanderSkillRegistry.getInstance();
+        const success = registry.execute(
+            skillId,
+            this.scene,
+            this.unitManager,
+            worldX,
+            worldY
+        );
+
+        if (!success) {
+            console.warn(`[CommanderSystem] Failed to execute skill: ${skillId}`);
+            // Fallback to legacy thunderstorm for backward compatibility
+            this.castLegacyThunderStorm(worldX, worldY);
+        }
+
         this.emit('skill-cast', {
             cooldown: this.commander.cooldown,
             lastCast: this.lastCastTime
@@ -65,7 +83,10 @@ export class CommanderSystem extends Phaser.Events.EventEmitter {
         return true;
     }
 
-    private castThunderStorm(centerX: number, centerY: number): void {
+    /**
+     * Legacy fallback for commanders without registered skills
+     */
+    private castLegacyThunderStorm(centerX: number, centerY: number): void {
         const FIELD_RADIUS = 160;
         const IMPACT_RADIUS = 90;
         const STRIKES = 6;

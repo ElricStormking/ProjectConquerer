@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { registerAllCommanderSkills } from '../systems/skills';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -10,6 +11,9 @@ export class BootScene extends Phaser.Scene {
     }
 
     create() {
+        // Register all commander active skills
+        registerAllCommanderSkills();
+        
         this.setupMobileOptimizations();
         this.scene.start('PreloadScene');
     }

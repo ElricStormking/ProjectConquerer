@@ -22,6 +22,7 @@ const STARTING_HAND = 5;
 import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { FactionRegistry } from '../systems/FactionRegistry';
+import { CommanderManager } from '../systems/CommanderManager';
 
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
@@ -60,8 +61,6 @@ export class BattleScene extends Phaser.Scene {
     
     // Scene data passed from NodeEncounterSystem
     private encounterId: string = 'default';
-    private nodeId: string = '';
-    private nodeType: string = '';
 
     constructor() {
         super({ key: 'BattleScene' });
@@ -113,9 +112,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     public init(data: { nodeId?: string; encounterId?: string; nodeType?: string }): void {
-        this.nodeId = data.nodeId ?? '';
         this.encounterId = data.encounterId ?? 'default';
-        this.nodeType = data.nodeType ?? 'battle';
         
         // Reset battle state for new encounter
         this.battleState = 'preparation';
@@ -180,6 +177,8 @@ export class BattleScene extends Phaser.Scene {
             this.updateUnitAI();
             this.checkCombat();
             this.processPassiveSkills();
+            this.updateJadeAuras();
+            this.updateFrostAuras();
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
         }
@@ -349,12 +348,15 @@ export class BattleScene extends Phaser.Scene {
         console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, found ${waves.length} waves`);
         this.waveManager.loadWaves(waves);
 
+        const commanderManager = CommanderManager.getInstance();
+        const commanderId = runState?.commanderRoster?.[0] ?? this.starterData.commander.id;
+        const commanderConfig = commanderManager.getCommander(commanderId) || this.starterData.commander;
         this.commanderSystem = new CommanderSystem(this, this.unitManager);
         // Only allow commander skill casting during the BATTLE phase.
         this.commanderSystem.setCanCastPredicate(
             () => this.gameState.getState().phase === 'BATTLE'
         );
-        this.commanderSystem.initialize(this.starterData.commander);
+        this.commanderSystem.initialize(commanderConfig);
 
         this.bindStateEvents();
         this.createPhaseControls();
@@ -1048,17 +1050,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private processPassiveSkills(): void {
-        const now = this.time.now;
-        const units = this.unitManager.getAllUnits();
-        units.forEach(unit => {
-            const skills = unit.getSkillTemplates().filter(s => s.trigger === 'passive_tick');
-            skills.forEach(skill => {
-                const tickMs = skill.auraTickMs ?? 1000;
-                const lastMap: Map<string, number> = (unit as any).lastPassiveTick ?? (unit as any).lastPassiveTick; // not directly accessible; store on unit via map
-            });
-        });
-        // Apply via helper below
-        this.applyPassiveTick(now);
+        this.applyPassiveTick(this.time.now);
     }
 
     // Helper using the unit's stored lastPassiveTick map via public methods
