@@ -11,7 +11,7 @@ import { FortressSystem } from '../systems/FortressSystem';
 import { WaveManager } from '../systems/WaveManager';
 import { CommanderSystem } from '../systems/CommanderSystem';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
-import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig } from '../types/ironwars';
+import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig, ICommanderFullConfig } from '../types/ironwars';
 
 type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
 type CommanderCastPayload = { screenX: number; screenY: number };
@@ -23,6 +23,7 @@ import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { FactionRegistry } from '../systems/FactionRegistry';
 import { CommanderManager } from '../systems/CommanderManager';
+import KeyCodes = Phaser.Input.Keyboard.KeyCodes;
 
 export class BattleScene extends Phaser.Scene {
     private isometricRenderer!: IsometricRenderer;
@@ -39,6 +40,9 @@ export class BattleScene extends Phaser.Scene {
     // COG_DOMINION_STARTER is now only used for Fortress/Commander layout fallback, 
     // data should come from DataManager
     private readonly starterData = COG_DOMINION_STARTER;
+    private commanderRoster: ICommanderFullConfig[] = [];
+    private activeCommanderIndex = 0;
+    private commanderHotkeys: Phaser.Input.Keyboard.Key[] = [];
 
     private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
     private currentDraggedCard?: ICard;
@@ -349,14 +353,27 @@ export class BattleScene extends Phaser.Scene {
         this.waveManager.loadWaves(waves);
 
         const commanderManager = CommanderManager.getInstance();
-        const commanderId = runState?.commanderRoster?.[0] ?? this.starterData.commander.id;
-        const commanderConfig = commanderManager.getCommander(commanderId) || this.starterData.commander;
+        const rosterIds = (runState?.commanderRoster ?? [this.starterData.commander.id]).slice(0, 5);
+        const fallbackCommander: ICommanderFullConfig = {
+            ...this.starterData.commander,
+            isStarter: true,
+            cardIds: this.starterData.deck.map(c => c.id)
+        };
+        this.commanderRoster = rosterIds
+            .map(id => commanderManager.getCommander(id))
+            .filter((cfg): cfg is ICommanderFullConfig => Boolean(cfg));
+        if (this.commanderRoster.length === 0) {
+            this.commanderRoster = [fallbackCommander];
+        }
+        this.activeCommanderIndex = 0;
+
         this.commanderSystem = new CommanderSystem(this, this.unitManager);
         // Only allow commander skill casting during the BATTLE phase.
         this.commanderSystem.setCanCastPredicate(
             () => this.gameState.getState().phase === 'BATTLE'
         );
-        this.commanderSystem.initialize(commanderConfig);
+        this.commanderSystem.initialize(this.commanderRoster[this.activeCommanderIndex]);
+        this.bindCommanderHotkeys();
 
         this.bindStateEvents();
         this.createPhaseControls();
@@ -364,6 +381,31 @@ export class BattleScene extends Phaser.Scene {
 
         // Start in building phase view, zoomed in on the fortress grid.
         this.updateCameraForPhase('PREPARATION');
+    }
+
+    private bindCommanderHotkeys(): void {
+        // Clean up old bindings
+        this.commanderHotkeys.forEach(key => key.destroy());
+        this.commanderHotkeys = [];
+
+        const keyboard = this.input.keyboard;
+        if (!keyboard) return;
+
+        const keys = [KeyCodes.ONE, KeyCodes.TWO, KeyCodes.THREE, KeyCodes.FOUR, KeyCodes.FIVE];
+        keys.forEach((code, idx) => {
+            const key = keyboard.addKey(code);
+            key.on('down', () => this.switchCommander(idx));
+            this.commanderHotkeys.push(key);
+        });
+    }
+
+    private switchCommander(index: number): void {
+        if (index < 0 || index >= this.commanderRoster.length) return;
+        if (this.activeCommanderIndex === index) return;
+        this.activeCommanderIndex = index;
+        const commander = this.commanderRoster[this.activeCommanderIndex];
+        console.log(`[BattleScene] Switched to commander ${commander.name} (${commander.id})`);
+        this.commanderSystem.initialize(commander);
     }
 
     private bindStateEvents() {
