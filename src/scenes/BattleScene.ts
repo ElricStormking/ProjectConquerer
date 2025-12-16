@@ -11,7 +11,7 @@ import { FortressSystem } from '../systems/FortressSystem';
 import { WaveManager } from '../systems/WaveManager';
 import { CommanderSystem } from '../systems/CommanderSystem';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
-import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig, ICommanderFullConfig } from '../types/ironwars';
+import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig, ICommanderFullConfig, IFortressConfig } from '../types/ironwars';
 
 type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
 type CommanderCastPayload = { screenX: number; screenY: number };
@@ -304,6 +304,11 @@ export class BattleScene extends Phaser.Scene {
             340, 200,
             cellWidth, cellHeight
         );
+        const runManager = RunProgressionManager.getInstance();
+        const runStateForUnlocks = runManager.getRunState();
+        const savedUnlocks = runStateForUnlocks?.fortressUnlockedCells?.[fortressConfig.id];
+        const initialUnlocked = savedUnlocks ?? this.computeInitialUnlockedCells(fortressConfig);
+        this.fortressSystem.setUnlockedCells(initialUnlocked);
         this.fortressSystem.initialize();
         
         // Calculate fortress core world position BEFORE creating the image
@@ -319,7 +324,6 @@ export class BattleScene extends Phaser.Scene {
         this.deckSystem = new DeckSystem(7);
         
         // Prefer the player's run deck from RunProgressionManager.
-        const runManager = RunProgressionManager.getInstance();
         const runDeck = runManager.getDeckSnapshot();
 
         if (runDeck.length > 0) {
@@ -397,6 +401,23 @@ export class BattleScene extends Phaser.Scene {
             key.on('down', () => this.switchCommander(idx));
             this.commanderHotkeys.push(key);
         });
+    }
+
+    private computeInitialUnlockedCells(fortress: IFortressGridConfig | IFortressConfig): string[] {
+        const centerX = Math.floor(fortress.gridWidth / 2);
+        const centerY = Math.floor(fortress.gridHeight / 2);
+        const cells = (fortress as any).cells as { x: number; y: number; type: string }[];
+        const sorted = cells
+            .filter(c => c.type !== 'blocked')
+            .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
+            .sort((a, b) => a.dist - b.dist);
+        const initial: string[] = [];
+        const target = 9;
+        for (const c of sorted) {
+            if (initial.length >= target) break;
+            initial.push(c.key);
+        }
+        return initial;
     }
 
     private switchCommander(index: number): void {

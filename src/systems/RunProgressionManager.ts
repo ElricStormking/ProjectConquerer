@@ -11,7 +11,8 @@ import {
     IMapNode,
     ICard,
     NodeType,
-    RelicTrigger
+    RelicTrigger,
+    IFortressConfig
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -57,13 +58,30 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             commanderRoster: [...this.runState.commanderRoster],
             cardCollection: [...(this.runState.cardCollection ?? [])],
             factionId: this.runState.factionId,
-            lives: this.runState.lives
+            lives: this.runState.lives,
+            fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined
         };
         return snapshot;
     }
 
     public getFactionId(): string {
         return this.runState?.factionId ?? 'cog_dominion';
+    }
+
+    private getInitialUnlockedCells(fortress: IFortressConfig): string[] {
+        const centerX = Math.floor(fortress.gridWidth / 2);
+        const centerY = Math.floor(fortress.gridHeight / 2);
+        const cellsSorted = fortress.cells
+            .filter(c => c.type !== 'blocked')
+            .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
+            .sort((a, b) => a.dist - b.dist);
+        const initial: string[] = [];
+        const targetCount = 9;
+        for (const c of cellsSorted) {
+            if (initial.length >= targetCount) break;
+            initial.push(c.key);
+        }
+        return initial;
     }
 
     public getStageSnapshot(stageIndex: number): IStageConfig | undefined {
@@ -99,6 +117,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const baseFortressHp = fortress?.maxHp ?? fallbackStarter.fortress.maxHp;
         const commanderId = starterCommander?.id ?? fallbackStarter.commander.id;
         const deck = starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck];
+        const fortressId = fortress?.id ?? fallbackStarter.fortress.id;
+        const fortressConfig = fortress ?? this.factionRegistry.getFortressConfig(fortressId) ?? fallbackStarter.fortress;
+        const initialUnlocked = this.getInitialUnlockedCells(fortressConfig);
         
         const startingStageIndex = 0;
         const entryNodeId = this.findEntryNodeId(startingStageIndex);
@@ -138,7 +159,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
-            factionId: factionId
+            factionId: factionId,
+            fortressUnlockedCells: { [fortressId]: initialUnlocked }
         };
 
         this.updateNodeAccessibility();
@@ -157,6 +179,10 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         
         this.buildStageGraph();
         this.runState = savedRun;
+        if (this.runState && !this.runState.fortressUnlockedCells) {
+            const fortress = this.factionRegistry.getFortressForFaction(this.runState.factionId) ?? COG_DOMINION_STARTER.fortress;
+            this.runState.fortressUnlockedCells = { [fortress.id]: this.getInitialUnlockedCells(fortress) };
+        }
         if (this.runState && (this.runState as any).lives === undefined) {
             this.runState.lives = 3;
         }
@@ -187,6 +213,14 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.saveManager.deleteSavedRun();
         this.runState = null;
         this.emit('run-abandoned');
+    }
+
+    public updateFortressUnlocks(fortressId: string, unlockedKeys: string[]): void {
+        if (!this.runState) return;
+        const record = this.runState.fortressUnlockedCells ?? {};
+        record[fortressId] = unlockedKeys;
+        this.runState.fortressUnlockedCells = record;
+        this.saveRun();
     }
 
     public moveToNode(nodeId: string): boolean {

@@ -14,6 +14,7 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
     private originY: number;
     private cellWidth: number;
     private cellHeight: number;
+    private unlockedCells: Set<string> = new Set();
 
     constructor(
         scene: Phaser.Scene,
@@ -41,6 +42,12 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
                 enhancementLevel: 0
             });
         });
+        // Default unlocked to all buildable/core until overridden
+        const defaults: string[] = [];
+        this.cellMap.forEach(cell => {
+            if (cell.type !== 'blocked') defaults.push(this.key(cell.x, cell.y));
+        });
+        this.unlockedCells = new Set(defaults);
     }
 
     public initialize(): void {
@@ -59,7 +66,41 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
 
     public isValidCell(x: number, y: number): boolean {
         const cell = this.getCell(x, y);
-        return !!cell && cell.type === 'buildable' && !cell.occupantId;
+        return !!cell && cell.type === 'buildable' && this.isUnlocked(x, y) && !cell.occupantId;
+    }
+
+    public isUnlocked(x: number, y: number): boolean {
+        return this.unlockedCells.has(this.key(x, y));
+    }
+
+    public setUnlockedCells(keys: string[]): void {
+        this.unlockedCells = new Set(keys);
+        if (this.placementGraphics) {
+            this.showPlacementHints();
+        }
+    }
+
+    public getUnlockedCellKeys(): string[] {
+        return Array.from(this.unlockedCells);
+    }
+
+    public unlockNextCells(count: number): string[] {
+        if (count <= 0) return [];
+        const candidates = this.getExpandableCells();
+        const added: string[] = [];
+        for (const c of candidates) {
+            if (added.length >= count) break;
+            if (!this.unlockedCells.has(c.key)) {
+                this.unlockedCells.add(c.key);
+                added.push(c.key);
+            }
+        }
+        if (added.length > 0) {
+            if (this.placementGraphics) {
+                this.showPlacementHints();
+            }
+        }
+        return added;
     }
 
     public occupyCell(x: number, y: number, occupantId: string, occupantType?: string): void {
@@ -142,6 +183,10 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
                 this.drawInvalidCellMarker(cell.x, cell.y);
                 return;
             }
+            if (!this.isUnlocked(cell.x, cell.y)) {
+                this.drawLockedCellMarker(cell.x, cell.y);
+                return;
+            }
             const valid = this.isValidCell(cell.x, cell.y);
             if (valid) {
                 const points = this.getDiamondPoints(cell.x, cell.y);
@@ -161,6 +206,10 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
 
     public getCellDimensions(): { width: number; height: number } {
         return { width: this.cellWidth, height: this.cellHeight };
+    }
+
+    public getFortressId(): string {
+        return this.config.id;
     }
 
     private drawGrid(): void {
@@ -195,6 +244,23 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         this.placementGraphics.strokePoints(points, true);
         this.placementGraphics.fillStyle(0xff4d4d, 0.12);
         this.placementGraphics.fillPoints(points, true);
+    }
+
+    private drawLockedCellMarker(gridX: number, gridY: number): void {
+        const points = this.getDiamondPoints(gridX, gridY);
+        this.placementGraphics.lineStyle(2, 0x777777, 0.6);
+        this.placementGraphics.strokePoints(points, true);
+        this.placementGraphics.fillStyle(0x555555, 0.12);
+        this.placementGraphics.fillPoints(points, true);
+    }
+
+    private getExpandableCells(): { key: string; dist: number }[] {
+        const centerX = Math.floor(this.config.gridWidth / 2);
+        const centerY = Math.floor(this.config.gridHeight / 2);
+        return Array.from(this.cellMap.values())
+            .filter(c => c.type === 'buildable' && !this.unlockedCells.has(this.key(c.x, c.y)))
+            .map(c => ({ key: this.key(c.x, c.y), dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
+            .sort((a, b) => a.dist - b.dist);
     }
 
     private key(x: number, y: number): string {

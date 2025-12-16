@@ -6,6 +6,7 @@ import { FortressSystem } from './FortressSystem';
 import { UnitManager } from './UnitManager';
 import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { DataManager } from './DataManager';
+import { RunProgressionManager } from './RunProgressionManager';
 
 export class CardSystem {
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
@@ -59,6 +60,10 @@ export class CardSystem {
         const cell = this.fortressSystem.getCell(gridX, gridY);
         if (!cell) {
             console.log(`[CardSystem] ❌ No cell at (${gridX}, ${gridY})`);
+            return false;
+        }
+        if (!this.fortressSystem.isUnlocked(gridX, gridY)) {
+            console.log(`[CardSystem] ❌ Cell is locked; expand fortress to use more slots`);
             return false;
         }
         if (cell.type === 'blocked') {
@@ -303,9 +308,51 @@ export class CardSystem {
             case 'cannon_tower':
                 this.createCannonTower(worldPos.x, worldPos.y, gridX, gridY, effectId);
                 return true;
+            case 'jade_expansion':
+            case 'jade_resource_gathering':
+                return this.unlockFortressCells(effectId === 'jade_resource_gathering' ? 5 : 4);
             default:
                 return false;
         }
+    }
+
+    private unlockFortressCells(count: number): boolean {
+        const newlyUnlocked = this.fortressSystem.unlockNextCells(count);
+        if (newlyUnlocked.length === 0) {
+            console.log('[CardSystem] No fortress cells available to unlock');
+            return false;
+        }
+
+        // Persist to run state
+        const runManager = RunProgressionManager.getInstance();
+        const fortressId = this.fortressSystem.getFortressId();
+        const run = runManager.getRunState();
+        if (run) {
+            const updated = new Set(run.fortressUnlockedCells?.[fortressId] ?? []);
+            newlyUnlocked.forEach(k => updated.add(k));
+            runManager.updateFortressUnlocks(fortressId, Array.from(updated));
+        }
+
+        // Visual feedback
+        newlyUnlocked.forEach(key => {
+            const [xStr, yStr] = key.split(',');
+            const gx = Number(xStr);
+            const gy = Number(yStr);
+            const pos = this.fortressSystem.gridToWorld(gx, gy);
+            const flash = this.scene.add.graphics();
+            flash.setDepth(4000);
+            flash.lineStyle(2, 0x00ffaa, 0.9);
+            flash.strokeCircle(pos.x, pos.y, 26);
+            this.scene.tweens.add({
+                targets: flash,
+                alpha: 0,
+                scale: { from: 1, to: 1.4 },
+                duration: 600,
+                onComplete: () => flash.destroy()
+            });
+        });
+
+        return true;
     }
 
     private createBarrierField(x: number, y: number, gridX: number, gridY: number, spellId: string) {

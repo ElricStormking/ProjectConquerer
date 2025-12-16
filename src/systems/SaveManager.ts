@@ -81,7 +81,8 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             completedNodeIds: [...runState.completedNodeIds],
             relics: [...runState.relics],
             curses: [...runState.curses],
-            commanderRoster: [...runState.commanderRoster]
+            commanderRoster: [...runState.commanderRoster],
+            fortressUnlockedCells: runState.fortressUnlockedCells
         };
         this.persist();
         console.log('[SaveManager] Run saved');
@@ -99,7 +100,8 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             completedNodeIds: [...run.completedNodeIds],
             relics: [...run.relics],
             curses: [...run.curses],
-            commanderRoster: [...run.commanderRoster]
+            commanderRoster: [...run.commanderRoster],
+            fortressUnlockedCells: run.fortressUnlockedCells ? { ...run.fortressUnlockedCells } : undefined
         };
     }
 

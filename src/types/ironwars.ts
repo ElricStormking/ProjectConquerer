@@ -348,6 +348,11 @@ export interface IRunState {
     curses: string[];
     commanderRoster: string[];
     factionId: string;
+    /**
+     * Tracks which fortress grid cells are unlocked for building per fortress id.
+     * Keys: fortressId, Values: array of "x,y" strings representing unlocked cells.
+     */
+    fortressUnlockedCells?: Record<string, string[]>;
 }
 
 export type UnitSkillTrigger = 'on_attack' | 'on_hit' | 'on_kill' | 'passive_tick' | 'on_death' | 'on_spawn';
