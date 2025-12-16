@@ -171,6 +171,7 @@ export class DataManager {
         if (!csv) return;
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         const toNum = (val: any): number | undefined => {
+            if (val === undefined || val === null || val === '') return undefined;
             const n = Number(val);
             return Number.isFinite(n) ? n : undefined;
         };
