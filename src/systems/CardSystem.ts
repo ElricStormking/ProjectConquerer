@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CardType, ICardPlacementPayload } from '../types/ironwars';
+import { CardType, ICardPlacementPayload, ICard } from '../types/ironwars';
 import { DeckSystem } from './DeckSystem';
 import { GameStateManager } from './GameStateManager';
 import { FortressSystem } from './FortressSystem';
@@ -77,8 +77,23 @@ export class CardSystem {
         
         // Check for ENHANCEMENT (Merge)
         if (cell.occupantId) {
-            const targetId = card.type === CardType.UNIT ? card.unitId : 
-                             card.type === CardType.SPELL ? card.spellEffectId : undefined;
+            let targetId: string | undefined;
+            switch (card.type) {
+                case CardType.UNIT:
+                    targetId = card.unitId;
+                    break;
+                case CardType.SPELL:
+                    targetId = card.spellEffectId;
+                    break;
+                case CardType.STRUCTURE:
+                    targetId = card.structureId;
+                    break;
+                case CardType.MODULE:
+                    targetId = card.moduleId;
+                    break;
+                default:
+                    targetId = undefined;
+            }
             
             if (cell.occupantType && cell.occupantType === targetId) {
                 if ((cell.enhancementLevel || 0) < 3) {
@@ -113,6 +128,12 @@ export class CardSystem {
                 break;
             case CardType.SPELL:
                 success = this.castSpell(card.spellEffectId, gridX, gridY);
+                break;
+            case CardType.STRUCTURE:
+                success = this.placeStructure(card.structureId, gridX, gridY, card);
+                break;
+            case CardType.MODULE:
+                success = this.placeModule(card.moduleId, gridX, gridY, card);
                 break;
             default:
                 success = false;
@@ -315,6 +336,72 @@ export class CardSystem {
             default:
                 return false;
         }
+    }
+
+    private placeStructure(structureId: string | undefined, gridX: number, gridY: number, card: ICard): boolean {
+        if (!structureId) return false;
+        const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
+        const dm = DataManager.getInstance();
+        const config = dm.getBuildingConfig(structureId);
+
+        // Choose sprite key: prefer buildings.csv sprite_key, then a convention, then card art.
+        const spriteKeyFromConfig: string | undefined = config?.sprite_key;
+        const fallbackTextureKey = `building_${structureId}`;
+        let textureKey: string | undefined = spriteKeyFromConfig;
+        if (!textureKey || !this.scene.textures.exists(textureKey)) {
+            textureKey = this.scene.textures.exists(fallbackTextureKey)
+                ? fallbackTextureKey
+                : (this.scene.textures.exists(card.portraitKey) ? card.portraitKey : undefined);
+        }
+
+        if (!textureKey || !this.scene.textures.exists(textureKey)) {
+            console.warn(`[CardSystem] No texture found for structure ${structureId}`);
+            return false;
+        }
+
+        const occupantId = `${structureId}_${gridX}_${gridY}`;
+        this.fortressSystem.occupyCell(gridX, gridY, occupantId, structureId);
+
+        const sprite = this.scene.add.image(worldPos.x, worldPos.y, textureKey);
+        sprite.setOrigin(0.5, 0.8);
+        this.fitBuildingToFortressCell(sprite);
+        sprite.setDepth(worldPos.y + 3600);
+        return true;
+    }
+
+    private placeModule(moduleId: string | undefined, gridX: number, gridY: number, card: ICard): boolean {
+        if (!moduleId) return false;
+        const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
+
+        const occupantId = `module_${moduleId}_${gridX}_${gridY}`;
+        this.fortressSystem.occupyCell(gridX, gridY, occupantId, moduleId);
+
+        // Visual: small node using card art, scaled to fortress cell.
+        const textureKey = this.scene.textures.exists(card.portraitKey) ? card.portraitKey : undefined;
+        if (textureKey) {
+            const sprite = this.scene.add.image(worldPos.x, worldPos.y, textureKey);
+            sprite.setOrigin(0.5, 0.8);
+            this.fitBuildingToFortressCell(sprite);
+            sprite.setScale(sprite.scale * 0.7); // Modules appear smaller than full buildings
+            sprite.setDepth(worldPos.y + 3600);
+        } else {
+            // Fallback simple diamond marker.
+            const g = this.scene.add.graphics();
+            g.setDepth(worldPos.y + 3600);
+            g.lineStyle(2, 0x33ffcc, 0.9);
+            g.fillStyle(0x0b3b39, 0.6);
+            const size = 18;
+            g.beginPath();
+            g.moveTo(worldPos.x, worldPos.y - size);
+            g.lineTo(worldPos.x + size, worldPos.y);
+            g.lineTo(worldPos.x, worldPos.y + size);
+            g.lineTo(worldPos.x - size, worldPos.y);
+            g.closePath();
+            g.fillPath();
+            g.strokePath();
+        }
+
+        return true;
     }
 
     private unlockAdjacentCells(gridX: number, gridY: number, max: number): boolean {

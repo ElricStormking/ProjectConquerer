@@ -169,6 +169,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');
         this.load.image('building_armor_shop', 'assets/buildings/cog_buildings/Building_ArmorShop.png');
         this.load.image('building_fortress_core', 'assets/buildings/cog_buildings/Building_FortressCore.png');
+        // Jade Dynasty buildings
+        this.load.image('building_chi_resonance_tower', 'assets/buildings/jade_buildings/Building_Chi_Resonance_Tower.png');
+        this.load.image('building_smoke_bomb_generator', 'assets/buildings/jade_buildings/Building_Smoke_Bomb_Generator.png');
+        this.load.image('building_jade_archer_turret', 'assets/buildings/jade_buildings/Building_Jade_Archer_Turret.png');
         // Card portraits (unit and spell cards)
         this.load.image('card_soldier', 'assets/cards/card_soldier.png');
         this.load.image('card_railgunner', 'assets/cards/card_railgunner.png');

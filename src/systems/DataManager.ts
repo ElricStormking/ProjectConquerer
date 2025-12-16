@@ -325,6 +325,10 @@ export class DataManager {
         });
     }
 
+    public getBuildingConfig(id: string): any | undefined {
+        return this.buildings.get(id);
+    }
+
     private parseStages(csv: string): void {
         if (!csv) return;
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });

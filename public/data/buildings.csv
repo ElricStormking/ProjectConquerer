@@ -1,3 +1,6 @@
 id,name,max_hp,width,height,effect_id,sprite_key
-cannon_tower,Cannon Tower,200,1,1,cannon_shoot,building_cannon
-armor_shop,Armor Shop,150,1,1,shield_aura,building_shop
+cannon_tower,Cannon Tower,200,1,1,cannon_shoot,building_cannon_tower
+armor_shop,Armor Shop,150,1,1,shield_aura,building_armor_shop
+jade_resonance_tower,Chi Resonance Tower,220,1,1,jade_resonance_pulse,building_chi_resonance_tower
+jade_smoke_bomb,Smoke Bomb Generator,180,1,1,jade_smoke_field,building_smoke_bomb_generator
+jade_archer_turret,Jade Archer Turret,200,1,1,jade_archer_volley,building_jade_archer_turret
