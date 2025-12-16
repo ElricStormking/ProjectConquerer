@@ -103,6 +103,24 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         return added;
     }
 
+    public unlockSpecificCells(cells: { x: number; y: number }[], maxCount?: number): string[] {
+        const added: string[] = [];
+        for (const c of cells) {
+            if (maxCount && added.length >= maxCount) break;
+            const key = this.key(c.x, c.y);
+            const cell = this.cellMap.get(key);
+            if (!cell) continue;
+            if (cell.type !== 'buildable') continue;
+            if (this.unlockedCells.has(key)) continue;
+            this.unlockedCells.add(key);
+            added.push(key);
+        }
+        if (added.length > 0 && this.placementGraphics) {
+            this.showPlacementHints();
+        }
+        return added;
+    }
+
     public occupyCell(x: number, y: number, occupantId: string, occupantType?: string): void {
         const cell = this.getCell(x, y);
         if (!cell) return;
@@ -217,6 +235,7 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         this.gridGraphics.lineStyle(1.5, 0xffffff, 0.25);
         this.config.cells.forEach(cell => {
             if (cell.type === 'blocked') return;
+            if (cell.type !== 'core' && !this.isUnlocked(cell.x, cell.y)) return;
             const points = this.getDiamondPoints(cell.x, cell.y);
             this.gridGraphics.strokePoints(points, true);
             if (cell.type === 'core') {

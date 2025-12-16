@@ -12,7 +12,8 @@ import {
     ICard,
     NodeType,
     RelicTrigger,
-    IFortressConfig
+    IFortressConfig,
+    IFortressCell
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -71,17 +72,33 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     private getInitialUnlockedCells(fortress: IFortressConfig): string[] {
         const centerX = Math.floor(fortress.gridWidth / 2);
         const centerY = Math.floor(fortress.gridHeight / 2);
-        const cellsSorted = fortress.cells
-            .filter(c => c.type !== 'blocked')
-            .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
-            .sort((a, b) => a.dist - b.dist);
-        const initial: string[] = [];
-        const targetCount = 9;
-        for (const c of cellsSorted) {
-            if (initial.length >= targetCount) break;
-            initial.push(c.key);
+        const cellByKey = new Map<string, IFortressCell>(fortress.cells.map(c => [`${c.x},${c.y}`, c]));
+
+        const initialSet = new Set<string>();
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const x = centerX + dx;
+                const y = centerY + dy;
+                const key = `${x},${y}`;
+                const cell = cellByKey.get(key);
+                if (cell && cell.type !== 'blocked') {
+                    initialSet.add(key);
+                }
+            }
         }
-        return initial;
+
+        const targetCount = 9;
+        if (initialSet.size < targetCount) {
+            const sorted = fortress.cells
+                .filter(c => c.type !== 'blocked')
+                .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
+                .sort((a, b) => a.dist - b.dist);
+            for (const c of sorted) {
+                if (initialSet.size >= targetCount) break;
+                initialSet.add(c.key);
+            }
+        }
+        return Array.from(initialSet);
     }
 
     public getStageSnapshot(stageIndex: number): IStageConfig | undefined {

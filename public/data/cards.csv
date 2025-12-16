@@ -27,7 +27,7 @@ card_jade_crossbow_gunners,Repeating Crossbow Gunners,unit,3,chi_flow,jade_cross
 card_jade_war_drum,War Drum of the South Wind,structure,3,chi_flow,jade_war_drum,card_jade_war_drum,Aura: +10% AS, +20% MS on spawn.,common
 card_jade_resonance_tower,Chi Resonance Tower,structure,4,chi_flow,jade_resonance_tower,card_jade_resonance_tower,Pulses stun every few seconds.,rare
 card_jade_amplifier,Chi Amplifier Node,module,3,chi_flow,jade_amplifier,card_jade_amplifier,+20% stun duration, +Chi damage to melee.,rare
-card_jade_expansion_slots,Expansion Slots,spell,2,chi_flow,jade_expansion,card_placeholder,Expand an empty slot next to units.,common
+card_jade_expansion_slots,Expansion Slots,spell,2,chi_flow,jade_expansion,card_placeholder,Place on an empty slot to unlock its 4 adjacent slots.,common
 card_jade_move_units,Move the Units or Building,spell,3,chi_flow,jade_move_units,card_placeholder,Relocate a unit or building to an adjacent empty slot.,common
 
 # Jade Dynasty – Hanami Reika (starter set)

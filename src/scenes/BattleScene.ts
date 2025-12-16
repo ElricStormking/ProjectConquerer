@@ -407,17 +407,33 @@ export class BattleScene extends Phaser.Scene {
         const centerX = Math.floor(fortress.gridWidth / 2);
         const centerY = Math.floor(fortress.gridHeight / 2);
         const cells = (fortress as any).cells as { x: number; y: number; type: string }[];
-        const sorted = cells
-            .filter(c => c.type !== 'blocked')
-            .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
-            .sort((a, b) => a.dist - b.dist);
-        const initial: string[] = [];
-        const target = 9;
-        for (const c of sorted) {
-            if (initial.length >= target) break;
-            initial.push(c.key);
+        const cellByKey = new Map<string, { x: number; y: number; type: string }>(cells.map(c => [`${c.x},${c.y}`, c]));
+
+        const initialSet = new Set<string>();
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const x = centerX + dx;
+                const y = centerY + dy;
+                const key = `${x},${y}`;
+                const cell = cellByKey.get(key);
+                if (cell && cell.type !== 'blocked') {
+                    initialSet.add(key);
+                }
+            }
         }
-        return initial;
+
+        const target = 9;
+        if (initialSet.size < target) {
+            const sorted = cells
+                .filter(c => c.type !== 'blocked')
+                .map(c => ({ key: `${c.x},${c.y}`, dist: Math.abs(c.x - centerX) + Math.abs(c.y - centerY) }))
+                .sort((a, b) => a.dist - b.dist);
+            for (const c of sorted) {
+                if (initialSet.size >= target) break;
+                initialSet.add(c.key);
+            }
+        }
+        return Array.from(initialSet);
     }
 
     private switchCommander(index: number): void {

@@ -309,11 +309,30 @@ export class CardSystem {
                 this.createCannonTower(worldPos.x, worldPos.y, gridX, gridY, effectId);
                 return true;
             case 'jade_expansion':
+                return this.unlockAdjacentCells(gridX, gridY, 4);
             case 'jade_resource_gathering':
-                return this.unlockFortressCells(effectId === 'jade_resource_gathering' ? 5 : 4);
+                return this.unlockFortressCells(5);
             default:
                 return false;
         }
+    }
+
+    private unlockAdjacentCells(gridX: number, gridY: number, max: number): boolean {
+        const offsets = [
+            { x: 1, y: 0 },
+            { x: -1, y: 0 },
+            { x: 0, y: 1 },
+            { x: 0, y: -1 }
+        ];
+        const targets = offsets.map(o => ({ x: gridX + o.x, y: gridY + o.y }));
+        const newlyUnlocked = this.fortressSystem.unlockSpecificCells(targets, max);
+        if (newlyUnlocked.length === 0) {
+            console.log('[CardSystem] No adjacent fortress cells available to unlock');
+            return false;
+        }
+        this.persistUnlocks(newlyUnlocked);
+        this.flashUnlocked(newlyUnlocked);
+        return true;
     }
 
     private unlockFortressCells(count: number): boolean {
@@ -334,7 +353,13 @@ export class CardSystem {
         }
 
         // Visual feedback
-        newlyUnlocked.forEach(key => {
+        this.flashUnlocked(newlyUnlocked);
+        return true;
+    }
+
+
+    private flashUnlocked(keys: string[]): void {
+        keys.forEach(key => {
             const [xStr, yStr] = key.split(',');
             const gx = Number(xStr);
             const gy = Number(yStr);
@@ -351,10 +376,17 @@ export class CardSystem {
                 onComplete: () => flash.destroy()
             });
         });
-
-        return true;
     }
 
+    private persistUnlocks(newlyUnlocked: string[]): void {
+        const runManager = RunProgressionManager.getInstance();
+        const run = runManager.getRunState();
+        const fortressId = this.fortressSystem.getFortressId();
+        if (!run) return;
+        const updated = new Set(run.fortressUnlockedCells?.[fortressId] ?? []);
+        newlyUnlocked.forEach(k => updated.add(k));
+        runManager.updateFortressUnlocks(fortressId, Array.from(updated));
+    }
     private createBarrierField(x: number, y: number, gridX: number, gridY: number, spellId: string) {
         const occupantId = `armor_shop_${this.buildingBuffs.length}`;
         this.fortressSystem.occupyCell(gridX, gridY, occupantId, spellId);
