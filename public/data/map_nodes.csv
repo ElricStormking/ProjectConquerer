@@ -12,7 +12,7 @@ id,stage_index,type,tier,encounter_id,pos_x,pos_y,icon_key,reward_tier,next_node
 4A_1,0,rest,2,rest_s1_camp,0.23,0.9,node_rest,2,"[""5A_1"",""5B_1""]"
 5D_1,0,elite,2,elite_jade_t2,0.29,0.3,node_elite,3,"[""6C_1"", ""6D_1""]"
 5B_1,0,battle,2,battle_jade_t1,0.29,0.7,node_battle,3,"[""6A_1"", ""6C_1""]"
-5A_1,0,event,2,event_shrine_s1,0.29,0.9,node_battle,3,"[""6A_1""]"
+5A_1,0,event,2,event_shrine_s1,0.29,0.9,node_event,3,"[""6A_1""]"
 6D_1,0,event,2,event_shrine_s1,0.35,0.3,node_event,3,"[""7C_1""]"
 6C_1,0,shop,2,shop_greaseworks,0.35,0.5,node_shop,3,"[""7C_1""]"
 6A_1,0,battle,2,battle_jade_t2,0.35,0.9,node_battle,3,"[""7B_1""]"
