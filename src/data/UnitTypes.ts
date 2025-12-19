@@ -52,6 +52,11 @@ export interface UnitTemplate {
     unitClass: 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner';
     size: 'small' | 'normal' | 'large';
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    /**
+     * How many copies of this unit a deployment card should spawn during
+     * the preparation phase. If undefined, falls back to the legacy default.
+     */
+    spawnAmount?: number;
     spriteScale?: number;
     spriteOffsetY?: number;
     baseStats: {

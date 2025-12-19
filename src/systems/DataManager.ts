@@ -91,6 +91,18 @@ export class DataManager {
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
         result.data.forEach((row: any) => {
+            const rawSpawnAmount = row.spawn_amount;
+            const parsedSpawnAmount =
+                typeof rawSpawnAmount === 'number'
+                    ? rawSpawnAmount
+                    : rawSpawnAmount !== undefined && rawSpawnAmount !== null && rawSpawnAmount !== ''
+                    ? Number(rawSpawnAmount)
+                    : undefined;
+            const spawnAmount =
+                typeof parsedSpawnAmount === 'number' && Number.isFinite(parsedSpawnAmount) && parsedSpawnAmount > 0
+                    ? parsedSpawnAmount
+                    : undefined;
+
             const template: UnitTemplate = {
                 type: row.id as UnitType, // Casting to UnitType, assuming CSV IDs match enum
                 name: row.name,
@@ -98,6 +110,7 @@ export class DataManager {
                 unitClass: row.role, // 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner'
                 size: row.size, // 'small' | 'normal' | 'large'
                 rarity: row.rarity,
+                spawnAmount,
                 spriteScale: row.sprite_scale ? Number(row.sprite_scale) : undefined,
                 spriteOffsetY: row.sprite_offset_y ? Number(row.sprite_offset_y) : undefined,
                 baseStats: {

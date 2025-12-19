@@ -246,11 +246,8 @@ export class CardSystem {
 
         // Spawn logic using unit template
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
-        const offsets = [
-            { x: -20, y: -10 },
-            { x:  20, y: -10 },
-            { x:   0, y:  12 }
-        ];
+        const spawnCount = Math.max(1, unitTemplate.spawnAmount ?? 3);
+        const offsets = this.getSpawnOffsets(spawnCount);
 
         const spawned: any[] = [];
         offsets.forEach(offset => {
@@ -291,12 +288,9 @@ export class CardSystem {
     }
 
     private spawnUnitFromLegacyConfig(unitConfig: any, gridX: number, gridY: number): boolean {
-         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
-        const offsets = [
-            { x: -20, y: -10 },
-            { x:  20, y: -10 },
-            { x:   0, y:  12 }
-        ];
+        const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
+        // Legacy starter-data path retains the original behavior of spawning 3 units.
+        const offsets = this.getSpawnOffsets(3);
 
         const spawned: any[] = [];
         offsets.forEach(offset => {
@@ -313,6 +307,47 @@ export class CardSystem {
 
         this.fortressSystem.occupyCell(gridX, gridY, spawned[0].getId());
         return true;
+    }
+
+    /**
+     * Compute local offsets for spawning multiple units around a fortress cell center.
+     * Preserves the original triangle layout for 3 units and uses sensible patterns for other counts.
+     */
+    private getSpawnOffsets(count: number): Array<{ x: number; y: number }> {
+        if (count <= 0) {
+            count = 1;
+        }
+
+        if (count === 1) {
+            return [{ x: 0, y: 0 }];
+        }
+
+        if (count === 2) {
+            return [
+                { x: -18, y: 0 },
+                { x: 18, y: 0 }
+            ];
+        }
+
+        if (count === 3) {
+            // Original offsets used before spawn_amount was introduced.
+            return [
+                { x: -20, y: -10 },
+                { x: 20, y: -10 },
+                { x: 0, y: 12 }
+            ];
+        }
+
+        const radius = 20;
+        const offsets: Array<{ x: number; y: number }> = [];
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count;
+            offsets.push({
+                x: Math.round(Math.cos(angle) * radius),
+                y: Math.round(Math.sin(angle) * radius)
+            });
+        }
+        return offsets;
     }
 
     private castSpell(effectId: string | undefined, gridX: number, gridY: number): boolean {

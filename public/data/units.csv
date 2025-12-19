@@ -1,42 +1,42 @@
-id,name,role,faction_id,rarity,max_hp,damage,armor,move_speed,attack_speed,range,mass,size,sprite_key,description,skill_primary_id,skill_secondary_id,passive_skill_id,sprite_scale,sprite_offset_y
-chronotemporal,Chronotemporal,support,player,legendary,80,18,3,45,1.2,100,40,normal,chronotemporal,Time-manipulating support mage,skill_basic_ranged,,,1,0
-sniper,Sniper,ranged,player,rare,55,25,1,40,0.8,500,48,small,sniper,Elite long-range marksman,skill_basic_ranged,,,1,0
-dark_mage,Dark Mage,ranged,player,epic,65,22,2,35,0.9,300,36,normal,dark_mage,Master of dark magic and curses,skill_basic_ranged,,,1,0
-warrior,Warrior,frontline,player,common,200,16,6,50,1,30,100,normal,warrior,Stalwart frontline fighter,skill_basic_melee,,,1,0
-ninja,Ninja,frontline,player,rare,70,28,2,80,2,35,30,small,ninja,Swift assassin with stealth abilities,skill_basic_melee,,,1,0
-shotgunner,Shotgunner,ranged,player,epic,90,35,4,45,0.6,200,64,normal,shotgunner,Close-range specialist with devastating firepower,skill_basic_ranged,,,1,0
-cog_soldier,Feral Warrior,frontline,cog_dominion,common,160,18,5,70,0.66,60,85,normal,warrior,Disciplined frontline infantry of the Cog Dominion,skill_basic_melee,,,1,0
-cog_railgunner,Railgunner,ranged,cog_dominion,rare,110,32,2,55,0.7,420,60,normal,sniper,Precision long-range specialist,skill_basic_ranged,,,1,0
-cog_aegis_tank,Aegis Tank,frontline,cog_dominion,rare,420,24,9,40,0.5,90,100,large,shotgunner,Slow but indestructible bastion tank,skill_basic_melee,,,1,0
-cog_medic_drone,Medic Druid,support,cog_dominion,rare,90,5,1,40,0.6,120,140,small,chronotemporal,Support unit that restores allied durability,skill_basic_ranged,,,1,0
-cog_thunder_cannon,Thunder Mage,siege,cog_dominion,epic,260,55,4,30,0.45,520,120,large,dark_mage,Heavy siege artillery of the Cog Dominion,skill_basic_ranged,,,1,0
-raider_grunt,Iron Raider,frontline,iron_raiders,common,130,16,3,65,0.7,50,70,normal,warrior,Aggressive melee attacker,skill_basic_melee,,,1,0
-raider_bomber,Siege Bomber,siege,iron_raiders,rare,200,40,2,45,0.55,380,110,large,shotgunner,Launches explosives at fortresses,skill_basic_ranged,,,1,0
-raider_boss,Iron Juggernaut,frontline,iron_raiders,legendary,1260,72,10,30,0.33,120,900,large,shotgunner,Massive raider tank with crushing area attacks,skill_basic_melee,,,3,0
-raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,22,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield,skill_basic_melee,,,1,0
-raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,50,0.9,420,58,normal,sniper,Long-range raider marksman supporting the boss,skill_basic_ranged,,,1,0
-jade_azure_spear,Azure Spear Chargers,frontline,jade_dynasty,common,190,22,5,70,1.25,45,85,normal,jade_azure_spear,Long reach melee; opener stun and chi gain on kill,skill_jade_azure_spear,,,1.2,30
-jade_storm_monks,Storm Monks,frontline,jade_dynasty,rare,170,24,4,80,1.5,40,80,normal,jade_storm_monks,Fast combo melee that can stun on dual hits,skill_jade_storm_monks,,,1.2,10
-jade_crossbow_gunners,Repeating Crossbow Gunners,ranged,jade_dynasty,common,120,16,3,60,1.1,360,70,normal,jade_crossbow_gunners,Ranged support that applies vulnerability and slow,skill_jade_crossbow_slow,,,1,8
-jade_halberd_guardian,Jade Halberd Guardian,frontline,jade_dynasty,rare,340,28,7,55,0.85,55,120,large,jade_halberd_guardian,Tank with wide cleave and shock slam,skill_jade_halberd_slam,,,1,14
-jade_shrine_oni,Shrine Oni Guardian,frontline,jade_dynasty,rare,360,26,8,50,0.8,50,130,large,jade_shrine_oni,Spirit guardian that taunts and gains chi shield,skill_basic_melee,,skill_jade_spirit_lantern_aura,1.8,16
-jade_shikigami_fox,Golden Shikigami Fox,ranged,jade_dynasty,rare,140,20,3,75,1.2,320,60,small,jade_shikigami_fox,Agile spirit firing homing flames with mini-stun,skill_jade_fox_sting,,,1,6
-jade_chi_dragoon,Chi Dragoon,frontline,jade_dynasty,rare,260,30,6,65,1,55,110,normal,jade_chi_dragoon,Bruiser that scales damage with chi flow,skill_jade_dragoon_shock,,,1.1,14
-jade_shuriken_ninjas,Shuriken Ninjas,ranged,jade_dynasty,common,110,17,2,85,1.4,300,55,small,jade_shuriken_ninjas,Throwing daggers with crit bleed and stealth on kill,skill_jade_shuriken_slow,,,1,6
-jade_shadowblade_assassins,Shadowblade Assassins,frontline,jade_dynasty,rare,150,26,3,90,1.6,40,60,small,jade_shadowblade_assassins,Stealth assassin with opening crit and brief stun,skill_jade_shadowblade_crit,,,1,6
-jade_spirit_lantern,Spirit Lantern Healer,support,jade_dynasty,common,130,10,2,55,1,140,70,normal,jade_spirit_lantern,Healing aura and debuff field spirit,skill_basic_ranged,skill_jade_spirit_lantern_slow,skill_jade_spirit_lantern_heal,1,8
-jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death,skill_basic_melee,skill_jade_paper_doll_death,,1,10
-jade_blue_oni,Blue Oni Bruiser,frontline,jade_dynasty,rare,240,32,6,65,1,55,105,normal,jade_blue_oni,Bruiser applying frost chi slow that scales with chi flow,skill_jade_blue_oni_slow,,,1,12
-shade_servant,Shade Servant,frontline,frost_clan,common,160,20,3,75,1.4,45,80,small,frost_shade_servant,Vampire melee with chance to convert kills into Flesh Weavers,skill_basic_melee,,,1,6
-putrid_archer,Putrid Archer,ranged,frost_clan,common,130,22,2,65,1,360,70,normal,frost_putrid_archer,Ranged undead archer that slows enemies with decay gas,skill_putrid_archer_cloud,,,1,8
-eternal_watcher,Eternal Watcher,frontline,frost_clan,epic,520,34,8,45,0.7,60,160,large,frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths,skill_basic_melee,,,2,18
-cursed_walker,Cursed Walker,support,frost_clan,rare,260,12,4,55,0.9,160,90,normal,frost_cursed_walker,Lich aura makes nearby undead immune to debuffs,skill_basic_ranged,,skill_cursed_walker_aura,1.6,10
-bloodline_noble,Bloodline Noble,frontline,frost_clan,rare,220,28,5,80,1.2,55,100,normal,frost_bloodline_noble,Vampire melee applying bleed on hit,skill_bloodline_noble_bleed,,,1.4,10
-agony_screamer,Agony Screamer,ranged,frost_clan,rare,150,24,3,70,1.1,260,90,normal,frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage,skill_agony_screamer_splash,,,1,8
-flesh_weaver,Flesh Weaver,frontline,frost_clan,common,80,11,2,90,1,35,75,small,frost_shade_servant,Fodder abomination that explodes on death,skill_basic_melee,skill_flesh_weaver_explode,,1,6
-bound_spectre,Bound Spectre,frontline,frost_clan,common,140,14,2,85,1.3,45,65,small,frost_shade_servant,Curse aura that weakens nearby enemy damage,skill_basic_melee,,skill_bound_spectre_curse,1.4,6
-abomination,Abomination,frontline,frost_clan,rare,600,32,9,45,0.65,55,200,large,frost_eternal_watcher,Heavy tank that shares max HP to allies on deploy,skill_basic_melee,,skill_abomination_spawn_boost,2,18
-forbidden_scientist,Forbidden Scientist,support,frost_clan,rare,150,10,3,70,1,200,80,normal,frost_shade_servant,Support that trades ally HP cap for damage,skill_basic_ranged,,skill_forbidden_scientist_buff,1.3,8
-screaming_coffin,Screaming Coffin,frontline,frost_clan,common,240,8,6,35,0.5,30,180,large,frost_eternal_watcher,Fear aura structure causing misses nearby,skill_basic_melee,,skill_screaming_coffin_fear,2,16
-flesh_crawler,Flesh Crawler,frontline,frost_clan,common,130,16,2,85,1.3,40,70,small,frost_shade_servant,Fast abomination with chance to corrupt on hit,skill_flesh_crawler_corrupt,,,1.2,6
-flesh_titan,Flesh Titan,frontline,frost_clan,epic,820,42,10,55,0.8,55,220,large,frost_eternal_watcher,Core bruiser that enrages below half HP but self-bleeds,skill_basic_melee,,,2,18
+id,name,role,faction_id,rarity,max_hp,damage,armor,move_speed,attack_speed,range,mass,size,sprite_key,description,skill_primary_id,skill_secondary_id,passive_skill_id,sprite_scale,sprite_offset_y,spawn_amount
+chronotemporal,Chronotemporal,support,player,legendary,80,18,3,45,1.2,100,40,normal,chronotemporal,Time-manipulating support mage,skill_basic_ranged,,,1,0,3
+sniper,Sniper,ranged,player,rare,55,25,1,40,0.8,500,48,small,sniper,Elite long-range marksman,skill_basic_ranged,,,1,0,3
+dark_mage,Dark Mage,ranged,player,epic,65,22,2,35,0.9,300,36,normal,dark_mage,Master of dark magic and curses,skill_basic_ranged,,,1,0,3
+warrior,Warrior,frontline,player,common,200,16,6,50,1,30,100,normal,warrior,Stalwart frontline fighter,skill_basic_melee,,,1,0,3
+ninja,Ninja,frontline,player,rare,70,28,2,80,2,35,30,small,ninja,Swift assassin with stealth abilities,skill_basic_melee,,,1,0,3
+shotgunner,Shotgunner,ranged,player,epic,90,35,4,45,0.6,200,64,normal,shotgunner,Close-range specialist with devastating firepower,skill_basic_ranged,,,1,0,3
+cog_soldier,Feral Warrior,frontline,cog_dominion,common,160,18,5,70,0.66,60,85,normal,warrior,Disciplined frontline infantry of the Cog Dominion,skill_basic_melee,,,1,0,3
+cog_railgunner,Railgunner,ranged,cog_dominion,rare,110,32,2,55,0.7,420,60,normal,sniper,Precision long-range specialist,skill_basic_ranged,,,1,0,3
+cog_aegis_tank,Aegis Tank,frontline,cog_dominion,rare,420,24,9,40,0.5,90,100,large,shotgunner,Slow but indestructible bastion tank,skill_basic_melee,,,1,0,3
+cog_medic_drone,Medic Druid,support,cog_dominion,rare,90,5,1,40,0.6,120,140,small,chronotemporal,Support unit that restores allied durability,skill_basic_ranged,,,1,0,3
+cog_thunder_cannon,Thunder Mage,siege,cog_dominion,epic,260,55,4,30,0.45,520,120,large,dark_mage,Heavy siege artillery of the Cog Dominion,skill_basic_ranged,,,1,0,3
+raider_grunt,Iron Raider,frontline,iron_raiders,common,130,16,3,65,0.7,50,70,normal,warrior,Aggressive melee attacker,skill_basic_melee,,,1,0,3
+raider_bomber,Siege Bomber,siege,iron_raiders,rare,200,40,2,45,0.55,380,110,large,shotgunner,Launches explosives at fortresses,skill_basic_ranged,,,1,0,3
+raider_boss,Iron Juggernaut,frontline,iron_raiders,legendary,1260,72,10,30,0.33,120,900,large,shotgunner,Massive raider tank with crushing area attacks,skill_basic_melee,,,3,0,3
+raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,22,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield,skill_basic_melee,,,1,0,3
+raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,50,0.9,420,58,normal,sniper,Long-range raider marksman supporting the boss,skill_basic_ranged,,,1,0,3
+jade_azure_spear,Azure Spear Chargers,frontline,jade_dynasty,common,190,22,5,70,1.25,45,85,normal,jade_azure_spear,Long reach melee; opener stun and chi gain on kill,skill_jade_azure_spear,,,1.2,30,5
+jade_storm_monks,Storm Monks,frontline,jade_dynasty,rare,170,24,4,80,1.5,40,80,normal,jade_storm_monks,Fast combo melee that can stun on dual hits,skill_jade_storm_monks,,,1.2,10,3
+jade_crossbow_gunners,Repeating Crossbow Gunners,ranged,jade_dynasty,common,120,16,3,60,1.1,360,70,normal,jade_crossbow_gunners,Ranged support that applies vulnerability and slow,skill_jade_crossbow_slow,,,1,8,3
+jade_halberd_guardian,Jade Halberd Guardian,frontline,jade_dynasty,rare,340,28,7,55,0.85,55,120,large,jade_halberd_guardian,Tank with wide cleave and shock slam,skill_jade_halberd_slam,,,1,14,3
+jade_shrine_oni,Shrine Oni Guardian,frontline,jade_dynasty,rare,360,26,8,50,0.8,50,130,large,jade_shrine_oni,Spirit guardian that taunts and gains chi shield,skill_basic_melee,,skill_jade_spirit_lantern_aura,1.8,16,3
+jade_shikigami_fox,Golden Shikigami Fox,ranged,jade_dynasty,rare,140,20,3,75,1.2,320,60,small,jade_shikigami_fox,Agile spirit firing homing flames with mini-stun,skill_jade_fox_sting,,,1,6,3
+jade_chi_dragoon,Chi Dragoon,frontline,jade_dynasty,rare,260,30,6,65,1,55,110,normal,jade_chi_dragoon,Bruiser that scales damage with chi flow,skill_jade_dragoon_shock,,,1.1,14,3
+jade_shuriken_ninjas,Shuriken Ninjas,ranged,jade_dynasty,common,110,17,2,85,1.4,300,55,small,jade_shuriken_ninjas,Throwing daggers with crit bleed and stealth on kill,skill_jade_shuriken_slow,,,1,6,3
+jade_shadowblade_assassins,Shadowblade Assassins,frontline,jade_dynasty,rare,150,26,3,90,1.6,40,60,small,jade_shadowblade_assassins,Stealth assassin with opening crit and brief stun,skill_jade_shadowblade_crit,,,1,6,3
+jade_spirit_lantern,Spirit Lantern Healer,support,jade_dynasty,common,130,10,2,55,1,140,70,normal,jade_spirit_lantern,Healing aura and debuff field spirit,skill_basic_ranged,skill_jade_spirit_lantern_slow,skill_jade_spirit_lantern_heal,1,8,3
+jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death,skill_basic_melee,skill_jade_paper_doll_death,,1,10,3
+jade_blue_oni,Blue Oni Bruiser,frontline,jade_dynasty,rare,240,32,6,65,1,55,105,normal,jade_blue_oni,Bruiser applying frost chi slow that scales with chi flow,skill_jade_blue_oni_slow,,,1,12,3
+shade_servant,Shade Servant,frontline,frost_clan,common,160,20,3,75,1.4,45,80,small,frost_shade_servant,Vampire melee with chance to convert kills into Flesh Weavers,skill_basic_melee,,,1,6,3
+putrid_archer,Putrid Archer,ranged,frost_clan,common,130,22,2,65,1,360,70,normal,frost_putrid_archer,Ranged undead archer that slows enemies with decay gas,skill_putrid_archer_cloud,,,1,8,3
+eternal_watcher,Eternal Watcher,frontline,frost_clan,epic,520,34,8,45,0.7,60,160,large,frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths,skill_basic_melee,,,2,18,3
+cursed_walker,Cursed Walker,support,frost_clan,rare,260,12,4,55,0.9,160,90,normal,frost_cursed_walker,Lich aura makes nearby undead immune to debuffs,skill_basic_ranged,,skill_cursed_walker_aura,1.6,10,3
+bloodline_noble,Bloodline Noble,frontline,frost_clan,rare,220,28,5,80,1.2,55,100,normal,frost_bloodline_noble,Vampire melee applying bleed on hit,skill_bloodline_noble_bleed,,,1.4,10,3
+agony_screamer,Agony Screamer,ranged,frost_clan,rare,150,24,3,70,1.1,260,90,normal,frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage,skill_agony_screamer_splash,,,1,8,3
+flesh_weaver,Flesh Weaver,frontline,frost_clan,common,80,11,2,90,1,35,75,small,frost_shade_servant,Fodder abomination that explodes on death,skill_basic_melee,skill_flesh_weaver_explode,,1,6,3
+bound_spectre,Bound Spectre,frontline,frost_clan,common,140,14,2,85,1.3,45,65,small,frost_shade_servant,Curse aura that weakens nearby enemy damage,skill_basic_melee,,skill_bound_spectre_curse,1.4,6,3
+abomination,Abomination,frontline,frost_clan,rare,600,32,9,45,0.65,55,200,large,frost_eternal_watcher,Heavy tank that shares max HP to allies on deploy,skill_basic_melee,,skill_abomination_spawn_boost,2,18,3
+forbidden_scientist,Forbidden Scientist,support,frost_clan,rare,150,10,3,70,1,200,80,normal,frost_shade_servant,Support that trades ally HP cap for damage,skill_basic_ranged,,skill_forbidden_scientist_buff,1.3,8,3
+screaming_coffin,Screaming Coffin,frontline,frost_clan,common,240,8,6,35,0.5,30,180,large,frost_eternal_watcher,Fear aura structure causing misses nearby,skill_basic_melee,,skill_screaming_coffin_fear,2,16,3
+flesh_crawler,Flesh Crawler,frontline,frost_clan,common,130,16,2,85,1.3,40,70,small,frost_shade_servant,Fast abomination with chance to corrupt on hit,skill_flesh_crawler_corrupt,,,1.2,6,3
+flesh_titan,Flesh Titan,frontline,frost_clan,epic,820,42,10,55,0.8,55,220,large,frost_eternal_watcher,Core bruiser that enrages below half HP but self-bleeds,skill_basic_melee,,,2,18,3
