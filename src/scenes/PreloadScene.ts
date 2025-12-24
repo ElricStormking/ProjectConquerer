@@ -117,6 +117,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png'); // legacy key
         this.load.image('stage_jade_map', 'assets/stage_map/map_stage_jade.png'); // current stage 1 key
         this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
+        this.load.image('stage_triarch_map', 'assets/stage_map/map_stage_triarch.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         
@@ -125,6 +126,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('fortress_grid_jade_dynasty_01_tilemap', 'data/fortress_grids/fortress_jade_dynasty_01_grid.csv');
         this.load.text('fortress_grid_frost_clan_01_meta', 'data/fortress_grids/fortress_eternal_frost_clan_01.csv');
         this.load.text('fortress_grid_frost_clan_01_tilemap', 'data/fortress_grids/fortress_eternal_frost_clan_01_grid.csv');
+        this.load.text('fortress_grid_triarch_dominion_01_meta', 'data/fortress_grids/fortress_triarch_dominion_01.csv');
+        this.load.text('fortress_grid_triarch_dominion_01_tilemap', 'data/fortress_grids/fortress_triarch_dominion_01_grid.csv');
 
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
@@ -133,9 +136,11 @@ export class PreloadScene extends Phaser.Scene {
         // Default testing fortress art now uses Jade Dynasty
         this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
         this.load.image('fortress_frost_clan_01', 'assets/fortress/Fortress_eternal_frost_clan_01.png');
+        this.load.image('fortress_triarch_dominion_01', 'assets/fortress/Fortress_Triarch_Dominion_01.png');
         // Faction selection backgrounds
         this.load.image('faction_bg_jade_dynasty', 'assets/faction_selection/faction_selection_jade_dynasty.png');
         this.load.image('faction_bg_frost_clan', 'assets/faction_selection/faction_selection_eternal_frost_clan.png');
+        this.load.image('faction_bg_triarch_dominion', 'assets/faction_selection/faction_selection_triarch_dominion.png');
         this.load.image('ui_arrow_left', 'assets/ui/ui_faction_selection/arrow_L.png');
         this.load.image('ui_arrow_right', 'assets/ui/ui_faction_selection/arrow_R.png');
         this.load.image('logo_jade_dynasty', 'assets/ui/ui_faction_selection/Logo_Jade_Dynasty.png');
@@ -173,6 +178,11 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('building_chi_resonance_tower', 'assets/buildings/jade_buildings/Building_Chi_Resonance_Tower.png');
         this.load.image('building_smoke_bomb_generator', 'assets/buildings/jade_buildings/Building_Smoke_Bomb_Generator.png');
         this.load.image('building_jade_archer_turret', 'assets/buildings/jade_buildings/Building_Jade_Archer_Turret.png');
+        // Triarch Dominion buildings
+        this.load.image('building_triarch_field_command_post', 'assets/buildings/triarch_buildings/build_Field_Command_Post.png');
+        this.load.image('building_triarch_healing_beacon', 'assets/buildings/triarch_buildings/build_Healing_Beacon.png');
+        this.load.image('building_triarch_cannon_turret', 'assets/buildings/triarch_buildings/build_Cannon_Turret.png');
+        this.load.image('building_triarch_storm_generator', 'assets/buildings/triarch_buildings/build_Storm_Generator.png');
         // Card portraits (unit and spell cards)
         this.load.image('card_soldier', 'assets/cards/card_soldier.png');
         this.load.image('card_railgunner', 'assets/cards/card_railgunner.png');
@@ -227,6 +237,28 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_frost_plague_infusion', 'assets/cards/Eternal_frost_clan/modules/Plague Infusion.png');
         this.load.image('card_frost_forbidden_regeneration', 'assets/cards/Eternal_frost_clan/modules/ForbiddenRegeneration.png');
         this.load.image('card_frost_soul_pact', 'assets/cards/Eternal_frost_clan/modules/SoulPact.png');
+
+        // Triarch Dominion card art (units / structures)
+        const triarchUnitCardPath = 'assets/cards/Triarch_dominion/units/';
+        this.load.image('card_triarch_zealot_duelist', `${triarchUnitCardPath}Zealot_Duelist.png`);
+        this.load.image('card_triarch_acolyte_healer', `${triarchUnitCardPath}Acolyte_Healer.png`);
+        this.load.image('card_triarch_priestess_dawn', `${triarchUnitCardPath}Priestess_of_Dawn.png`);
+        this.load.image('card_triarch_crusader_shieldbearer', `${triarchUnitCardPath}Crusader_Shieldbearerpng.png`);
+        this.load.image('card_triarch_seraph_guardian', `${triarchUnitCardPath}Seraph_Guardian.png`);
+        this.load.image('card_triarch_rifleman_squad', `${triarchUnitCardPath}Rifleman_Squad.png`);
+        this.load.image('card_triarch_sniper_elite', `${triarchUnitCardPath}Sniper_Elite.png`);
+        this.load.image('card_triarch_firethrower_unit', `${triarchUnitCardPath}Firethrower_Unit.png`);
+        this.load.image('card_triarch_heavy_siege_walker', `${triarchUnitCardPath}Heavy_Siege Walker.png`);
+        this.load.image('card_triarch_lightning_sorcerer', `${triarchUnitCardPath}Lightning_Sorcerer.png`);
+        this.load.image('card_triarch_aether_golem', `${triarchUnitCardPath}Aether_Golem.png`);
+        this.load.image('card_triarch_mana_siphon_adept', `${triarchUnitCardPath}Mana_Siphon_Adept.png`);
+        this.load.image('card_triarch_aether_archer', `${triarchUnitCardPath}Aether_Archer.png`);
+
+        const triarchBuildingCardPath = 'assets/cards/Triarch_dominion/buildings/';
+        this.load.image('card_triarch_field_command_post', `${triarchBuildingCardPath}Field_Command_Post.png`);
+        this.load.image('card_triarch_healing_beacon', `${triarchBuildingCardPath}Healing_Beacon.png`);
+        this.load.image('card_triarch_cannon_turret', `${triarchBuildingCardPath}Cannon_Turret.png`);
+        this.load.image('card_triarch_storm_generator', `${triarchBuildingCardPath}Storm_Generator.png`);
 
         // Victory / SFX
         this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
@@ -316,6 +348,29 @@ export class PreloadScene extends Phaser.Scene {
 
         this.load.spritesheet('frost_agony_screamer', 'assets/units/Eternal_Frost_Clan/army_Agony_Screamer/army_Agony_Screamer.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('frost_agony_screamer_anim', 'assets/units/Eternal_Frost_Clan/army_Agony_Screamer/army_Agony_Screamer_an.json');
+
+        // Triarch Dominion units
+        this.load.spritesheet('triarch_zealot_duelist', 'assets/units/Triarch_Dominion/army_Zealot_Duelist/army_Zealot_Duelist.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('triarch_zealot_duelist_an', 'assets/units/Triarch_Dominion/army_Zealot_Duelist/army_Zealot_Duelist_an.json');
+        this.load.spritesheet('triarch_acolyte_healer', 'assets/units/Triarch_Dominion/army_Acolyte_Healer/army_Acolyte_Healer.png', { frameWidth: 80, frameHeight: 80 });
+        this.load.json('triarch_acolyte_healer_an', 'assets/units/Triarch_Dominion/army_Acolyte_Healer/army_Acolyte_Healer_an.json');
+        this.load.spritesheet('triarch_seraph_guardian', 'assets/units/Triarch_Dominion/army_Seraph_Guardian/army_Seraph_Guardian.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('triarch_seraph_guardian_an', 'assets/units/Triarch_Dominion/army_Seraph_Guardian/army_Seraph_Guardian_an.json');
+        // Lightning Sorcerer uses 160x160 frames per pack metadata
+        this.load.spritesheet('triarch_lightning_sorcerer', 'assets/units/Triarch_Dominion/army_Lightning_Sorcerer/army_Lightning_Sorcerer.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('triarch_lightning_sorcerer_an', 'assets/units/Triarch_Dominion/army_Lightning_Sorcerer/army_Lightning_Sorcerer_an.json');
+        // Mana Siphon Adept – use original pack key (animations reference this)
+        this.load.spritesheet('army_Mana_Siphon_Adept', 'assets/units/Triarch_Dominion/army_Mana_Siphon_Adept/army_Mana_Siphon_Adept.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Mana_Siphon_Adept_an', 'assets/units/Triarch_Dominion/army_Mana_Siphon_Adept/army_Mana_Siphon_Adept_an.json');
+        // Alias for legacy references
+        this.load.spritesheet('triarch_mana_siphon_adept', 'assets/units/Triarch_Dominion/army_Mana_Siphon_Adept/army_Mana_Siphon_Adept.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('triarch_mana_siphon_adept_an', 'assets/units/Triarch_Dominion/army_Mana_Siphon_Adept/army_Mana_Siphon_Adept_an.json');
+        // Aether Archer uses original pack key to match animation JSON frames
+        this.load.spritesheet('army_Aether_Archer', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('army_Aether_Archer_an', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer_an.json');
+        // Alias load to support any legacy references
+        this.load.spritesheet('triarch_aether_archer', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.json('triarch_aether_archer_an', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer_an.json');
     }
 
     create() {

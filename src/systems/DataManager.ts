@@ -660,7 +660,7 @@ export class DataManager {
      */
     private parseFortressGridsFromCache(cache: Phaser.Cache.CacheManager): void {
         // Known fortress grid IDs - add more here as they're created
-        const fortressIds = ['jade_dynasty_01', 'frost_clan_01'];
+        const fortressIds = ['jade_dynasty_01', 'frost_clan_01', 'triarch_dominion_01'];
         
         for (const id of fortressIds) {
             const metaKey = `fortress_grid_${id}_meta`;

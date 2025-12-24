@@ -42,7 +42,20 @@ export enum UnitType {
     FROST_FORBIDDEN_SCIENTIST = 'forbidden_scientist',
     FROST_SCREAMING_COFFIN = 'screaming_coffin',
     FROST_FLESH_CRAWLER = 'flesh_crawler',
-    FROST_FLESH_TITAN = 'flesh_titan'
+    FROST_FLESH_TITAN = 'flesh_titan',
+    TRIARCH_ZEALOT_DUELIST = 'triarch_zealot_duelist',
+    TRIARCH_ACOLYTE_HEALER = 'triarch_acolyte_healer',
+    TRIARCH_PRIESTESS_DAWN = 'triarch_priestess_dawn',
+    TRIARCH_CRUSADER_SHIELDBEARER = 'triarch_crusader_shieldbearer',
+    TRIARCH_SERAPH_GUARDIAN = 'triarch_seraph_guardian',
+    TRIARCH_RIFLEMAN_SQUAD = 'triarch_rifleman_squad',
+    TRIARCH_SNIPER_ELITE = 'triarch_sniper_elite',
+    TRIARCH_FIRETHROWER_UNIT = 'triarch_firethrower_unit',
+    TRIARCH_HEAVY_SIEGE_WALKER = 'triarch_heavy_siege_walker',
+    TRIARCH_LIGHTNING_SORCERER = 'triarch_lightning_sorcerer',
+    TRIARCH_AETHER_GOLEM = 'triarch_aether_golem',
+    TRIARCH_MANA_SIPHON_ADEPT = 'triarch_mana_siphon_adept',
+    TRIARCH_AETHER_ARCHER = 'triarch_aether_archer'
 }
 
 export interface UnitTemplate {

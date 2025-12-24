@@ -4,3 +4,7 @@ armor_shop,Armor Shop,150,1,1,shield_aura,building_armor_shop
 jade_resonance_tower,Chi Resonance Tower,220,1,1,jade_resonance_pulse,building_chi_resonance_tower
 jade_smoke_bomb,Smoke Bomb Generator,180,1,1,jade_smoke_field,building_smoke_bomb_generator
 jade_archer_turret,Jade Archer Turret,200,1,1,jade_archer_volley,building_jade_archer_turret
+triarch_field_command_post,Field Command Post,210,1,1,triarch_command_zone,building_triarch_field_command_post
+triarch_healing_beacon,Healing Beacon,180,1,1,triarch_healing_pulse,building_triarch_healing_beacon
+triarch_cannon_turret,Cannon Turret,260,1,1,triarch_cannon_blast,building_triarch_cannon_turret
+triarch_storm_generator,Storm Generator,200,1,1,triarch_storm_zone,building_triarch_storm_generator

@@ -78,6 +78,15 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         gridHeight: 4,
         maxHp: 580,
         abilities: ['war_drums', 'blood_rage']
+    },
+    fortress_triarch_dominion_01: {
+        id: 'fortress_triarch_dominion_01',
+        name: 'Triarch Bastion',
+        factionId: 'triarch_dominion',
+        gridWidth: 5,
+        gridHeight: 5,
+        maxHp: 520,
+        abilities: ['triarch_command', 'triarch_resolve']
     }
 };
 
@@ -166,7 +175,8 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
             republic_virel: 0x3498db,     // Steel blue
             verdant_covenant: 0x27ae60,   // Forest green
             frost_clan: 0x74b9ff,         // Ice blue
-            bloodfang_warborn: 0xc0392b   // Blood red
+            bloodfang_warborn: 0xc0392b,  // Blood red
+            triarch_dominion: 0xd6c58b    // Gold-white holy brass
         };
         return colors[factionId] ?? 0x888888;
     }

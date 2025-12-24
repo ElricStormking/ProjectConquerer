@@ -28,3 +28,17 @@ shield_aura,Armorer's Aegis,aura,passive_tick,ally,,,,,,none,,,,,,,,,,,,,,,,300,
 jade_resonance_pulse,Chi Resonance,aura,passive_tick,enemy,,,180,,,slow,5000,,,,,,,3000,5000,,,,,,,250,3000,,,,,,,,,,,,
 jade_smoke_field,Smoke Veil,aura,passive_tick,ally,,,,,,none,,,,,,,,,,,,,,,,200,3000,,,,,,,evasion,0.25,,,,
 jade_archer_volley,Archer Turret Volley,projectile,on_attack,enemy,12,,,,400,none,,,,,,,,,,1200,,,3,,,,,,,,,,,,,,,,
+skill_triarch_zealot_cleave,Holy Fire Strike,melee_swing,on_attack,enemy,70,,90,80,,,,,,,,,,,0,,,,,,,,,,,,,,,,,,,"Cleave every 4th hit; small AoE"
+skill_triarch_zealot_cleave,Holy Fire Strike,melee_swing,on_attack,enemy,70,,90,80,,,,,,,,,,,0,,,,,,,,,,,,,,,,,,,"Cleave every 4th hit; small AoE"
+skill_triarch_acolyte_heal,Acolyte Mend,aura,passive_tick,ally,,,,,,hot,0,,,,,2000,35,,,,0,,0,,,200,2000,,0,0,120,,,,, ,"Heals lowest-HP ally every 2s; Faith generation not modeled"
+skill_triarch_priestess_cone_heal,Dawnlight Cone Heal,aura,passive_tick,ally,,,,,,hot,0,,,,,3000,45,,,,0,,0,,,260,3000,,0,,140,,TRUE,,damage_reduction,0.1,3000,,"Cone heal every 3s; cleanse/DR approximated"
+skill_triarch_shieldbearer_wall,Shield Wall Aura,aura,passive_tick,ally,,,,,,none,,,,,,0,0,,,,0,,0,,,220,1500,,0,,0,,FALSE,TRUE,damage_reduction,0.3,2000,,"Forward shield cone approximated as aura; periodic taunt implied"
+skill_triarch_seraph_stun,Seraph Stun Sweep,melee_swing,on_attack,enemy,120,,120,120,,stun,1200,,,,,,,,5000,,,,,,,,,,,,,,,,,,"Every ~5th swing stuns nearby enemies (cooldown approximation)"
+skill_triarch_rifleman_mark_focus,Field Marksman,projectile,on_attack,enemy,10,,,,,,,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,damage_buff,1.1,4000,,"+10% damage/accuracy flavor; command post synergy not modeled"
+skill_triarch_sniper_armor_crack,Armor Crack Shot,projectile,on_attack,enemy,25,,,,,slow,2000,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,armor_reduction,-0.1,4000,,"Armor crack debuff on hit"
+skill_triarch_firethrower_scorch,Scorching Cone,projectile,on_attack,enemy,16,,120,,dot,3000,,500,12,,,,,,2500,,,,,,,,,,0,,0,,0,,FALSE,,damage_taken,0.1,3000,,"Flame cone DoT; +10% damage taken"
+skill_triarch_siege_cannon,Siege Cannon,projectile,on_attack,enemy,220,,200,140,320,none,,,,,,,,400,,,,3500,,0,,3,,,,,,0,,0,,0,,FALSE,,,
+skill_triarch_lightning_chain,Chain Lightning,projectile,on_attack,enemy,26,,220,0,,slow,2000,,0,,0,,,,,,0,,,3,3,220,,,,,,0,,0,,0,,FALSE,,,
+skill_triarch_golem_burst,Aether Burst,aura,passive_tick,enemy,180,,160,140,,,none,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,,
+skill_triarch_siphon_weaken,Mana Siphon Bolt,projectile,on_attack,enemy,18,,,,,suppressed,4000,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,spell_power,-0.1,4000,,"Reduces enemy spell potency for 4s"
+skill_triarch_aether_pierce,Aether Piercing Shot,projectile,on_attack,enemy,22,,,,,,,,,,,,,,,0,,,,,,,,,,0,,0,,2,,FALSE,,damage_buff,1.15,3000,,"Pierces up to 2; bonus vs shields not modeled"

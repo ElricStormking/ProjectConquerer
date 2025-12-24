@@ -38,8 +38,8 @@ export class FactionSelectionScene extends Phaser.Scene {
             this.sound.play('bgm_faction_select', { loop: true, volume: 0.7 });
         }
         
-        // Only show currently supported factions (Jade + Frost for now)
-        const allowedFactions = new Set(['jade_dynasty', 'frost_clan']);
+        // Only show supported factions
+        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion']);
         this.factions = this.factionRegistry.getAllFactions().filter(f => allowedFactions.has(f.id));
         if (this.factions.length === 0) {
             // Fallback if no factions loaded
@@ -126,7 +126,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         // Faction emblem (use logo art if available)
         const logoKeyMap: Record<string, string> = {
             jade_dynasty: 'logo_jade_dynasty',
-            frost_clan: 'logo_frost_clan'
+            frost_clan: 'logo_frost_clan',
+            triarch_dominion: 'logo_triarch_dominion'
         };
         const logoKey = logoKeyMap[faction.id];
         if (logoKey && this.textures.exists(logoKey)) {
@@ -570,14 +571,16 @@ export class FactionSelectionScene extends Phaser.Scene {
 
         const keyMap: Record<string, string> = {
             jade_dynasty: 'faction_bg_jade_dynasty',
-            frost_clan: 'faction_bg_frost_clan'
+            frost_clan: 'faction_bg_frost_clan',
+            triarch_dominion: 'faction_bg_triarch_dominion'
         };
         const bgKey = keyMap[factionId];
 
         // On-demand load if missing
         const fileMap: Record<string, string> = {
             faction_bg_jade_dynasty: 'assets/faction_selection/faction_selection_jade_dynasty.png',
-            faction_bg_frost_clan: 'assets/faction_selection/faction_selection_eternal_frost_clan.png'
+            faction_bg_frost_clan: 'assets/faction_selection/faction_selection_eternal_frost_clan.png',
+            faction_bg_triarch_dominion: 'assets/faction_selection/faction_selection_triarch_dominion.png'
         };
 
         if (bgKey && !this.textures.exists(bgKey) && fileMap[bgKey] && !this.bgLoadInFlight.has(bgKey)) {

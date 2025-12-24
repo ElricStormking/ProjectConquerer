@@ -68,6 +68,23 @@ card_zhaquille_abominable_hatchery,Abominable Hatchery,structure,5,soulfrost,abo
 card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_jade_smoke_bomb,Smoke field reduces enemy accuracy; boosts ninja dodge.,common
 card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_jade_archer_turret,Piercing arrows; periodic AoE stun.,rare
 card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_jade_feng_shui_ward,Healing aura; increased healing received.,common
+card_triarch_zealot_duelist,Zealot Duelist,unit,2,gold,triarch_zealot_duelist,card_triarch_zealot_duelist,Fast melee striker with holy cleave.,common
+card_triarch_acolyte_healer,Acolyte Healer,unit,2,gold,triarch_acolyte_healer,card_triarch_acolyte_healer,Single-target healer that generates faith.,common
+card_triarch_priestess_dawn,Priestess of Dawn,unit,3,gold,triarch_priestess_dawn,card_triarch_priestess_dawn,Cone healer with periodic cleanse.,rare
+card_triarch_crusader_shieldbearer,Crusader Shieldbearer,unit,3,gold,triarch_crusader_shieldbearer,card_triarch_crusader_shieldbearer,Frontline tank projecting shield cone.,rare
+card_triarch_seraph_guardian,Seraph Guardian,unit,4,gold,triarch_seraph_guardian,card_triarch_seraph_guardian,Elite melee controller with stun swings.,epic
+card_triarch_rifleman_squad,Rifleman Squad,unit,2,gold,triarch_rifleman_squad,card_triarch_rifleman_squad,Core ranged DPS squad.,common
+card_triarch_sniper_elite,Sniper Elite,unit,3,gold,triarch_sniper_elite,card_triarch_sniper_elite,Long-range execution with armor crack.,rare
+card_triarch_firethrower_unit,Firethrower Unit,unit,3,gold,triarch_firethrower_unit,card_triarch_firethrower_unit,Short-range flame cone DoT and scorch.,rare
+card_triarch_heavy_siege_walker,Heavy Siege Walker,unit,6,gold,triarch_heavy_siege_walker,card_triarch_heavy_siege_walker,Heavy walker with cannon and stomp.,epic
+card_triarch_lightning_sorcerer,Lightning Sorcerer,unit,3,gold,triarch_lightning_sorcerer,card_triarch_lightning_sorcerer,Chain lightning caster with slows.,rare
+card_triarch_aether_golem,Aether Golem,unit,4,gold,triarch_aether_golem,card_triarch_aether_golem,Floating construct bruiser with burst.,rare
+card_triarch_mana_siphon_adept,Mana Siphon Adept,unit,2,gold,triarch_mana_siphon_adept,card_triarch_mana_siphon_adept,Anti-caster draining enemy power.,common
+card_triarch_aether_archer,Aether Archer,unit,2,gold,triarch_aether_archer,card_triarch_aether_archer,Piercing arcane arrows strong vs shields.,common
+card_triarch_field_command_post,Field Command Post,structure,3,gold,triarch_field_command_post,card_triarch_field_command_post,Aura boosts ranged accuracy and fire rate.,rare
+card_triarch_healing_beacon,Healing Beacon,structure,2,gold,triarch_healing_beacon,card_triarch_healing_beacon,Pulsing heals; faith generation for holy play.,common
+card_triarch_cannon_turret,Cannon Turret,structure,4,gold,triarch_cannon_turret,card_triarch_cannon_turret,Explosive shells applying stagger.,rare
+card_triarch_storm_generator,Storm Generator,structure,4,gold,triarch_storm_generator,card_triarch_storm_generator,Storm zone slowing and damaging enemies.,rare
 card_jade_ninja_warp,Ninja Warp Pad,module,3,chi_flow,jade_ninja_warp,card_jade_ninja_warp,Grants brief invisibility and crit bonus to ninjas.,rare
 card_jade_shield_node,Jade Shield Node,module,3,chi_flow,jade_shield_node,card_jade_shield_node,Grants Chi Shield to allies (+HP shield).,common
 card_jade_chi_reactor,Chi Reactor Node,module,3,chi_flow,jade_chi_reactor,card_jade_chi_reactor,Generates Chi Flow over time; boosts damage at high Chi.,rare

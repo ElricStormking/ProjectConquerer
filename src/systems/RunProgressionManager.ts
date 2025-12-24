@@ -553,8 +553,11 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.runState.currentStageIndex = nextStage.index;
         const entryNodeId = this.findEntryNodeId(nextStage.index);
         this.runState.currentNodeId = entryNodeId;
+
         this.updateNodeAccessibility();
+        this.saveRun();
         this.emit('stage-entered', this.getStageSnapshot(nextStage.index));
+        this.emit('node-selected', this.getNodeSnapshot(entryNodeId));
     }
 
     private resolveNextStage(stage?: IStageConfig): IStageConfig | undefined {

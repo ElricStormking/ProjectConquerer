@@ -1069,16 +1069,93 @@ export class BattleScene extends Phaser.Scene {
 
     private handleRangedAttack(attacker: any, target: any): void {
         const unitType = attacker.getConfig().unitType as UnitType;
+        const now = this.time.now;
+
+        // Lightning Sorcerer: always fire chain lightning as the attack
+        if (unitType === UnitType.TRIARCH_LIGHTNING_SORCERER) {
+            const rawSkill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
+            // Force cooldown-less usage so every attack is chain lightning
+            const skill = rawSkill ? { ...rawSkill, cooldownMs: 0 } : undefined;
+            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
+
+            const buildChain = (): any[] => {
+                const chain: any[] = [target];
+                const maxCount = Math.max(1, (skill?.chainCount ?? 3));
+                const radius = skill?.chainRadius ?? skill?.range ?? 220;
+                while (chain.length < maxCount) {
+                    const last = chain[chain.length - 1];
+                    let best: any = null;
+                    let bestDist = radius + 1;
+                    enemies.forEach(e => {
+                        if (chain.includes(e)) return;
+                        const pos = e.getPosition();
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, last.getPosition().x, last.getPosition().y);
+                        if (dist <= radius && dist < bestDist) {
+                            best = e;
+                            bestDist = dist;
+                        }
+                    });
+                    if (!best) break;
+                    chain.push(best);
+                }
+                return chain;
+            };
+
+            const chainTargets = buildChain();
+            if (chainTargets.length > 0) {
+                this.drawChainLightning(attacker.getPosition(), chainTargets.map((t: any) => t.getPosition()));
+                if (skill) {
+                    attacker.triggerSkill(skill, chainTargets, now, this.combatSystem);
+                } else {
+                    // Fallback: apply base damage if skill missing
+                    chainTargets.forEach((t: any) => this.combatSystem.dealDamage(attacker as any, t as any, attacker.getDamage()));
+                }
+            }
+            attacker.setLastAttackTime(now);
+            return;
+        }
+
         const damage = attacker.getDamage();
         this.combatSystem.dealDamage(attacker as any, target as any, damage);
 
         const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
         if (skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now)) {
-            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1);
+            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
             const center = target.getPosition();
-            const targets = skill.aoeRadius
-                ? enemies.filter((e: any) => !e.isDead() && Phaser.Math.Distance.Between(center.x, center.y, e.getPosition().x, e.getPosition().y) <= (skill.aoeRadius || 0))
-                : [target];
+
+            const buildChain = (): any[] => {
+                const chain: any[] = [target];
+                const maxCount = Math.max(1, skill.chainCount || 1);
+                const radius = skill.chainRadius || skill.range || 220;
+                while (chain.length < maxCount) {
+                    const last = chain[chain.length - 1];
+                    let best: any = null;
+                    let bestDist = radius + 1;
+                    enemies.forEach(e => {
+                        if (chain.includes(e)) return;
+                        const pos = e.getPosition();
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, last.getPosition().x, last.getPosition().y);
+                        if (dist <= radius && dist < bestDist) {
+                            best = e;
+                            bestDist = dist;
+                        }
+                    });
+                    if (!best) break;
+                    chain.push(best);
+                }
+                return chain;
+            };
+
+            const targets = skill.chainCount && skill.chainCount > 1
+                ? buildChain()
+                : skill.aoeRadius
+                    ? enemies.filter((e: any) => Phaser.Math.Distance.Between(center.x, center.y, e.getPosition().x, e.getPosition().y) <= (skill.aoeRadius || 0))
+                    : [target];
+
+            if (skill.chainCount && skill.chainCount > 1 && targets.length > 1) {
+                this.drawChainLightning(attacker.getPosition(), targets.map((t: any) => t.getPosition()));
+            }
+
             attacker.triggerSkill(skill, targets, this.time.now, this.combatSystem);
         } else {
             if (unitType === UnitType.FROST_PUTRID_ARCHER) {
@@ -1114,6 +1191,57 @@ export class BattleScene extends Phaser.Scene {
 
         // Visual projectile
         this.createProjectileAttack(attacker, target, unitType);
+    }
+
+    private drawChainLightning(origin: { x: number; y: number }, points: { x: number; y: number }[]): void {
+        const g = this.add.graphics();
+        g.setDepth(7000);
+        g.setBlendMode(Phaser.BlendModes.ADD);
+
+        const stroke = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+            const segments = 8;
+            const path: { x: number; y: number }[] = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const x = Phaser.Math.Linear(from.x, to.x, t);
+                const y = Phaser.Math.Linear(from.y, to.y, t);
+                const jitter = 14;
+                path.push({ x: x + Phaser.Math.Between(-jitter, jitter), y: y + Phaser.Math.Between(-jitter, jitter) });
+            }
+            g.lineStyle(4, 0x8cf5ff, 1);
+            g.beginPath();
+            g.moveTo(from.x, from.y);
+            path.forEach(p => g.lineTo(p.x, p.y));
+            g.lineTo(to.x, to.y);
+            g.strokePath();
+
+            // glow overlay
+            g.lineStyle(8, 0xb9ffff, 0.35);
+            g.beginPath();
+            g.moveTo(from.x, from.y);
+            path.forEach(p => g.lineTo(p.x, p.y));
+            g.lineTo(to.x, to.y);
+            g.strokePath();
+        };
+
+        let last = origin;
+        points.forEach(p => {
+            stroke(last, p);
+            // impact spark
+            g.fillStyle(0xd7fbff, 0.95);
+            g.fillCircle(p.x, p.y, 10);
+            last = p;
+        });
+
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            scaleX: 1.12,
+            scaleY: 1.12,
+            duration: 260,
+            ease: 'Quad.easeOut',
+            onComplete: () => g.destroy()
+        });
     }
 
     private applySlowCloud(center: { x: number; y: number }, attackerTeam: number): void {
@@ -1506,7 +1634,14 @@ export class BattleScene extends Phaser.Scene {
             UnitType.JADE_CROSSBOW_GUNNERS,
             UnitType.JADE_SHIKIGAMI_FOX,
             UnitType.FROST_PUTRID_ARCHER,
-            UnitType.FROST_AGONY_SCREAMER
+            UnitType.FROST_AGONY_SCREAMER,
+            UnitType.TRIARCH_LIGHTNING_SORCERER,
+            UnitType.TRIARCH_AETHER_ARCHER,
+            UnitType.TRIARCH_MANA_SIPHON_ADEPT,
+            UnitType.TRIARCH_RIFLEMAN_SQUAD,
+            UnitType.TRIARCH_SNIPER_ELITE,
+            UnitType.TRIARCH_FIRETHROWER_UNIT,
+            UnitType.TRIARCH_HEAVY_SIEGE_WALKER
         ].includes(unitType);
     }
 
@@ -1536,7 +1671,11 @@ export class BattleScene extends Phaser.Scene {
             UnitType.FROST_FORBIDDEN_SCIENTIST,
             UnitType.FROST_SCREAMING_COFFIN,
             UnitType.FROST_FLESH_CRAWLER,
-            UnitType.FROST_FLESH_TITAN
+            UnitType.FROST_FLESH_TITAN,
+            UnitType.TRIARCH_ZEALOT_DUELIST,
+            UnitType.TRIARCH_CRUSADER_SHIELDBEARER,
+            UnitType.TRIARCH_SERAPH_GUARDIAN,
+            UnitType.TRIARCH_AETHER_GOLEM
         ].includes(unitType);
     }
 

@@ -3,7 +3,7 @@ import { PhysicsManager } from '../systems/PhysicsManager';
 import { StatusEffect } from '../systems/CombatSystem';
 import type { UnitManager } from '../systems/UnitManager';
 import type { CombatSystem } from '../systems/CombatSystem';
-import { UnitType, UNIT_TEMPLATES, UnitTemplate } from '../data/UnitTypes';
+import { UnitType, UnitTemplate } from '../data/UnitTypes';
 import { RelicManager } from '../systems/RelicManager';
 import { GameStateManager } from '../systems/GameStateManager';
 import { DataManager } from '../systems/DataManager';
@@ -155,6 +155,24 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.createTrailGraphics();
         this.createAnimations();
     }
+
+    private drawSeraphSweepEffect(radius: number): void {
+        const g = this.scene.add.graphics();
+        const pos = this.getPosition();
+        g.setDepth(pos.y + 3000);
+        g.lineStyle(3, 0x6be0ff, 0.8);
+        g.fillStyle(0x6be0ff, 0.12);
+        g.strokeCircle(pos.x, pos.y, radius);
+        g.fillCircle(pos.x, pos.y, radius * 0.92);
+        this.scene.tweens.add({
+            targets: g,
+            alpha: 0,
+            scaleX: 1.12,
+            scaleY: 1.12,
+            duration: 220,
+            onComplete: () => g.destroy()
+        });
+    }
     
     private createPhysicsBody(): void {
         const radius = this.getSizeRadius();
@@ -230,7 +248,7 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.sprite.setTint(0xffaaaa); // Light red team tint
         }
         
-        // Create health bar and team flag
+        // Create health bar and team flag (unit names hidden for clearer visuals)
         this.healthBarBg = this.scene.add.graphics();
         this.healthBar = this.scene.add.graphics();
         this.teamFlag = this.scene.add.graphics();
@@ -241,14 +259,6 @@ export class Unit extends Phaser.Events.EventEmitter {
             strokeThickness: 3
         }).setOrigin(0.5, 0.5);
         this.attackSwingGraphics = this.scene.add.graphics();
-        // Class label above unit
-        const className = UNIT_TEMPLATES[this.config.unitType]?.name ?? this.config.unitType;
-        this.classLabel = this.scene.add.text(this.config.x, this.config.y - 110, className, {
-            fontSize: '12px',
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 2
-        }).setOrigin(0.5, 0.5);
         this.updateHealthBar();
         this.createTeamFlag();
     }
@@ -382,6 +392,10 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.FROST_SCREAMING_COFFIN:
             case UnitType.FROST_FLESH_CRAWLER:
             case UnitType.FROST_FLESH_TITAN:
+            case UnitType.TRIARCH_ZEALOT_DUELIST:
+            case UnitType.TRIARCH_CRUSADER_SHIELDBEARER:
+            case UnitType.TRIARCH_SERAPH_GUARDIAN:
+            case UnitType.TRIARCH_AETHER_GOLEM:
                 return true;
             default:
                 return false;
@@ -396,6 +410,10 @@ export class Unit extends Phaser.Events.EventEmitter {
         const dotDurationSec = statusDurationSec;
         const hotDurationSec = statusDurationSec;
         targets.forEach(target => {
+            // Direct damage (data-driven)
+            if (typeof skill.damage === 'number' && skill.damage > 0 && combatSystem?.dealDamage) {
+                combatSystem.dealDamage(this as any, target as any, skill.damage);
+            }
             if (skill.statusEffects) {
                 skill.statusEffects.forEach(effect => {
                     if (effect === 'stun') {
@@ -430,6 +448,10 @@ export class Unit extends Phaser.Events.EventEmitter {
             if (skill.cleanse && (target as any).clearDebuffs) {
                 (target as any).clearDebuffs();
             }
+            if (skill.taunt && typeof target.applyTaunt === 'function') {
+                const pos = this.getPosition();
+                target.applyTaunt(pos.x, pos.y, skill.statusDurationMs ?? 1500);
+            }
         });
         this.markSkillUsed(skill, currentTime);
     }
@@ -457,8 +479,13 @@ export class Unit extends Phaser.Events.EventEmitter {
             // Area damage in 160-degree sector in front of unit
             if (unitManager && combatSystem) {
                 const center = this.getPosition();
-                const swingAngle = Phaser.Math.DegToRad(120); // narrower cone so it feels forward
-                const radius = Math.max(this.getRange(), 60);
+                let swingAngle = Phaser.Math.DegToRad(120); // standard melee cone
+                let radius = Math.max(this.getRange(), 60);
+                if (this.config.unitType === UnitType.TRIARCH_SERAPH_GUARDIAN) {
+                    swingAngle = Phaser.Math.PI2; // full 360° sweep
+                    radius = Math.max(this.getRange(), this.skillPrimary?.aoeRadius ?? 120);
+                    this.drawSeraphSweepEffect(radius);
+                }
                 const enemies = unitManager.getUnitsByTeam(this.getTeam() === 1 ? 2 : 1);
                 let appliedStormStun = false;
                 const hitEnemies: Unit[] = [];
@@ -1256,6 +1283,25 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.FROST_SCREAMING_COFFIN: return 'frost_eternal_watcher'; // placeholder
             case UnitType.FROST_FLESH_CRAWLER: return 'frost_shade_servant'; // placeholder
             case UnitType.FROST_FLESH_TITAN: return 'frost_eternal_watcher'; // placeholder
+            case UnitType.TRIARCH_ZEALOT_DUELIST: return 'triarch_zealot_duelist';
+            case UnitType.TRIARCH_ACOLYTE_HEALER: return 'triarch_acolyte_healer';
+            case UnitType.TRIARCH_PRIESTESS_DAWN: return 'warrior';
+            case UnitType.TRIARCH_CRUSADER_SHIELDBEARER: return 'warrior';
+            case UnitType.TRIARCH_SERAPH_GUARDIAN: return 'triarch_seraph_guardian';
+            case UnitType.TRIARCH_RIFLEMAN_SQUAD: return 'sniper';
+            case UnitType.TRIARCH_SNIPER_ELITE: return 'sniper';
+            case UnitType.TRIARCH_FIRETHROWER_UNIT: return 'shotgunner';
+            case UnitType.TRIARCH_HEAVY_SIEGE_WALKER: return 'camp1_soldier1';
+            case UnitType.TRIARCH_LIGHTNING_SORCERER: return 'triarch_lightning_sorcerer';
+            case UnitType.TRIARCH_AETHER_GOLEM: return 'camp1_soldier2';
+            case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
+                return this.scene.textures.exists('army_Mana_Siphon_Adept')
+                    ? 'army_Mana_Siphon_Adept'
+                    : 'triarch_mana_siphon_adept';
+            case UnitType.TRIARCH_AETHER_ARCHER:
+                return this.scene.textures.exists('army_Aether_Archer')
+                    ? 'army_Aether_Archer'
+                    : 'triarch_aether_archer';
             default: return 'warrior';
         }
     }

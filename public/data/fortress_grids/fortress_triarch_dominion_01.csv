@@ -1,0 +1,2 @@
+id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height,image_offset_x,image_offset_y,image_scale
+fortress_triarch_dominion_01,triarch_dominion,Triarch Bastion,fortress_triarch_dominion_01,520,128,64,12,116,0.9

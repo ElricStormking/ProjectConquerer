@@ -1,4 +1,4 @@
-# The Triarch Dominion – Commanders & 42-Card Faction Design (Detailed) v1.1
+# The Triarch Dominion – Commanders & 37-Card Faction Design (Detailed) v1.1
 This document contains the **full detailed design** for the merged faction **The Triarch Dominion**, including:
 - **3 Commanders** (passives, actives, playstyle, synergy)
 - **42 Cards Total**
@@ -154,66 +154,37 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 - Taunts nearby enemies every 8s (short taunt)
 - On taking heavy burst, triggers **Shield Bash** (stagger 0.4s)
 
-### 5) Radiant Knight — **Cost 3**
-**Role:** melee bruiser / healing-synergy DPS  
-- Gains **+10% damage per healed ally nearby** (max +30%)
-- Emits **Radiant Aura**: light DoT to enemies within 1 tile
-- Strong vs clustered melee swarms
-
-### 6) Seraph Guardian — **Cost 4**
+### 5) Seraph Guardian — **Cost 4**
 **Role:** elite melee controller  
 - Wide 360° swings (AoE melee)
 - Every **5th swing**: **Stun 1.2s** in 2-tile radius
 - Receives **+20% healing** from all sources
 
-### 7) Dawnbreaker Charger — **Cost 4**
-**Role:** cavalry disruptor / engager  
-- Performs a **Charge** on first contact
-  - Knockback 2 tiles
-  - Stun (weak) 0.5s on non-elite units
-- After charge, gains +15% attack speed for 5s
-
-### 8) Archon of Light — **Cost 5**
-**Role:** flying holy construct / anti-slow  
-- Flying; immune to slows
-- Ranged holy bolts that pierce 1 target
-- Periodic **Shockwave** every 10s: small AoE stagger
 
 ---
 
 ## Elara Blackiron Units (6)
 
-### 9) Rifleman Squad — **Cost 2**
+### 6) Rifleman Squad — **Cost 2**
 **Role:** core ranged DPS  
 - Moderate DPS rifle fire
 - Gains +10% accuracy near **Field Command Post**
 - Prioritizes marked / lowest-HP enemies
 
-### 10) Sniper Elite — **Cost 3**
+### 7) Sniper Elite — **Cost 3**
 **Role:** long-range execution  
 - Very long range, slow fire rate
 - Deals **+50% damage** to **Marked** targets (from Field Command Post aura rules or future marks)
 - First shot against elite targets applies **Armor Crack** (-10% DR for 4s)
 
-### 11) Shield Trooper — **Cost 2**
-**Role:** defensive infantry / cover  
-- Creates portable cover angle (reduced ranged damage for allies behind)
-- Short-range pistol fire
-- On taking heavy ranged damage, throws **flash charge** (stagger 0.3s)
 
-### 12) Mortar Team — **Cost 4**
-**Role:** indirect AoE artillery  
-- Arcing shots; effective vs backline and clumps
-- Each hit applies **Suppression** (-10% attack speed) for 2s
-- Strong synergy with **Arcane Tornado** and **Storm Generator**
-
-### 13) Firethrower Unit — **Cost 3**
+### 8) Firethrower Unit — **Cost 3**
 **Role:** anti-swarm / area denial  
 - Short-range flame cone DoT
 - Applies **Scorch**: enemies take +10% damage for 3s
 - Good at clearing small/fast units
 
-### 14) Heavy Siege Walker — **Cost 6**
+### 9) Heavy Siege Walker — **Cost 6**
 **Role:** late-game siege anchor  
 - Large walker with cannon and stomp
 - Cannon: heavy AoE impact damage (slow reload)
@@ -224,97 +195,79 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 
 ## Rex Aetherfall Units (7)
 
-### 15) Lightning Sorcerer — **Cost 3**
+### 10) Lightning Sorcerer — **Cost 3**
 **Role:** chain AoE caster  
 - Chain lightning basic attack (jumps up to 3)
 - Applies **15% slow** on hit for 2s
 - Generates extra Aetherstorm Sparks on multi-hit
 
-### 16) Aether Golem — **Cost 4**
+### 11) Aether Golem — **Cost 4**
 **Role:** floating construct bruiser  
 - Midline durable unit
 - Charges **Aether Burst** every 6s: AoE magic burst
 - Explodes on death (small AoE) if empowered by Lightning Amplifier Crystal
 
-### 17) Mana Siphon Adept — **Cost 2**
+### 12) Mana Siphon Adept — **Cost 2**
 **Role:** anti-caster utility  
 - Drains enemy energy (reduces enemy skill frequency – abstract)
 - Applies **Weaken**: -10% spell damage for 4s
 - Helps stabilize against mage-heavy enemy waves
 
-### 18) Arcane Bomber Drone — **Cost 3**
-**Role:** flying AoE pressure  
-- Flying; drops bombs in small AoE
-- Bombs apply **Static**: enemies take +10% lightning damage for 4s
-- Great for stacked wave lanes
 
-### 19) Mystic Sentinel — **Cost 3**
-**Role:** support caster / control  
-- Periodic **Shield Pulse** to nearest ally (small barrier)
-- Casts **Stun Wave** every 10s: short stun 0.6s in a line
-- Supports hybrid defensive builds
-
-### 20) Aether Archer — **Cost 2**
+### 13) Aether Archer — **Cost 2**
 **Role:** piercing ranged magic  
 - Piercing arcane arrows
 - Bonus damage vs shielded enemies (breaks barriers faster)
 - Great for finishing targets clustered in tornado
 
-### 21) Stormcaller Priest — **Cost 3**
-**Role:** spell amplifier / aura support  
-- Aura: +10% spell damage to nearby allies
-- Periodic **Charge Spark**: grants Aetherstorm Sparks to Rex
-- Low direct DPS; high scaling utility
-
----
 
 # ---------------------------------------
 # 2B. SHARED STRUCTURES (8)
 # ---------------------------------------
 
-### 22) Field Command Post — **Cost 3**
+### 14) Field Command Post — **Cost 3**
 **Type:** buff structure / tactical hub  
 - Aura (4 tiles): +10% accuracy, +10% ranged attack speed
 - If Elara is your active commander: also generates **+1 Tactical Orders every 8s**
 - Visual: command flags, map table, signal lantern
 
-### 23) Healing Beacon — **Cost 2**
+### 15) Healing Beacon — **Cost 2**
 **Type:** sustain structure  
 - Pulses heal every 2s in 3-tile radius (small heal)
 - If Valerius is active: generates **+1 Faith every 10s**
 - Prioritizes allies below 50% HP
 
-### 24) Lightbringer Tower — **Cost 3**
+### 16) Lightbringer Tower — **Cost 3**
 **Type:** long-range piercing holy turret  
 - Fires a beam every 2.5s
 - Beam pierces 1 target, minor slow 10% for 1.5s
 - Strong vs armored single targets
 
-### 25) Cannon Turret — **Cost 4**
+### 17) Cannon Turret — **Cost 4**
 **Type:** AoE siege turret  
 - Fires explosive shells (AoE 2 tiles)
 - Applies **stagger 0.2s** to basic units in blast
 - Great wave clearer when enemies are clumped
 
-### 26) Machine Gun Nest — **Cost 3**
+### 18) Machine Gun Nest — **Cost 3**
 **Type:** sustained DPS / suppression  
 - Rapid fire at nearest enemies
 - Applies **Suppression**: -10% attack speed for 2s (refreshing)
 - Strong against swarms and light armor
 
-### 27) Aether Tower — **Cost 4**
+### 19) Aether Tower — **Cost 4**
 **Type:** lightning chain turret  
 - Chain lightning bolts jump up to 3 targets
 - Generates Aetherstorm Sparks if Rex is active
 - Best paired with Lightning Amplifier Crystal
 
-### 28) Mana Fountain — **Cost 2**
+### 20) Mana Fountain — **Cost 2**
 **Type:** spell economy support  
 - Grants nearby casters faster ability cadence (abstract “mana regen”)
 - Improves spell uptime and mage performance
 - Encourages caster-centric builds
 
-### 29) Storm Generator — **Cost 4**
+### 21) Storm Generator — **Cost 4**
 **Type:** zone control structure  
 - Creates storm zone (3-tile radius) for 8s
   - Enemies slowed 25%
@@ -327,22 +280,22 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 # 2C. SHARED MODULES (7)
 # ---------------------------------------
 
-### 30) Advanced Optics Node
+### 22) Advanced Optics Node
 **Type:** range amplifier module  
 - +20% range to ranged units and turrets spawned/placed adjacent
 - Increases battlefield coverage, supports gunlines
 
-### 31) Reload Synchronizer
+### 23) Reload Synchronizer
 **Type:** fire-rate module  
 - +15% attack speed to firearms and turrets in adjacency radius
 - Encourages fortress layout planning (weapon clusters)
 
-### 32) Holy Barrier Matrix
+### 24) Holy Barrier Matrix
 **Type:** defensive spawn module  
 - Units spawned on adjacent tiles gain **10% HP shield** (6s)
 - Stacks well with Valerius sustain and hybrid defense
 
-### 33) Faith / Aether Conduit
+### 25) Faith / Aether Conduit
 **Type:** resource generator module  
 - Generates commander-aligned resource over time:
   - If Valerius active → Faith
@@ -350,17 +303,17 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
   - If Elara active → Tactical Orders (reduced rate)
 - Enables multi-commander decks without dead draws
 
-### 34) Spellweaver Rune Grid
+### 26) Spellweaver Rune Grid
 **Type:** AoE geometry module  
 - +20% AoE radius to spells cast while within 4 tiles of module
 - Strong for tornado + bombardment + storm zones
 
-### 35) Lightning Amplifier Crystal
+### 27) Lightning Amplifier Crystal
 **Type:** damage amplifier module  
 - +20% lightning/magic damage to lightning-tag attacks
 - Improves chain lightning, Aether Tower, Lightning Sorcerer
 
-### 36) Detection Grid
+### 28) Detection Grid
 **Type:** stealth counter module  
 - Reveals stealth enemies within 5 tiles
 - Reduces enemy dodge in area by 10% (optional tuning)
@@ -371,38 +324,38 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 # 2D. SHARED SPELLS (6)
 # ---------------------------------------
 
-### 37) Radiant Burst — **Cost 2**
+### 29) Radiant Burst — **Cost 2**
 **Role:** AoE damage + accuracy control  
 - AoE holy explosion (3-tile radius)
 - Applies **Blind**: -20% accuracy for 3s
 - Great vs ranged-heavy waves
 
-### 38) Spirit Mend — **Cost 1**
+### 30) Spirit Mend — **Cost 1**
 **Role:** emergency heal  
 - Heal a target ally for moderate amount
 - Grants +10% damage reduction for 3s
 - Enables clutch saves on tanks and siege units
 
-### 39) Tactical Airstrike — **Cost 3**
+### 31) Tactical Airstrike — **Cost 3**
 **Role:** high-impact AoE nuke  
 - Large AoE bombardment line or circle (implementation choice)
 - Heavy damage, strong vs clumped waves
 - Best combo: Storm Generator + Arcane Tornado
 
-### 40) Smoke Screen — **Cost 2**
+### 32) Smoke Screen — **Cost 2**
 **Role:** defensive utility / reposition  
 - Creates smoke zone (3 tiles) for 6s
   - Allies inside: +25% dodge/evasion
   - Enemies inside: -30% accuracy
 - Supports both gunlines and holy sustain plays
 
-### 41) Chain Lightning — **Cost 2**
+### 33) Chain Lightning — **Cost 2**
 **Role:** multi-target spell DPS  
 - Hits up to 5 targets, increasing damage each jump slightly
 - Applies minor slow 10% for 2s
 - Generates Aetherstorm Sparks for Rex
 
-### 42) Arcane Tornado — **Cost 3**
+### 34) Arcane Tornado — **Cost 3**
 **Role:** pull + DoT control  
 - Creates a vortex for 4s
   - Pulls enemies inward
@@ -442,16 +395,11 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 - Acolyte Healer
 - Priestess of Dawn
 - Crusader Shieldbearer
-- Radiant Knight
 - Seraph Guardian
-- Dawnbreaker Charger
-- Archon of Light
 
 ### ELARA – Tactical / Gunpowder
 - Rifleman Squad
 - Sniper Elite
-- Shield Trooper
-- Mortar Team
 - Firethrower Unit
 - Heavy Siege Walker
 
@@ -459,10 +407,8 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 - Lightning Sorcerer
 - Aether Golem
 - Mana Siphon Adept
-- Arcane Bomber Drone
-- Mystic Sentinel
 - Aether Archer
-- Stormcaller Priest
+
 
 ---
 
