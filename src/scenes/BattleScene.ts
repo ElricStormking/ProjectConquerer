@@ -1115,6 +1115,11 @@ export class BattleScene extends Phaser.Scene {
             return;
         }
 
+        if (unitType === UnitType.TRIARCH_AETHER_ARCHER) {
+            this.handleAetherPiercingAttack(attacker, target);
+            return;
+        }
+
         const damage = attacker.getDamage();
         this.combatSystem.dealDamage(attacker as any, target as any, damage);
 
@@ -1191,6 +1196,163 @@ export class BattleScene extends Phaser.Scene {
 
         // Visual projectile
         this.createProjectileAttack(attacker, target, unitType);
+    }
+
+    private handleAetherPiercingAttack(attacker: any, target: any): void {
+        const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
+        const canPierce = skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now);
+
+        if (!canPierce) {
+            const damage = attacker.getDamage();
+            this.combatSystem.dealDamage(attacker as any, target as any, damage);
+            this.createProjectileAttack(attacker, target, UnitType.TRIARCH_AETHER_ARCHER);
+            return;
+        }
+
+        const origin = attacker.getPosition();
+        const targetPos = target.getPosition();
+        const dirX = targetPos.x - origin.x;
+        const dirY = targetPos.y - origin.y;
+        const dirLen = Math.sqrt(dirX * dirX + dirY * dirY);
+
+        if (dirLen < 1) {
+            const damage = attacker.getDamage();
+            this.combatSystem.dealDamage(attacker as any, target as any, damage);
+            this.createProjectileAttack(attacker, target, UnitType.TRIARCH_AETHER_ARCHER);
+            return;
+        }
+
+        const nx = dirX / dirLen;
+        const ny = dirY / dirLen;
+        const maxRange = Math.max(attacker.getRange?.() ?? dirLen, dirLen);
+        const rawWidth = typeof skill.aoeRadius === 'number' ? skill.aoeRadius : Number(skill.aoeRadius);
+        const pierceWidth = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : 60;
+        const rawMaxTargets = typeof skill.maxTargets === 'number' ? skill.maxTargets : Number(skill.maxTargets);
+        const maxTargets = Number.isFinite(rawMaxTargets) && rawMaxTargets > 0 ? rawMaxTargets : 3;
+
+        const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
+
+        // Pick targets along the shot line for piercing.
+        const candidates: Array<{ unit: any; proj: number }> = [];
+        enemies.forEach(enemy => {
+            const pos = enemy.getPosition();
+            const relX = pos.x - origin.x;
+            const relY = pos.y - origin.y;
+            const proj = relX * nx + relY * ny;
+            if (proj < 0 || proj > maxRange) return;
+            const perp = Math.abs(relX * ny - relY * nx);
+            if (perp > pierceWidth) return;
+            candidates.push({ unit: enemy, proj });
+        });
+
+        if (!candidates.some(c => c.unit === target)) {
+            candidates.push({ unit: target, proj: dirLen });
+        }
+
+        candidates.sort((a, b) => a.proj - b.proj);
+        const projById = new Map<string, number>();
+        candidates.forEach(entry => {
+            const id = entry.unit.getId?.();
+            if (id) projById.set(id, entry.proj);
+        });
+
+        const targets: any[] = [];
+        const seen = new Set<string>();
+        for (const entry of candidates) {
+            const id = entry.unit.getId?.() ?? '';
+            if (id && seen.has(id)) continue;
+            if (id) seen.add(id);
+            targets.push(entry.unit);
+            if (targets.length >= maxTargets) break;
+        }
+
+        if (targets.length === 0) {
+            targets.push(target);
+        } else {
+            const targetId = target.getId?.() ?? '';
+            const hasTarget = targetId
+                ? targets.some(t => t.getId?.() === targetId)
+                : targets.includes(target);
+            if (!hasTarget) {
+                if (targets.length >= maxTargets) {
+                    targets[targets.length - 1] = target;
+                } else {
+                    targets.push(target);
+                }
+            }
+        }
+        targets.sort((a, b) => {
+            const aId = a.getId?.() ?? '';
+            const bId = b.getId?.() ?? '';
+            return (projById.get(aId) ?? 0) - (projById.get(bId) ?? 0);
+        });
+
+        const baseDamage = attacker.getDamage();
+        const rawPierceDamage = typeof skill.damage === 'number' && Number.isFinite(skill.damage) && skill.damage > 0
+            ? skill.damage
+            : baseDamage;
+        const secondaryMultiplier = 0.9;
+        targets.forEach((enemy, index) => {
+            const damage = index === 0 ? baseDamage : Math.round(rawPierceDamage * secondaryMultiplier);
+            this.combatSystem.dealDamage(attacker as any, enemy as any, damage);
+        });
+
+        attacker.markSkillUsed?.(skill, this.time.now);
+
+        const impactPoints = targets.map((t: any) => t.getPosition());
+        this.drawAetherPierceLine(origin, impactPoints);
+
+        const end = impactPoints[impactPoints.length - 1];
+        const rawSpeed = typeof skill.projectileSpeed === 'number' ? skill.projectileSpeed : Number(skill.projectileSpeed);
+        const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 520;
+        this.projectileSystem.createProjectile({
+            startX: origin.x,
+            startY: origin.y,
+            targetX: end.x,
+            targetY: end.y,
+            unitType: UnitType.TRIARCH_AETHER_ARCHER,
+            damage: rawPierceDamage,
+            speed,
+            attackerTeam: attacker.getTeam()
+        });
+    }
+
+    private drawAetherPierceLine(origin: { x: number; y: number }, points: { x: number; y: number }[]): void {
+        if (points.length === 0) return;
+        const end = points[points.length - 1];
+        const g = this.add.graphics();
+        g.setDepth(7000);
+        g.setBlendMode(Phaser.BlendModes.ADD);
+
+        g.lineStyle(3, 0x9fe8ff, 0.9);
+        g.beginPath();
+        g.moveTo(origin.x, origin.y);
+        g.lineTo(end.x, end.y);
+        g.strokePath();
+
+        g.lineStyle(8, 0x5ac7ff, 0.25);
+        g.beginPath();
+        g.moveTo(origin.x, origin.y);
+        g.lineTo(end.x, end.y);
+        g.strokePath();
+
+        points.forEach((p, index) => {
+            const ring = index === points.length - 1 ? 12 : 9;
+            g.fillStyle(0xd9f6ff, 0.85);
+            g.fillCircle(p.x, p.y, ring * 0.45);
+            g.lineStyle(2, 0x7bdcff, 0.8);
+            g.strokeCircle(p.x, p.y, ring);
+        });
+
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            scaleX: 1.06,
+            scaleY: 1.06,
+            duration: 240,
+            ease: 'Quad.easeOut',
+            onComplete: () => g.destroy()
+        });
     }
 
     private drawChainLightning(origin: { x: number; y: number }, points: { x: number; y: number }[]): void {
@@ -1538,6 +1700,12 @@ export class BattleScene extends Phaser.Scene {
                 break;
             case UnitType.RAIDER_ARCHER:
                 speed = 420;
+                break;
+            case UnitType.TRIARCH_AETHER_ARCHER:
+                speed = 520;
+                break;
+            case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
+                speed = 360;
                 break;
         }
 

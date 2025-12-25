@@ -208,10 +208,9 @@ Cooldown: **24s** | Targeting: ground (4-tile radius)
 - Explodes on death (small AoE) if empowered by Lightning Amplifier Crystal
 
 ### 12) Mana Siphon Adept — **Cost 2**
-**Role:** anti-caster utility  
-- Drains enemy energy (reduces enemy skill frequency – abstract)
-- Applies **Weaken**: -10% spell damage for 4s
-- Helps stabilize against mage-heavy enemy waves
+**Role:** attack speed suppression  
+- Arcane siphon bolt applies **Suppressed**: -50% attack speed for 4s
+- Helps stabilize against speedy enemy waves
 
 
 ### 13) Aether Archer — **Cost 2**

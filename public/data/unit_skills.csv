@@ -40,5 +40,5 @@ skill_triarch_firethrower_scorch,Scorching Cone,projectile,on_attack,enemy,16,,1
 skill_triarch_siege_cannon,Siege Cannon,projectile,on_attack,enemy,220,,200,140,320,none,,,,,,,,400,,,,3500,,0,,3,,,,,,0,,0,,0,,FALSE,,,
 skill_triarch_lightning_chain,Chain Lightning,projectile,on_attack,enemy,26,,220,0,,slow,2000,,0,,0,,,,,,0,,,3,3,220,,,,,,0,,0,,0,,FALSE,,,
 skill_triarch_golem_burst,Aether Burst,aura,passive_tick,enemy,180,,160,140,,,none,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,,
-skill_triarch_siphon_weaken,Mana Siphon Bolt,projectile,on_attack,enemy,18,,,,,suppressed,4000,,,,,,,,,0,,,,,,,,,,0,,0,,0,,FALSE,,spell_power,-0.1,4000,,"Reduces enemy spell potency for 4s"
-skill_triarch_aether_pierce,Aether Piercing Shot,projectile,on_attack,enemy,22,,,,,,,,,,,,,,,0,,,,,,,,,,0,,0,,2,,FALSE,,damage_buff,1.15,3000,,"Pierces up to 2; bonus vs shields not modeled"
+skill_triarch_siphon_weaken,Mana Siphon Bolt,projectile,on_attack,enemy,18,,,,360,suppressed,4000,,,,,,,,,0,,,,,,,,,,0,,,,,,,,Suppressed: -50% attack speed for 4s,
+skill_triarch_aether_pierce,Aether Piercing Shot,projectile,on_attack,enemy,22,,,70,520,,,,,,,,,,,0,,,3,,,,,,,0,,,,,,,,Pierces up to 3; bonus vs shields not modeled,

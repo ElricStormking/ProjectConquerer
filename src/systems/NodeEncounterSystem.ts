@@ -92,7 +92,12 @@ export class NodeEncounterSystem {
         const scenePlugin = this.hostScene.scene;
         scenePlugin.stop('BattleScene');
         scenePlugin.stop('UIScene');
-        scenePlugin.wake(this.hostScene.scene.key);
+        const hostKey = this.hostScene.scene.key;
+        if (scenePlugin.isPaused(hostKey)) {
+            scenePlugin.resume(hostKey);
+        } else if (scenePlugin.isSleeping(hostKey)) {
+            scenePlugin.wake(hostKey);
+        }
         scenePlugin.bringToTop(this.hostScene.scene.key);
 
         if (!victory) {

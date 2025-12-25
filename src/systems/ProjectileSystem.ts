@@ -81,6 +81,60 @@ export class Projectile extends Phaser.GameObjects.Container {
                 this.projectileGraphics.fillPath();
                 this.projectileGraphics.strokePath();
                 break;
+
+            case UnitType.TRIARCH_AETHER_ARCHER:
+                // Aether arrow: bright, piercing arcane bolt
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0x7bdcff, 0.9);
+                this.projectileGraphics.lineStyle(1, 0xe6fbff, 0.9);
+                this.projectileGraphics.beginPath();
+                // Shaft
+                this.projectileGraphics.moveTo(-10, -1.5);
+                this.projectileGraphics.lineTo(6, -1.5);
+                this.projectileGraphics.lineTo(6, 1.5);
+                this.projectileGraphics.lineTo(-10, 1.5);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                // Head
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(6, -4);
+                this.projectileGraphics.lineTo(12, 0);
+                this.projectileGraphics.lineTo(6, 4);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                // Tail spark
+                this.projectileGraphics.fillStyle(0x4bb8ff, 0.7);
+                this.projectileGraphics.fillCircle(-12, 0, 2);
+                break;
+                
+            case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
+                // Mana siphon bolt: vivid violet lance with core spark
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0xc07bff, 0.9);
+                this.projectileGraphics.lineStyle(1, 0xf1ddff, 0.9);
+                this.projectileGraphics.beginPath();
+                // Shaft
+                this.projectileGraphics.moveTo(-8, -2);
+                this.projectileGraphics.lineTo(8, -2);
+                this.projectileGraphics.lineTo(8, 2);
+                this.projectileGraphics.lineTo(-8, 2);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                // Tip
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(8, -5);
+                this.projectileGraphics.lineTo(14, 0);
+                this.projectileGraphics.lineTo(8, 5);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                // Core glow
+                this.projectileGraphics.fillStyle(0x7a33ff, 0.8);
+                this.projectileGraphics.fillCircle(0, 0, 3);
+                break;
                 
             case UnitType.SHOTGUNNER:
                 // Shotgun pellets
@@ -175,13 +229,22 @@ export class Projectile extends Phaser.GameObjects.Container {
         this.traveledDistance += stepDistance;
 
         // Orient projectile graphics along travel direction
-        if (this.unitType === UnitType.SNIPER) {
+        if (
+            this.unitType === UnitType.SNIPER ||
+            this.unitType === UnitType.TRIARCH_AETHER_ARCHER ||
+            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT
+        ) {
             const angle = Math.atan2(vy, vx);
             this.projectileGraphics.setRotation(angle);
         }
 
         // Create trail effect for magic projectiles
-        if (this.unitType === UnitType.DARK_MAGE || this.unitType === UnitType.CHRONOTEMPORAL) {
+        if (
+            this.unitType === UnitType.DARK_MAGE ||
+            this.unitType === UnitType.CHRONOTEMPORAL ||
+            this.unitType === UnitType.TRIARCH_AETHER_ARCHER ||
+            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT
+        ) {
             this.createTrailEffect();
         }
 
@@ -222,6 +285,10 @@ export class Projectile extends Phaser.GameObjects.Container {
         
         if (this.unitType === UnitType.DARK_MAGE) {
             trailGraphics.fillStyle(0xAA66FF, alpha);
+        } else if (this.unitType === UnitType.TRIARCH_AETHER_ARCHER) {
+            trailGraphics.fillStyle(0x7bdcff, alpha);
+        } else if (this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT) {
+            trailGraphics.fillStyle(0xc07bff, alpha);
         } else {
             trailGraphics.fillStyle(0x00FFFF, alpha);
         }
@@ -290,6 +357,30 @@ export class Projectile extends Phaser.GameObjects.Container {
                 // Remove debug marker once detonated
                 this.debugTargetMarker?.destroy();
                 this.debugTargetLabel?.destroy();
+                break;
+
+            case UnitType.TRIARCH_AETHER_ARCHER:
+                // Aether impact burst (centered at local origin)
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.lineStyle(3, 0xb9f4ff, 0.9);
+                impactGraphics.strokeCircle(0, 0, 18);
+                impactGraphics.lineStyle(1, 0xffffff, 0.8);
+                impactGraphics.lineBetween(-10, 0, 10, 0);
+                impactGraphics.lineBetween(0, -10, 0, 10);
+                impactGraphics.fillStyle(0x7bdcff, 0.6);
+                impactGraphics.fillCircle(0, 0, 6);
+                break;
+
+            case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
+                // Mana siphon impact: violet burst with cross flare
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.lineStyle(3, 0xd8b6ff, 0.9);
+                impactGraphics.strokeCircle(0, 0, 20);
+                impactGraphics.lineStyle(2, 0x9f66ff, 0.85);
+                impactGraphics.lineBetween(-12, 0, 12, 0);
+                impactGraphics.lineBetween(0, -12, 0, 12);
+                impactGraphics.fillStyle(0x7a33ff, 0.7);
+                impactGraphics.fillCircle(0, 0, 7);
                 break;
                 
             case UnitType.CHRONOTEMPORAL:

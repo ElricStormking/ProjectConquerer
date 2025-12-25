@@ -51,5 +51,5 @@ triarch_firethrower_unit,Firethrower Unit,ranged,triarch_dominion,rare,170,26,4,
 triarch_heavy_siege_walker,Heavy Siege Walker,siege,triarch_dominion,epic,600,50,10,40,0.6,160,200,large,triarch_heavy_siege_walker,Heavy walker with cannon and stomp,skill_triarch_siege_cannon,,,1,16,2
 triarch_lightning_sorcerer,Lightning Sorcerer,ranged,triarch_dominion,rare,150,22,3,65,1,260,90,normal,triarch_lightning_sorcerer,Chain lightning caster applying slows,skill_triarch_lightning_chain,,,1,10,3
 triarch_aether_golem,Aether Golem,frontline,triarch_dominion,rare,380,30,7,55,0.9,60,160,large,triarch_aether_golem,Durable construct with burst pulse,skill_basic_melee,,skill_triarch_golem_burst,1,14,3
-triarch_mana_siphon_adept,Mana Siphon Adept,support,triarch_dominion,common,130,14,3,70,1.1,200,80,triarch_mana_siphon_adept,Anti-caster that weakens enemy spells,skill_triarch_siphon_weaken,,skill_basic_ranged,1,8,3
-triarch_aether_archer,Aether Archer,ranged,triarch_dominion,common,130,18,2,70,1.2,340,70,triarch_aether_archer,Piercing arcane arrows strong vs shields,skill_triarch_aether_pierce,,,1,8,3
+triarch_mana_siphon_adept,Mana Siphon Adept,support,triarch_dominion,common,130,14,3,70,1.1,200,80,normal,triarch_mana_siphon_adept,Support that suppresses enemy attack speed,skill_triarch_siphon_weaken,,skill_basic_ranged,1,8,3
+triarch_aether_archer,Aether Archer,ranged,triarch_dominion,common,130,18,2,70,1.2,340,70,normal,triarch_aether_archer,Piercing arcane arrows strong vs shields,skill_triarch_aether_pierce,,,1,8,3

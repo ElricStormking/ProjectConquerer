@@ -79,7 +79,7 @@ card_triarch_firethrower_unit,Firethrower Unit,unit,3,gold,triarch_firethrower_u
 card_triarch_heavy_siege_walker,Heavy Siege Walker,unit,6,gold,triarch_heavy_siege_walker,card_triarch_heavy_siege_walker,Heavy walker with cannon and stomp.,epic
 card_triarch_lightning_sorcerer,Lightning Sorcerer,unit,3,gold,triarch_lightning_sorcerer,card_triarch_lightning_sorcerer,Chain lightning caster with slows.,rare
 card_triarch_aether_golem,Aether Golem,unit,4,gold,triarch_aether_golem,card_triarch_aether_golem,Floating construct bruiser with burst.,rare
-card_triarch_mana_siphon_adept,Mana Siphon Adept,unit,2,gold,triarch_mana_siphon_adept,card_triarch_mana_siphon_adept,Anti-caster draining enemy power.,common
+card_triarch_mana_siphon_adept,Mana Siphon Adept,unit,2,gold,triarch_mana_siphon_adept,card_triarch_mana_siphon_adept,Suppresses enemy attack speed with a siphon bolt.,common
 card_triarch_aether_archer,Aether Archer,unit,2,gold,triarch_aether_archer,card_triarch_aether_archer,Piercing arcane arrows strong vs shields.,common
 card_triarch_field_command_post,Field Command Post,structure,3,gold,triarch_field_command_post,card_triarch_field_command_post,Aura boosts ranged accuracy and fire rate.,rare
 card_triarch_healing_beacon,Healing Beacon,structure,2,gold,triarch_healing_beacon,card_triarch_healing_beacon,Pulsing heals; faith generation for holy play.,common
