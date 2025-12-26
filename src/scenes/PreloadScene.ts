@@ -85,6 +85,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('commander_azariel', 'assets/commanders/nightborn_commander/Azariel_Lich_King.png');
         this.load.image('commander_bellucci', 'assets/commanders/nightborn_commander/Bellucci_The Blood_Queen.png');
         this.load.image('commander_zhaquille', 'assets/commanders/nightborn_commander/Zhaquille_Frankenstein.png');
+        // Commander portraits (Triarch Dominion)
+        this.load.image('commander_valerius', 'assets/commanders/triarch_commanders/Valerius_Dawnward.png');
+        this.load.image('commander_elara', 'assets/commanders/triarch_commanders/Elara_Blackiron.png');
+        this.load.image('commander_rex', 'assets/commanders/triarch_commanders/Rex_Aetherfall.png');
         // Jade Dynasty unit card art
         this.load.image('card_jade_azure_spear', 'assets/cards/Jade_dynasty/units/Azure_Spear_Chargers.png');
         this.load.image('card_jade_chi_dragoon', 'assets/cards/Jade_dynasty/units/Chi_Dragoon.png');

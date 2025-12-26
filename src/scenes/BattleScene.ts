@@ -964,19 +964,40 @@ export class BattleScene extends Phaser.Scene {
                 return;
             }
 
-            const dxToTarget = targetPos.x - currentPos.x;
-            const dyToTarget = targetPos.y - currentPos.y;
+            let dxToTarget = targetPos.x - currentPos.x;
+            let dyToTarget = targetPos.y - currentPos.y;
             const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
 
             const unitConfig = unit.getConfig();
-            if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
-                return;
-            }
+            const isSupportBackline =
+                unitConfig.type === 'support' ||
+                unitConfig.type === 'summoner' ||
+                this.isSupportUnit(unitConfig.unitType);
 
-            if (unitConfig.unitType === UnitType.NINJA && targetPos !== this.fortressCoreWorld) {
-                const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
-                if (jumped) {
+            // Healers/supporters: stay in a safe band and kite away if enemies get too close.
+            if (isSupportBackline) {
+                const preferred = Math.max(unit.getRange(), 200); // desired standoff distance
+                const retreatThreshold = Math.max(140, preferred * 0.65);
+                const advanceThreshold = Math.max(180, preferred * 0.9);
+
+                if (distanceToTarget < retreatThreshold) {
+                    // Too close: move away from the nearest threat
+                    dxToTarget *= -1;
+                    dyToTarget *= -1;
+                } else if (distanceToTarget <= advanceThreshold) {
+                    // In the safe band: hold position
                     return;
+                }
+            } else {
+                if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
+                    return;
+                }
+
+                if (unitConfig.unitType === UnitType.NINJA && targetPos !== this.fortressCoreWorld) {
+                    const jumped = (unit as any).attemptNinjaJump(targetPos, this.time.now);
+                    if (jumped) {
+                        return;
+                    }
                 }
             }
 
@@ -1810,6 +1831,18 @@ export class BattleScene extends Phaser.Scene {
             UnitType.TRIARCH_SNIPER_ELITE,
             UnitType.TRIARCH_FIRETHROWER_UNIT,
             UnitType.TRIARCH_HEAVY_SIEGE_WALKER
+        ].includes(unitType);
+    }
+
+    private isSupportUnit(unitType: UnitType): boolean {
+        return [
+            UnitType.COG_MEDIC_DRONE,
+            UnitType.JADE_SPIRIT_LANTERN,
+            UnitType.JADE_SHIKIGAMI_FOX,
+            UnitType.FROST_FORBIDDEN_SCIENTIST,
+            UnitType.TRIARCH_ACOLYTE_HEALER,
+            UnitType.TRIARCH_PRIESTESS_DAWN,
+            UnitType.TRIARCH_MANA_SIPHON_ADEPT
         ].includes(unitType);
     }
 
