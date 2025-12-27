@@ -13,15 +13,65 @@ export class CardSystem {
     private cannonTowers: Array<{
         x: number;
         y: number;
+        gridX?: number;
+        gridY?: number;
         hp: number;
         maxHp: number;
         lastShotTime: number;
         range: number;
         damage: number;
+        cooldownMs?: number;
         body: Phaser.GameObjects.Image;
         hpBg: Phaser.GameObjects.Graphics;
         hpBar: Phaser.GameObjects.Graphics;
         occupantId: string;
+    }> = [];
+
+    private healingBeacons: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+        lastPulseTime: number;
+    }> = [];
+
+    private commandPosts: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+    }> = [];
+
+    private stormGenerators: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+        lastTickTime: number;
+    }> = [];
+
+    private shieldAuras: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+        lastPulseTime: number;
+    }> = [];
+
+    private smokeFields: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+        lastTickTime: number;
+    }> = [];
+
+    private resonanceTowers: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        effectId: string;
+        lastPulseTime: number;
     }> = [];
 
     constructor(
@@ -44,6 +94,7 @@ export class CardSystem {
     }
 
     public update(now: number, _deltaSeconds: number): void {
+        this.updateStructureEffects(now, _deltaSeconds);
         this.updateCannonTowers(now);
     }
 
@@ -197,6 +248,33 @@ export class CardSystem {
                     // Just refresh visual
                     const pos = this.fortressSystem.gridToWorld(cell.x, cell.y);
                     this.addRankIndicator(pos.x, pos.y, newLevel);
+                }
+            }
+        } else if (card.type === CardType.STRUCTURE && card.structureId) {
+            // Structure enhancements: effects scale based on cell enhancement level.
+            const dm = DataManager.getInstance();
+            const config = dm.getBuildingConfig(card.structureId);
+            const effectId: string | undefined = config?.effect_id;
+
+            const pos = this.fortressSystem.gridToWorld(cell.x, cell.y);
+            this.addRankIndicator(pos.x, pos.y, newLevel);
+
+            // If this structure is a turret, update its instance stats immediately.
+            if (effectId === 'triarch_cannon_blast' || effectId === 'cannon_shoot' || effectId === 'jade_archer_volley') {
+                const tower = this.cannonTowers.find(t => t.occupantId === cell.occupantId);
+                if (tower) {
+                    const baseHp = Number(config?.max_hp) || 200;
+                    const baseDamage =
+                        effectId === 'triarch_cannon_blast'
+                            ? 55
+                            : effectId === 'jade_archer_volley'
+                                ? 18
+                                : 40;
+                    const mult = 1 + 1.5 * newLevel;
+                    tower.maxHp = baseHp * mult;
+                    tower.hp = tower.maxHp;
+                    tower.damage = baseDamage * mult;
+                    this.updateTowerHPBar(tower);
                 }
             }
         }
@@ -378,6 +456,7 @@ export class CardSystem {
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
         const dm = DataManager.getInstance();
         const config = dm.getBuildingConfig(structureId);
+        const effectId: string | undefined = config?.effect_id;
 
         // Choose sprite key: prefer buildings.csv sprite_key, then a convention, then card art.
         const spriteKeyFromConfig: string | undefined = config?.sprite_key;
@@ -397,11 +476,308 @@ export class CardSystem {
         const occupantId = `${structureId}_${gridX}_${gridY}`;
         this.fortressSystem.occupyCell(gridX, gridY, occupantId, structureId);
 
+        // Turret-like structures get full runtime behavior (shooting, HP bar).
+        if (
+            effectId === 'triarch_cannon_blast' ||
+            effectId === 'cannon_shoot' ||
+            effectId === 'jade_archer_volley'
+        ) {
+            const baseHp = Number(config?.max_hp) || 200;
+            const baseDamage =
+                effectId === 'triarch_cannon_blast'
+                    ? 55
+                    : effectId === 'jade_archer_volley'
+                        ? 18
+                        : 40;
+            const cooldownMs = effectId === 'jade_archer_volley' ? 900 : 2000;
+            this.createTurretStructure(worldPos.x, worldPos.y, gridX, gridY, occupantId, textureKey, baseHp, baseDamage, cooldownMs);
+            return true;
+        }
+
         const sprite = this.scene.add.image(worldPos.x, worldPos.y, textureKey);
         sprite.setOrigin(0.5, 0.8);
         this.fitBuildingToFortressCell(sprite);
         sprite.setDepth(worldPos.y + 3600);
+
+        if (effectId) {
+            this.registerStructureEffect(effectId, gridX, gridY, occupantId);
+        }
         return true;
+    }
+
+    private registerStructureEffect(effectId: string, gridX: number, gridY: number, occupantId: string): void {
+        switch (effectId) {
+            case 'triarch_healing_pulse':
+                this.healingBeacons.push({ gridX, gridY, occupantId, effectId, lastPulseTime: 0 });
+                return;
+            case 'triarch_command_zone':
+                this.commandPosts.push({ gridX, gridY, occupantId, effectId });
+                return;
+            case 'triarch_storm_zone':
+                this.stormGenerators.push({ gridX, gridY, occupantId, effectId, lastTickTime: 0 });
+                return;
+            case 'shield_aura':
+                this.shieldAuras.push({ gridX, gridY, occupantId, effectId, lastPulseTime: 0 });
+                return;
+            case 'jade_smoke_field':
+                this.smokeFields.push({ gridX, gridY, occupantId, effectId, lastTickTime: 0 });
+                return;
+            case 'jade_resonance_pulse':
+                this.resonanceTowers.push({ gridX, gridY, occupantId, effectId, lastPulseTime: 0 });
+                return;
+            default:
+                // Unknown structure effects are currently no-ops (still placeable as visuals).
+                return;
+        }
+    }
+
+    private updateStructureEffects(now: number, deltaSeconds: number): void {
+        const phase = this.gameState.getState().phase;
+        if (phase !== 'PREPARATION' && phase !== 'BATTLE') return;
+
+        // 1) Command Post aura: continuously sets building-specific multipliers so it stacks cleanly
+        // with temporary buffs/debuffs.
+        this.updateCommandPostAuras();
+
+        // 2) Healing beacon pulses (also useful in pre-build)
+        this.updateHealingBeacons(now);
+
+        // 3) Shield auras (also useful in pre-build)
+        this.updateShieldAuras(now);
+
+        // 4) Storm/smoke/resonance zones (battle-only meaningful because they target enemies)
+        if (phase === 'BATTLE') {
+            this.updateStormGenerators(now, deltaSeconds);
+            this.updateSmokeFields(now);
+            this.updateResonanceTowers(now);
+        }
+    }
+
+    private updateCommandPostAuras(): void {
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        if (allies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 4; // 4 tiles
+
+        // Default all units back to no building aura, then re-apply strongest aura found.
+        allies.forEach(u => {
+            u.setBuildingAttackSpeedMultiplier?.(1);
+            u.setBuildingAccuracyMultiplier?.(1);
+        });
+
+        if (this.commandPosts.length === 0) return;
+
+        // Accumulate max multipliers across multiple command posts.
+        const bestAtkSpeed = new Map<any, number>();
+        const bestAcc = new Map<any, number>();
+        allies.forEach(u => {
+            bestAtkSpeed.set(u, 1);
+            bestAcc.set(u, 1);
+        });
+
+        this.commandPosts.forEach(post => {
+            const pos = this.fortressSystem.gridToWorld(post.gridX, post.gridY);
+            const cell = this.fortressSystem.getCell(post.gridX, post.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            // Base: +15% ranged attack speed, +10% accuracy
+            const atkSpeedMult = 1 + 0.15 * scale;
+            const accMult = 1 + 0.1 * scale;
+
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                const uPos = u.getPosition?.();
+                if (!uPos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+                if (dist > radius) return;
+
+                bestAtkSpeed.set(u, Math.max(bestAtkSpeed.get(u) ?? 1, atkSpeedMult));
+                bestAcc.set(u, Math.max(bestAcc.get(u) ?? 1, accMult));
+                u.markBuildingBuff?.();
+            });
+        });
+
+        allies.forEach(u => {
+            u.setBuildingAttackSpeedMultiplier?.(bestAtkSpeed.get(u) ?? 1);
+            u.setBuildingAccuracyMultiplier?.(bestAcc.get(u) ?? 1);
+        });
+    }
+
+    private updateHealingBeacons(now: number): void {
+        if (this.healingBeacons.length === 0) return;
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        if (allies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3; // 3 tiles
+        const intervalMs = 2000;
+
+        this.healingBeacons.forEach(beacon => {
+            if (now - beacon.lastPulseTime < intervalMs) return;
+            beacon.lastPulseTime = now;
+
+            const pos = this.fortressSystem.gridToWorld(beacon.gridX, beacon.gridY);
+            const cell = this.fortressSystem.getCell(beacon.gridX, beacon.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            const baseHeal = 18; // tuned baseline for Healing Beacon
+            const healAmount = baseHeal * scale;
+
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                const uPos = u.getPosition?.();
+                if (!uPos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+                if (dist > radius) return;
+                u.heal?.(healAmount);
+                u.markBuildingBuff?.();
+            });
+        });
+    }
+
+    private updateStormGenerators(now: number, deltaSeconds: number): void {
+        if (this.stormGenerators.length === 0) return;
+        const enemies = this.unitManager.getUnitsByTeam(2) as any[];
+        if (enemies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3; // 3 tiles
+        const slowTickMs = 500;
+
+        this.stormGenerators.forEach(storm => {
+            const pos = this.fortressSystem.gridToWorld(storm.gridX, storm.gridY);
+            const cell = this.fortressSystem.getCell(storm.gridX, storm.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            const baseSlow = 0.25;
+            const slowAmount = Math.min(0.8, baseSlow * scale);
+            const baseDps = 5;
+            const dps = baseDps * scale;
+
+            enemies.forEach(e => {
+                if (e.isDead?.()) return;
+                const ePos = e.getPosition?.();
+                if (!ePos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, ePos.x, ePos.y);
+                if (dist > radius) return;
+
+                // DoT each frame (small)
+                e.takeDamage?.(dps * deltaSeconds);
+
+                // Slow refresh on a fixed cadence
+                if (now - storm.lastTickTime >= slowTickMs) {
+                    e.applySlow?.(slowAmount, 900);
+                }
+            });
+
+            if (now - storm.lastTickTime >= slowTickMs) {
+                storm.lastTickTime = now;
+            }
+        });
+    }
+
+    private updateShieldAuras(now: number): void {
+        if (this.shieldAuras.length === 0) return;
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        if (allies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3; // 3 tiles
+        const intervalMs = 2500;
+
+        this.shieldAuras.forEach(aura => {
+            if (now - aura.lastPulseTime < intervalMs) return;
+            aura.lastPulseTime = now;
+
+            const pos = this.fortressSystem.gridToWorld(aura.gridX, aura.gridY);
+            const cell = this.fortressSystem.getCell(aura.gridX, aura.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            const baseShield = 20;
+            const shieldAmount = baseShield * scale;
+            const durationMs = 3000;
+
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                const uPos = u.getPosition?.();
+                if (!uPos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+                if (dist > radius) return;
+                u.applyShield?.(shieldAmount, durationMs);
+                u.markBuildingBuff?.();
+            });
+        });
+    }
+
+    private updateSmokeFields(now: number): void {
+        if (this.smokeFields.length === 0) return;
+        const enemies = this.unitManager.getUnitsByTeam(2) as any[];
+        if (enemies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3;
+        const tickMs = 500;
+
+        this.smokeFields.forEach(field => {
+            if (now - field.lastTickTime < tickMs) return;
+            field.lastTickTime = now;
+
+            const pos = this.fortressSystem.gridToWorld(field.gridX, field.gridY);
+            const cell = this.fortressSystem.getCell(field.gridX, field.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            // Smoke: reduce accuracy (daze) briefly; scaled.
+            const accMult = Math.max(0.15, 0.7 / scale);
+            const durationMs = 900;
+
+            enemies.forEach(e => {
+                if (e.isDead?.()) return;
+                const ePos = e.getPosition?.();
+                if (!ePos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, ePos.x, ePos.y);
+                if (dist > radius) return;
+                e.applyDaze?.(accMult, durationMs);
+            });
+        });
+    }
+
+    private updateResonanceTowers(now: number): void {
+        if (this.resonanceTowers.length === 0) return;
+        const enemies = this.unitManager.getUnitsByTeam(2) as any[];
+        if (enemies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 2; // 2 tiles
+        const intervalMs = 3500;
+
+        this.resonanceTowers.forEach(tower => {
+            if (now - tower.lastPulseTime < intervalMs) return;
+            tower.lastPulseTime = now;
+
+            const pos = this.fortressSystem.gridToWorld(tower.gridX, tower.gridY);
+            const cell = this.fortressSystem.getCell(tower.gridX, tower.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            const stunMs = 700 + 200 * level;
+            const damage = 4 * scale;
+
+            enemies.forEach(e => {
+                if (e.isDead?.()) return;
+                const ePos = e.getPosition?.();
+                if (!ePos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, ePos.x, ePos.y);
+                if (dist > radius) return;
+                e.applyStun?.(stunMs);
+                e.takeDamage?.(damage);
+            });
+        });
     }
 
     private placeModule(moduleId: string | undefined, gridX: number, gridY: number, card: ICard): boolean {
@@ -639,11 +1015,64 @@ export class CardSystem {
         this.cannonTowers.push({
             x,
             y,
+            gridX,
+            gridY,
             hp: maxHp,
             maxHp,
             lastShotTime: 0,
             range: (this.scene.cameras.main.width || 1920) * (2 / 3),
             damage: 40, // Default damage
+            cooldownMs: 2000,
+            body,
+            hpBg,
+            hpBar,
+            occupantId
+        });
+    }
+
+    private createTurretStructure(
+        x: number,
+        y: number,
+        gridX: number,
+        gridY: number,
+        occupantId: string,
+        textureKey: string,
+        baseHp: number,
+        baseDamage: number,
+        cooldownMs: number = 2000
+    ): void {
+        const body = this.scene.add.image(x, y, textureKey);
+        body.setOrigin(0.5, 0.8);
+        this.fitBuildingToFortressCell(body);
+        const hpBg = this.scene.add.graphics();
+        const hpBar = this.scene.add.graphics();
+        body.setDepth(y + 3600);
+
+        const maxHp = baseHp;
+        const hpWidth = 50;
+        const hpHeight = 4;
+        const hpY = y - body.displayHeight * 0.9;
+        hpBg.clear();
+        hpBg.fillStyle(0x000000, 0.7);
+        hpBg.fillRect(x - hpWidth / 2, hpY, hpWidth, hpHeight);
+        hpBg.setDepth(y + 3601);
+
+        hpBar.clear();
+        hpBar.fillStyle(0x00ff00, 1);
+        hpBar.fillRect(x - hpWidth / 2, hpY, hpWidth, hpHeight);
+        hpBar.setDepth(y + 3602);
+
+        this.cannonTowers.push({
+            x,
+            y,
+            gridX,
+            gridY,
+            hp: maxHp,
+            maxHp,
+            lastShotTime: 0,
+            range: (this.scene.cameras.main.width || 1920) * (2 / 3),
+            damage: baseDamage,
+            cooldownMs,
             body,
             hpBg,
             hpBar,
@@ -908,8 +1337,6 @@ export class CardSystem {
         const enemies = this.unitManager.getUnitsByTeam(2);
         if (enemies.length === 0) return;
 
-        const COOLDOWN_MS = 2000;
-
         // Check for enemies attacking towers and apply damage
         this.cannonTowers.forEach(tower => {
             enemies.forEach(enemy => {
@@ -937,7 +1364,8 @@ export class CardSystem {
 
         // Towers shoot at enemies
         this.cannonTowers.forEach(tower => {
-            if (now - tower.lastShotTime < COOLDOWN_MS) {
+            const cooldownMs = tower.cooldownMs ?? 2000;
+            if (now - tower.lastShotTime < cooldownMs) {
                 return;
             }
 

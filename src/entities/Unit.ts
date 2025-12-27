@@ -83,6 +83,10 @@ export class Unit extends Phaser.Events.EventEmitter {
     private accuracy: number = 1;
     private moveSpeedMultiplier: number = 1;
     private attackSpeedMultiplier: number = 1;
+    // Building auras should not overwrite temporary multipliers (e.g. Overclock).
+    // We keep them separate and combine in getters.
+    private buildingAttackSpeedMultiplier: number = 1;
+    private buildingAccuracyMultiplier: number = 1;
     private friction: number = 0.2;
     
     // Status effect timers are tracked in SECONDS (remaining, tickInterval, accumulator).
@@ -925,6 +929,13 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.addStatusEffect(StatusEffect.SLOWED, durationSec);
     }
 
+    public applyDaze(accuracyMultiplier: number, durationMs: number): void {
+        if (this.dead) return;
+        const durationSec = durationMs / 1000;
+        this.setAccuracy(accuracyMultiplier);
+        this.addStatusEffect(StatusEffect.DAZED, durationSec);
+    }
+
     public cleanse(): void {
         this.clearDebuffs();
     }
@@ -1157,7 +1168,9 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getMass(): number { return this.mass; }
     public getCritChance(): number { return this.critChance; }
     public getCritMultiplier(): number { return this.critMultiplier; }
-    public getAccuracy(): number { return this.accuracy; }
+    public getAccuracy(): number {
+        return this.accuracy * this.buildingAccuracyMultiplier;
+    }
     
     public getRange(): number { 
         const baseRange = this.range;
@@ -1172,7 +1185,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getAttackSpeed(): number { 
         const baseSpeed = this.attackSpeed;
         const relicMod = RelicManager.getInstance().applyAttackSpeedModifier(baseSpeed, this.getRelicContext());
-        return relicMod * this.attackSpeedMultiplier; 
+        return relicMod * this.attackSpeedMultiplier * this.buildingAttackSpeedMultiplier; 
     }
     
     public isStunned(): boolean { return this.stunned; }
@@ -1208,6 +1221,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public setMoveSpeedMultiplier(value: number): void { this.moveSpeedMultiplier = value; }
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
+    public setBuildingAttackSpeedMultiplier(value: number): void { this.buildingAttackSpeedMultiplier = value; }
     public addDamageBuff(multiplier: number, durationMs: number): void {
         this.damageMultiplier = Math.max(this.damageMultiplier, multiplier);
         this.damageBuffRemainingMs = Math.max(this.damageBuffRemainingMs, durationMs);
@@ -1227,6 +1241,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     public setFriction(value: number): void { this.friction = value; }
     public setAccuracy(value: number): void { this.accuracy = value; }
+    public setBuildingAccuracyMultiplier(value: number): void { this.buildingAccuracyMultiplier = value; }
     public getConfig(): UnitConfig { return this.config; }
     
     private getRelicContext(): IRelicContext {
