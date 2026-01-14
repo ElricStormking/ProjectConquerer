@@ -439,7 +439,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         // Fortress art preview to the right
         const fortressKeyMap: Record<string, string> = {
             jade_dynasty: 'fortress_jade_dynasty_01',
-            frost_clan: 'fortress_frost_clan_01'
+            frost_clan: 'fortress_frost_clan_01',
+            triarch_dominion: 'fortress_triarch_dominion_01'
         };
         const fortressKey = fortressKeyMap[factionId];
         if (fortressKey && this.textures.exists(fortressKey)) {
