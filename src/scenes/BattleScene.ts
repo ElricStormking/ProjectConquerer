@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { IsometricRenderer } from '../systems/IsometricRenderer';
 import { PhysicsManager } from '../systems/PhysicsManager';
 import { UnitManager } from '../systems/UnitManager';
-import { CombatSystem, StatusEffect } from '../systems/CombatSystem';
+import { CombatSystem, DamageEvent, StatusEffect } from '../systems/CombatSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { DeckSystem } from '../systems/DeckSystem';
 import { CardSystem } from '../systems/CardSystem';
@@ -62,6 +62,22 @@ export class BattleScene extends Phaser.Scene {
     private jadeCrossbowHitCounter: Map<string, number> = new Map();
     private jadeSpiritLanternTick: Map<string, number> = new Map();
     private jadeOniTauntTick: Map<string, number> = new Map();
+    private elfPoisonFields: Array<{
+        x: number;
+        y: number;
+        radius: number;
+        expiresAt: number;
+        lastTickTime: number;
+        tickMs: number;
+        damagePerTick: number;
+        visual?: Phaser.GameObjects.Graphics;
+        team: number;
+    }> = [];
+    private elfLastPoisonBloomTime: Map<string, number> = new Map();
+    private elfButterflyLifesteal: Map<string, number> = new Map();
+    private elfSquireLastGuard: Map<string, number> = new Map();
+    private elfGrovePetitionerLastHeal: Map<string, number> = new Map();
+    private etherealSlowStacks: Map<string, { stacks: number; expiresAt: number }> = new Map();
     
     // Scene data passed from NodeEncounterSystem
     private encounterId: string = 'default';
@@ -132,6 +148,7 @@ export class BattleScene extends Phaser.Scene {
         this.setupPointerBridge();
         this.startBackgroundMusic();
         this.registerFrostAbilityEvents();
+        this.registerElfAbilityEvents();
 
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.stopBackgroundMusic();
@@ -182,6 +199,7 @@ export class BattleScene extends Phaser.Scene {
             this.checkCombat();
             this.processPassiveSkills();
             this.updateJadeAuras();
+            this.updateElfAuras(deltaSeconds);
             this.updateFrostAuras();
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
@@ -225,6 +243,8 @@ export class BattleScene extends Phaser.Scene {
         let bgKey = 'world_bg';
         if (stageIndex === 0 && this.textures.exists('battle_bg_stage_1')) {
             bgKey = 'battle_bg_stage_1';
+        } else if (stageIndex === 3 && this.textures.exists('battle_bg_stage_4')) {
+            bgKey = 'battle_bg_stage_4';
         }
         const bg = this.add.image(960, 540, bgKey);
         bg.setDepth(-10000);
@@ -279,19 +299,23 @@ export class BattleScene extends Phaser.Scene {
         const factionRegistry = FactionRegistry.getInstance();
         const runState = RunProgressionManager.getInstance().getRunState();
         const factionIdForFortress = runState?.factionId ?? 'jade_dynasty';
-        const testFortressId = `fortress_${factionIdForFortress}_01`;
-        let fortressConfig = factionRegistry.getFortressConfig(testFortressId);
+        const fallbackFortressId = `fortress_${factionIdForFortress}_01`;
+        const preferredFortressId = factionRegistry.getFaction(factionIdForFortress)?.fortressId;
+        const fortressId = factionRegistry.getFortressConfig(fallbackFortressId)
+            ? fallbackFortressId
+            : (preferredFortressId ?? fallbackFortressId);
+        let fortressConfig = factionRegistry.getFortressConfig(fortressId);
         
         // Fallback to starterData if no CSV fortress found
         if (!fortressConfig) {
-            console.warn(`[BattleScene] Fortress ${testFortressId} not found, using starterData fallback`);
+            console.warn(`[BattleScene] Fortress ${fortressId} not found, using starterData fallback`);
             fortressConfig = this.starterData.fortress;
         } else {
             console.log(`[BattleScene] Using fortress from CSV: ${fortressConfig.name} (${fortressConfig.gridWidth}x${fortressConfig.gridHeight})`);
         }
 
         // Get cell size from grid config if available
-        const gridConfig = factionRegistry.getFortressGridConfig(testFortressId);
+        const gridConfig = factionRegistry.getFortressGridConfig(fortressId);
         const cellWidth = gridConfig?.cellSizeWidth ?? 64;
         const cellHeight = gridConfig?.cellSizeHeight ?? 32;
 
@@ -317,7 +341,7 @@ export class BattleScene extends Phaser.Scene {
         this.fortressCoreWorld = this.fortressSystem.gridToWorld(coreX, coreY);
         
         // Create fortress image behind the grid (needs fortressCoreWorld to be set)
-        this.createFortressImage(gridConfig?.imageKey ?? testFortressId, fortressConfig.gridWidth, gridConfig);
+        this.createFortressImage(gridConfig?.imageKey ?? fortressId, fortressConfig.gridWidth, gridConfig);
         
         this.createFortressCorePlaceholder();
 
@@ -1092,6 +1116,18 @@ export class BattleScene extends Phaser.Scene {
         const unitType = attacker.getConfig().unitType as UnitType;
         const now = this.time.now;
 
+        if (unitType === UnitType.ELF_SOUL_LIGHT_BUTTERFLY) {
+            attacker.setLastAttackTime(now);
+            return;
+        }
+
+        if (unitType === UnitType.ELF_ETHEREAL_WEAVER) {
+            this.applyEtherealSlow(attacker, target);
+            this.createProjectileAttack(attacker, target, unitType);
+            attacker.setLastAttackTime(now);
+            return;
+        }
+
         // Lightning Sorcerer: always fire chain lightning as the attack
         if (unitType === UnitType.TRIARCH_LIGHTNING_SORCERER) {
             const rawSkill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
@@ -1142,7 +1178,9 @@ export class BattleScene extends Phaser.Scene {
         }
 
         const damage = attacker.getDamage();
-        this.combatSystem.dealDamage(attacker as any, target as any, damage);
+        if (damage > 0) {
+            this.combatSystem.dealDamage(attacker as any, target as any, damage);
+        }
 
         const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
         if (skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now)) {
@@ -1451,6 +1489,7 @@ export class BattleScene extends Phaser.Scene {
             if (!u.getSkillTemplates) return;
             const skills = u.getSkillTemplates().filter((s: any) => s.trigger === 'passive_tick');
             skills.forEach((skill: any) => {
+                if (this.shouldSkipSkill(skill)) return;
                 const tickMs = skill.auraTickMs ?? skill.cooldownMs ?? 1000;
                 const last = u.getLastPassiveTick ? u.getLastPassiveTick(skill.id) : 0;
                 if (currentTime - last < tickMs) return;
@@ -1497,6 +1536,11 @@ export class BattleScene extends Phaser.Scene {
         return 'enemy';
     }
 
+    private shouldSkipSkill(skill: any): boolean {
+        const notes = typeof skill?.notes === 'string' ? skill.notes.toLowerCase() : '';
+        return notes.includes('handled in code');
+    }
+
     private updateJadeAuras(): void {
         const now = this.time.now;
         const units = this.unitManager.getAllUnits();
@@ -1536,13 +1580,183 @@ export class BattleScene extends Phaser.Scene {
         });
     }
 
+    private updateElfAuras(deltaSeconds: number): void {
+        const now = this.time.now;
+        const allUnits = this.unitManager.getAllUnits();
+        if (allUnits.length === 0) return;
+
+        const team1 = this.unitManager.getUnitsByTeam(1);
+        const team2 = this.unitManager.getUnitsByTeam(2);
+        const getAllies = (team: number) => (team === 1 ? team1 : team2);
+        const getEnemies = (team: number) => (team === 1 ? team2 : team1);
+
+        const healMultByUnit = new Map<any, number>();
+        allUnits.forEach(unit => {
+            unit.setHealingMultiplier?.(1);
+            unit.setAuraDamageMultiplier?.(1);
+            healMultByUnit.set(unit, 1);
+        });
+        this.elfButterflyLifesteal.clear();
+
+        this.etherealSlowStacks.forEach((entry, unitId) => {
+            if (entry.expiresAt <= now) {
+                this.etherealSlowStacks.delete(unitId);
+            }
+        });
+
+        allUnits.forEach(unit => {
+            if (unit.isDead?.()) return;
+            const type = unit.getConfig().unitType as UnitType;
+            const team = unit.getTeam();
+            const allies = getAllies(team);
+            const enemies = getEnemies(team);
+            const pos = unit.getPosition();
+
+            if (type === UnitType.ELF_SPORE_WING_SCOUT) {
+                const hazeSkill = unit.getSecondarySkill?.();
+                const swiftSkill = unit.getPassiveSkill?.();
+                const hazeRadius = Number(hazeSkill?.auraRadius ?? 200);
+                const hazeDuration = Math.max(0.1, Number(hazeSkill?.statusDurationMs ?? 1200) / 1000);
+                enemies.forEach(enemy => {
+                    if (enemy.isDead?.()) return;
+                    const enemyType = enemy.getConfig().unitType as UnitType;
+                    if (!this.isRangedUnit(enemyType)) return;
+                    const ePos = enemy.getPosition();
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, ePos.x, ePos.y);
+                    if (dist <= hazeRadius) {
+                        this.combatSystem.applyStatusEffect(enemy as any, StatusEffect.DAZED, hazeDuration);
+                    }
+                });
+
+                const swiftRadius = Number(swiftSkill?.auraRadius ?? 200);
+                const swiftMult = Number(swiftSkill?.statModAmount ?? 1.15);
+                const swiftDuration = Number(swiftSkill?.statModDurationMs ?? 1200);
+                if (!Number.isFinite(swiftMult) || swiftMult <= 0) return;
+                allies.forEach(ally => {
+                    if (ally.isDead?.()) return;
+                    const aPos = ally.getPosition();
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                    if (dist <= swiftRadius) {
+                        ally.applyMoveSpeedModifier?.(swiftMult, swiftDuration);
+                    }
+                });
+            } else if (type === UnitType.ELF_VERDANT_LEGIONARY) {
+                const bondSkill = unit.getPassiveSkill?.();
+                const radius = Number(bondSkill?.auraRadius ?? 150);
+                const nearbyCount = allies.filter(a => {
+                    if (a.isDead?.()) return false;
+                    if (a.getId?.() === unit.getId?.()) return false;
+                    if (a.getConfig().unitType !== UnitType.ELF_VERDANT_LEGIONARY) return false;
+                    const aPos = a.getPosition();
+                    return Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y) <= radius;
+                }).length;
+                const bonus = Math.min(nearbyCount * 0.05, 0.5);
+                unit.setAuraDamageMultiplier?.(1 + bonus);
+            } else if (type === UnitType.ELF_EMERALD_JUSTICIAR) {
+                const buffCount = this.countJusticiarBuffs(unit);
+                const bonus = Math.min(buffCount * 0.05, 0.3);
+                if (bonus > 0) {
+                    unit.setAuraDamageMultiplier?.(1 + bonus);
+                }
+            } else if (type === UnitType.ELF_KAELAS_SQUIRE) {
+                const guardSkill = unit.getPassiveSkill?.();
+                const radius = Number(guardSkill?.auraRadius ?? 160);
+                const last = this.elfSquireLastGuard.get(unit.getId()) ?? 0;
+                if (now - last >= 1000) {
+                    this.elfSquireLastGuard.set(unit.getId(), now);
+                    let target: any = null;
+                    let bestScore = -Infinity;
+                    allies.forEach(ally => {
+                        if (ally.isDead?.()) return;
+                        if (ally.getId?.() === unit.getId?.()) return;
+                        const aPos = ally.getPosition();
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                        if (dist > radius) return;
+                        const score = Number(ally.getMaxHp?.() ?? ally.getMaxHealth?.() ?? 0);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            target = ally;
+                        }
+                    });
+                    if (target) {
+                        target.applyDamageShare?.(0.2, [target, unit], 1200);
+                    }
+                }
+            } else if (type === UnitType.ELF_ORACLE) {
+                const oracleSkill = unit.getPassiveSkill?.();
+                const radius = Number(oracleSkill?.auraRadius ?? 220);
+                const healMult = 1.15;
+                allies.forEach(ally => {
+                    if (ally.isDead?.()) return;
+                    const aPos = ally.getPosition();
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                    if (dist > radius) return;
+                    const current = healMultByUnit.get(ally) ?? 1;
+                    healMultByUnit.set(ally, Math.max(current, healMult));
+                });
+            } else if (type === UnitType.ELF_SOUL_LIGHT_BUTTERFLY) {
+                const auraSkill = unit.getPassiveSkill?.();
+                const radius = Number(auraSkill?.auraRadius ?? 180);
+                allies.forEach(ally => {
+                    if (ally.isDead?.()) return;
+                    const aPos = ally.getPosition();
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                    if (dist > radius) return;
+                    const current = this.elfButterflyLifesteal.get(ally.getId()) ?? 0;
+                    this.elfButterflyLifesteal.set(ally.getId(), Math.max(current, 0.1));
+                });
+            } else if (type === UnitType.ELF_GROVE_PETITIONER) {
+                const healSkill = unit.getPassiveSkill?.();
+                const radius = Number(healSkill?.auraRadius ?? 160);
+                const healAmount = Number(healSkill?.healAmount ?? 12);
+                const tickMs = Number(healSkill?.auraTickMs ?? 2000);
+                const last = this.elfGrovePetitionerLastHeal.get(unit.getId()) ?? 0;
+                if (now - last >= tickMs) {
+                    let target: any = null;
+                    let closest = Infinity;
+                    allies.forEach(ally => {
+                        if (ally.isDead?.()) return;
+                        const currentHp = Number(ally.getHealth?.() ?? ally.getCurrentHp?.() ?? 0);
+                        const maxHp = Number(ally.getMaxHp?.() ?? ally.getMaxHealth?.() ?? 0);
+                        if (currentHp >= maxHp) return;
+                        const aPos = ally.getPosition();
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                        if (dist > radius) return;
+                        if (dist < closest) {
+                            closest = dist;
+                            target = ally;
+                        }
+                    });
+                    if (target) {
+                        target.heal?.(healAmount);
+                        this.elfGrovePetitionerLastHeal.set(unit.getId(), now);
+                    }
+                }
+            }
+        });
+
+        allUnits.forEach(unit => {
+            const mult = healMultByUnit.get(unit) ?? 1;
+            unit.setHealingMultiplier?.(mult);
+        });
+
+        this.updateElfPoisonFields(now, deltaSeconds);
+    }
+
     private registerFrostAbilityEvents(): void {
         this.events.on('unit-spawned', this.onUnitSpawned, this);
         this.events.on('unit-death', this.onUnitDeath, this);
     }
 
+    private registerElfAbilityEvents(): void {
+        this.events.on('damage-dealt', this.onDamageDealt, this);
+        this.events.on('unit-healed', this.onUnitHealed, this);
+    }
+
     private onUnitSpawned(unit: any): void {
-        const skills = unit.getSkillTemplates ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_spawn') : [];
+        const skills = unit.getSkillTemplates
+            ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_spawn' && !this.shouldSkipSkill(s))
+            : [];
         skills.forEach((skill: any) => {
             const targetType = skill.target || this.inferTarget(skill);
             const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
@@ -1559,6 +1773,49 @@ export class BattleScene extends Phaser.Scene {
                 unit.triggerSkill(skill, targets, this.time.now, this.combatSystem);
             }
         });
+
+        const onHitSkills = unit.getSkillTemplates
+            ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_hit' && !this.shouldSkipSkill(s))
+            : [];
+        if (onHitSkills.length > 0 && unit.on) {
+            const pollenBurst = unit.getConfig?.().unitType === UnitType.ELF_POLLEN_BURSTER;
+            unit.on('damage-taken', () => {
+                if (unit.isDead?.()) return;
+                const now = this.time.now;
+                onHitSkills.forEach((skill: any) => {
+                    if (!unit.canUseSkill?.(skill, now)) return;
+                    const targetType = skill.target || this.inferTarget(skill);
+                    const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
+                    const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+                    const origin = unit.getPosition();
+                    const radius = skill.auraRadius ?? skill.aoeRadius ?? 0;
+                    const inRadius = (list: any[]) =>
+                        radius > 0
+                            ? list.filter(
+                                  u2 =>
+                                      !u2.isDead() &&
+                                      Phaser.Math.Distance.Between(
+                                          origin.x,
+                                          origin.y,
+                                          u2.getPosition().x,
+                                          u2.getPosition().y
+                                      ) <= radius
+                              )
+                            : list;
+                    let targets: any[] = [];
+                    if (targetType === 'ally') targets = inRadius(allies);
+                    else if (targetType === 'self') targets = [unit];
+                    else if (targetType === 'both') targets = inRadius(allies).concat(inRadius(enemies));
+                    else targets = inRadius(enemies);
+                    if (pollenBurst) {
+                        targets = targets.filter(t => this.isMeleeUnit(t.getConfig().unitType as UnitType));
+                    }
+                    if (targets.length > 0) {
+                        unit.triggerSkill(skill, targets, now, this.combatSystem);
+                    }
+                });
+            });
+        }
 
         const type = unit.getConfig().unitType as UnitType;
         if (type === UnitType.FROST_ABOMINATION) {
@@ -1582,6 +1839,7 @@ export class BattleScene extends Phaser.Scene {
 
         const skills = unit.getSkillTemplates ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_death') : [];
         skills.forEach((skill: any) => {
+            if (this.shouldSkipSkill(skill)) return;
             const origin = unit.getPosition();
             const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
             const allies = this.unitManager.getUnitsByTeam(unit.getTeam());
@@ -1597,6 +1855,30 @@ export class BattleScene extends Phaser.Scene {
                 unit.triggerSkill(skill, targets, this.time.now, this.combatSystem);
             }
         });
+
+        if (type === UnitType.ELF_GLOW_SPROUT_SPIRIT) {
+            const center = unit.getPosition();
+            const offsets = [
+                { x: -16, y: 0 },
+                { x: 16, y: 0 }
+            ];
+            offsets.forEach(offset => {
+                const config = this.unitManager.createUnitConfig(
+                    UnitType.ELF_VINE_TENDRIL,
+                    unit.getTeam(),
+                    center.x + offset.x,
+                    center.y + offset.y
+                );
+                const spawned = this.unitManager.spawnUnit(config);
+                if (spawned) {
+                    this.time.delayedCall(20000, () => {
+                        if (!spawned.isDead?.()) {
+                            this.unitManager.removeUnit(spawned.getId());
+                        }
+                    });
+                }
+            });
+        }
 
         if (type === UnitType.FROST_FLESH_WEAVER) {
             const center = unit.getPosition();
@@ -1633,6 +1915,231 @@ export class BattleScene extends Phaser.Scene {
                 }
             });
         }
+    }
+
+    private onDamageDealt(payload: DamageEvent): void {
+        const attacker = payload.attacker;
+        const target = payload.target;
+        if (!attacker || !target) return;
+        const attackerType = attacker.getConfig?.().unitType as UnitType | undefined;
+        if (!attackerType) return;
+
+        let lifestealPercent = this.elfButterflyLifesteal.get(attacker.getId()) ?? 0;
+        if (attackerType === UnitType.ELF_SPIRIT_BOUND_DEER) {
+            lifestealPercent += 0.15;
+        }
+        if (lifestealPercent > 0 && payload.damage > 0) {
+            attacker.heal?.(payload.damage * lifestealPercent);
+        }
+
+        if (attackerType === UnitType.ELF_VITALITY_BONDER && payload.damage > 0) {
+            const healAmount = payload.damage * 0.5;
+            this.healAlliesAlongLine(attacker.getPosition(), target.getPosition(), healAmount, attacker.getTeam());
+        }
+
+        if (
+            attackerType === UnitType.ELF_SEED_POD_ARTILLERY ||
+            attackerType === UnitType.ELF_BLOOM_THROWER
+        ) {
+            this.maybeSpawnPoisonBloom(attacker, target);
+        }
+
+        if (attackerType === UnitType.ELF_EMERALD_DRAGONLING && !target.isDead?.()) {
+            const currentHp = Number(target.getHealth?.() ?? target.getCurrentHp?.() ?? 0);
+            const maxHp = Number(target.getMaxHp?.() ?? target.getMaxHealth?.() ?? 0);
+            if (maxHp > 0 && currentHp / maxHp < 0.5) {
+                const bonus = Math.max(1, Math.round(payload.damage * 0.3));
+                target.takeDamage?.(bonus);
+            }
+        }
+
+        if (attackerType === UnitType.ELF_CHAMPION_GLADE && !target.isDead?.()) {
+            const rarity = target.getConfig?.().unitTemplate?.rarity;
+            if (rarity === 'epic' || rarity === 'legendary') {
+                const skill = attacker.getPassiveSkill?.();
+                const mult = Number(skill?.statModAmount ?? 1.4);
+                const duration = Number(skill?.statModDurationMs ?? 2000);
+                attacker.applyAttackSpeedModifier?.(mult, duration);
+            }
+        }
+    }
+
+    private onUnitHealed(payload: { unit: any; amount: number }): void {
+        const unit = payload.unit;
+        if (!unit || unit.isDead?.()) return;
+        const type = unit.getConfig?.().unitType as UnitType | undefined;
+        if (type !== UnitType.ELF_SOUL_SEER_DISCIPLE) return;
+
+        const pulseSkill = unit.getPassiveSkill?.() || unit.getSecondarySkill?.();
+        const radius = Number(pulseSkill?.auraRadius ?? 120);
+        const damage = Number(payload.amount);
+        if (!Number.isFinite(damage) || damage <= 0) return;
+
+        const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+        enemies.forEach(enemy => {
+            if (enemy.isDead?.()) return;
+            const ePos = enemy.getPosition();
+            const uPos = unit.getPosition();
+            const dist = Phaser.Math.Distance.Between(uPos.x, uPos.y, ePos.x, ePos.y);
+            if (dist <= radius) {
+                enemy.takeDamage?.(damage);
+            }
+        });
+    }
+
+    private countJusticiarBuffs(unit: any): number {
+        let buffs = 0;
+        if (unit.getDamageMultiplier?.() > 1) buffs += 1;
+        if (unit.getAuraDamageMultiplier?.() > 1) buffs += 1;
+        if ((unit.getShieldAmount?.() ?? 0) > 0) buffs += 1;
+        if (unit.hasBuildingBuff?.()) buffs += 1;
+        const baseSpeed = Number(unit.getConfig?.().stats?.attackSpeed ?? 0);
+        const currentSpeed = Number(unit.getAttackSpeed?.() ?? 0);
+        if (baseSpeed > 0 && currentSpeed > baseSpeed * 1.05) buffs += 1;
+        return buffs;
+    }
+
+    private maybeSpawnPoisonBloom(attacker: any, target: any): void {
+        const now = this.time.now;
+        const attackerId = attacker.getId?.();
+        if (!attackerId) return;
+        const last = this.elfLastPoisonBloomTime.get(attackerId) ?? 0;
+        if (now - last < 300) return;
+        if (Math.random() > 0.2) return;
+
+        const skill = attacker.getPrimarySkill?.();
+        const pos = target.getPosition?.();
+        if (!pos) return;
+        const radius = Number(skill?.aoeRadius ?? 90);
+        const damagePerTick = Number(skill?.dotAmount ?? 4);
+        const tickMs = Number(skill?.dotTickMs ?? 1000);
+        const durationMs = 10000;
+        this.spawnPoisonBloom(pos.x, pos.y, radius, damagePerTick, tickMs, durationMs, attacker.getTeam());
+        this.elfLastPoisonBloomTime.set(attackerId, now);
+    }
+
+    private spawnPoisonBloom(
+        x: number,
+        y: number,
+        radius: number,
+        damagePerTick: number,
+        tickMs: number,
+        durationMs: number,
+        team: number
+    ): void {
+        const bloom = this.add.graphics();
+        bloom.setDepth(y + 3000);
+        bloom.setBlendMode(Phaser.BlendModes.ADD);
+        bloom.fillStyle(0x66ff99, 0.2);
+        bloom.fillCircle(x, y, radius);
+        bloom.lineStyle(2, 0x2ecc71, 0.6);
+        bloom.strokeCircle(x, y, radius);
+
+        this.elfPoisonFields.push({
+            x,
+            y,
+            radius,
+            expiresAt: this.time.now + durationMs,
+            lastTickTime: 0,
+            tickMs,
+            damagePerTick,
+            visual: bloom,
+            team
+        });
+
+        this.tweens.add({
+            targets: bloom,
+            alpha: 0,
+            duration: durationMs,
+            onComplete: () => bloom.destroy()
+        });
+    }
+
+    private updateElfPoisonFields(now: number, _deltaSeconds: number): void {
+        if (this.elfPoisonFields.length === 0) return;
+
+        this.elfPoisonFields = this.elfPoisonFields.filter(field => {
+            if (now >= field.expiresAt) {
+                (field as any).visual?.destroy?.();
+                return false;
+            }
+            return true;
+        });
+
+        this.elfPoisonFields.forEach(field => {
+            if (now - field.lastTickTime < field.tickMs) return;
+            field.lastTickTime = now;
+            const enemies = this.unitManager.getUnitsByTeam(field.team === 1 ? 2 : 1);
+            if (enemies.length === 0) return;
+            enemies.forEach(enemy => {
+                if (enemy.isDead?.()) return;
+                const ePos = enemy.getPosition();
+                const dist = Phaser.Math.Distance.Between(field.x, field.y, ePos.x, ePos.y);
+                if (dist <= field.radius) {
+                    enemy.takeDamage?.(field.damagePerTick);
+                }
+            });
+        });
+    }
+
+    private healAlliesAlongLine(
+        start: { x: number; y: number },
+        end: { x: number; y: number },
+        amount: number,
+        team: number
+    ): void {
+        if (!Number.isFinite(amount) || amount <= 0) return;
+        const allies = this.unitManager.getUnitsByTeam(team);
+        const width = 40;
+        allies.forEach(ally => {
+            if (ally.isDead?.()) return;
+            const pos = ally.getPosition();
+            const dist = this.distancePointToSegment(pos, start, end);
+            if (dist <= width) {
+                ally.heal?.(amount);
+            }
+        });
+    }
+
+    private distancePointToSegment(
+        point: { x: number; y: number },
+        start: { x: number; y: number },
+        end: { x: number; y: number }
+    ): number {
+        const vx = end.x - start.x;
+        const vy = end.y - start.y;
+        const wx = point.x - start.x;
+        const wy = point.y - start.y;
+        const c1 = vx * wx + vy * wy;
+        if (c1 <= 0) {
+            return Phaser.Math.Distance.Between(point.x, point.y, start.x, start.y);
+        }
+        const c2 = vx * vx + vy * vy;
+        if (c2 <= c1) {
+            return Phaser.Math.Distance.Between(point.x, point.y, end.x, end.y);
+        }
+        const b = c1 / c2;
+        const pbx = start.x + b * vx;
+        const pby = start.y + b * vy;
+        return Phaser.Math.Distance.Between(point.x, point.y, pbx, pby);
+    }
+
+    private applyEtherealSlow(attacker: any, target: any): void {
+        if (!target || target.isDead?.()) return;
+        const skill = attacker.getPrimarySkill?.();
+        const baseAmount = Number(skill?.slowAmount ?? 0.12);
+        const durationMs = Number(skill?.slowDurationMs ?? 2000);
+        const maxStacks = 3;
+        const targetId = target.getId?.();
+        if (!targetId) return;
+
+        const now = this.time.now;
+        const entry = this.etherealSlowStacks.get(targetId);
+        const stacks = entry && entry.expiresAt > now ? Math.min(maxStacks, entry.stacks + 1) : 1;
+        this.etherealSlowStacks.set(targetId, { stacks, expiresAt: now + durationMs });
+
+        const totalAmount = Math.min(0.6, baseAmount * stacks);
+        target.applySlow?.(totalAmount, durationMs);
     }
 
     private updateFrostAuras(): void {
@@ -1830,7 +2337,18 @@ export class BattleScene extends Phaser.Scene {
             UnitType.TRIARCH_RIFLEMAN_SQUAD,
             UnitType.TRIARCH_SNIPER_ELITE,
             UnitType.TRIARCH_FIRETHROWER_UNIT,
-            UnitType.TRIARCH_HEAVY_SIEGE_WALKER
+            UnitType.TRIARCH_HEAVY_SIEGE_WALKER,
+            UnitType.ELF_SPORE_WING_SCOUT,
+            UnitType.ELF_SEED_POD_ARTILLERY,
+            UnitType.ELF_BLOOM_THROWER,
+            UnitType.ELF_EMERALD_DRAGONLING,
+            UnitType.ELF_SOUL_SEER_DISCIPLE,
+            UnitType.ELF_SPIRIT_BOUND_DEER,
+            UnitType.ELF_ORACLE,
+            UnitType.ELF_ETHEREAL_WEAVER,
+            UnitType.ELF_GROVE_PETITIONER,
+            UnitType.ELF_SOUL_LIGHT_BUTTERFLY,
+            UnitType.ELF_VITALITY_BONDER
         ].includes(unitType);
     }
 
@@ -1842,7 +2360,13 @@ export class BattleScene extends Phaser.Scene {
             UnitType.FROST_FORBIDDEN_SCIENTIST,
             UnitType.TRIARCH_ACOLYTE_HEALER,
             UnitType.TRIARCH_PRIESTESS_DAWN,
-            UnitType.TRIARCH_MANA_SIPHON_ADEPT
+            UnitType.TRIARCH_MANA_SIPHON_ADEPT,
+            UnitType.ELF_SOUL_SEER_DISCIPLE,
+            UnitType.ELF_ORACLE,
+            UnitType.ELF_ETHEREAL_WEAVER,
+            UnitType.ELF_GROVE_PETITIONER,
+            UnitType.ELF_SOUL_LIGHT_BUTTERFLY,
+            UnitType.ELF_VITALITY_BONDER
         ].includes(unitType);
     }
 
@@ -1876,7 +2400,18 @@ export class BattleScene extends Phaser.Scene {
             UnitType.TRIARCH_ZEALOT_DUELIST,
             UnitType.TRIARCH_CRUSADER_SHIELDBEARER,
             UnitType.TRIARCH_SERAPH_GUARDIAN,
-            UnitType.TRIARCH_AETHER_GOLEM
+            UnitType.TRIARCH_AETHER_GOLEM,
+            UnitType.ELF_GLOW_SPROUT_SPIRIT,
+            UnitType.ELF_VINE_TENDRIL,
+            UnitType.ELF_VERDANT_LEGIONARY,
+            UnitType.ELF_ROOT_KIN_SWARM,
+            UnitType.ELF_POLLEN_BURSTER,
+            UnitType.ELF_EMERALD_JUSTICIAR,
+            UnitType.ELF_KAELAS_SQUIRE,
+            UnitType.ELF_GUARDIAN_WORLD_TREE,
+            UnitType.ELF_CHAMPION_GLADE,
+            UnitType.ELF_EMERALD_VANGUARD,
+            UnitType.ELF_HALLOW_TREE_PALADIN
         ].includes(unitType);
     }
 
@@ -1948,6 +2483,8 @@ export class BattleScene extends Phaser.Scene {
         const travelTime = (distance / speed) * 1000;
 
         this.time.delayedCall(travelTime, () => {
+            const damage = attackerUnit.getDamage();
+            if (damage <= 0) return;
             if (unitType === UnitType.COG_THUNDER_CANNON) {
                 // Thunder Cannon: area-of-effect blast at the landing point.
                 const explosionCenter = targetPos;
@@ -1961,11 +2498,11 @@ export class BattleScene extends Phaser.Scene {
                         pos.x, pos.y
                     );
                     if (dist <= explosionRadius) {
-                        this.combatSystem.dealDamage(attackerUnit, enemy as any, attackerUnit.getDamage());
+                        this.combatSystem.dealDamage(attackerUnit, enemy as any, damage);
                     }
                 });
             } else if (!targetUnit.isDead()) {
-                this.combatSystem.dealDamage(attackerUnit, targetUnit, attackerUnit.getDamage());
+                this.combatSystem.dealDamage(attackerUnit, targetUnit, damage);
             }
         });
     }

@@ -55,7 +55,29 @@ export enum UnitType {
     TRIARCH_LIGHTNING_SORCERER = 'triarch_lightning_sorcerer',
     TRIARCH_AETHER_GOLEM = 'triarch_aether_golem',
     TRIARCH_MANA_SIPHON_ADEPT = 'triarch_mana_siphon_adept',
-    TRIARCH_AETHER_ARCHER = 'triarch_aether_archer'
+    TRIARCH_AETHER_ARCHER = 'triarch_aether_archer',
+    ELF_GLOW_SPROUT_SPIRIT = 'elf_glow_sprout_spirit',
+    ELF_VINE_TENDRIL = 'elf_vine_tendril',
+    ELF_SPORE_WING_SCOUT = 'elf_spore_wing_scout',
+    ELF_VERDANT_LEGIONARY = 'elf_verdant_legionary',
+    ELF_ROOT_KIN_SWARM = 'elf_root_kin_swarm',
+    ELF_SEED_POD_ARTILLERY = 'elf_seed_pod_artillery',
+    ELF_POLLEN_BURSTER = 'elf_pollen_burster',
+    ELF_BLOOM_THROWER = 'elf_bloom_thrower',
+    ELF_EMERALD_JUSTICIAR = 'elf_emerald_justiciar',
+    ELF_KAELAS_SQUIRE = 'elf_kaelas_squire',
+    ELF_GUARDIAN_WORLD_TREE = 'elf_guardian_world_tree',
+    ELF_EMERALD_DRAGONLING = 'elf_emerald_dragonling',
+    ELF_CHAMPION_GLADE = 'elf_champion_glade',
+    ELF_EMERALD_VANGUARD = 'elf_emerald_vanguard',
+    ELF_HALLOW_TREE_PALADIN = 'elf_hallow_tree_paladin',
+    ELF_SOUL_SEER_DISCIPLE = 'elf_soul_seer_disciple',
+    ELF_SPIRIT_BOUND_DEER = 'elf_spirit_bound_deer',
+    ELF_ORACLE = 'elf_oracle',
+    ELF_ETHEREAL_WEAVER = 'elf_ethereal_weaver',
+    ELF_GROVE_PETITIONER = 'elf_grove_petitioner',
+    ELF_SOUL_LIGHT_BUTTERFLY = 'elf_soul_light_butterfly',
+    ELF_VITALITY_BONDER = 'elf_vitality_bonder'
 }
 
 export interface UnitTemplate {

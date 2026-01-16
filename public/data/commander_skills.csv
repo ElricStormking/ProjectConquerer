@@ -5,6 +5,9 @@ shadowstep_backroll,Shadow Clone Ambush,Shadow clones that taunt and explode,jad
 soul_blasphemy,Soul Blasphemy,Necrotic decay zone reversing heals,frost_clan,150,8000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,500,6,800,0
 sacrificial_feast,Sacrificial Feast,Siphon allies to buff damage,frost_clan,140,6000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,6000,0.5,6000,0,0,0,0,0,0,2,0.3,0,0,0.5
 flesh_link,Flesh Link,Link allies to share damage and shield,frost_clan,160,4000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,4000,0,0,0,0,0,0,0,0,0,0,0,0,0.5
+overgrowth,Overgrowth,Summons nature spirits in the target area,elf_covenant,120,,12,,,,,,,,,,3,5000,70,,,,,,,,,,,,,,,,,,,,,,,,,,,
+judgment_of_world_tree,Judgment of the World Tree,Shockwave knocks back enemies and shields allies,elf_covenant,140,,,,,,,,,,,,,,,,,,,,,,,,,1,2000,,,,,,,,,120,,,,,,
+soul_bond,Soul Bond,Links allies to share damage and grant lifesteal,elf_covenant,150,6000,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0.3,,,,
 skyfall_cataclysm,Skyfall Cataclysm,Lightning storm with vortex pull,triarch_dominion,160,4000,0,12,6,150,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,0.2,0,0,0,0,0,0,0,0
 judgment_of_the_dawn,Judgment of the Dawn,Holy explosion with stun cleanse and shields,triarch_dominion,140,0,45,0,0,0,0,1500,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.15,6000,0.25,5000,0,0,0,0,0,0,0,0,0,0,0
 grand_bombardment,Grand Bombardment Protocol,Artillery strike after telegraph,triarch_dominion,180,0,0,35,5,500,60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,3000,5,500,35,80,0,0,0,0,0

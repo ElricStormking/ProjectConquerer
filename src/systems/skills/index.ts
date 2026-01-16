@@ -10,6 +10,9 @@ export { DragonSpearBarrage, ShikigamiSummoning, ShadowCloneAmbush } from './Jad
 // Forbidden Bloodline Skills
 export { SoulBlasphemy, SacrificialFeast, FleshLink } from './ForbiddenBloodlineSkills';
 
+// Elf Covenant Skills
+export { Overgrowth, JudgmentOfWorldTree, SoulBond } from './ElfCovenantSkills';
+
 import { CommanderSkillRegistry } from './CommanderSkillRegistry';
 
 /**

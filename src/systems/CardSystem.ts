@@ -7,6 +7,7 @@ import { UnitManager } from './UnitManager';
 import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
+import { UnitType } from '../data/UnitTypes';
 
 export class CardSystem {
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
@@ -25,6 +26,7 @@ export class CardSystem {
         hpBg: Phaser.GameObjects.Graphics;
         hpBar: Phaser.GameObjects.Graphics;
         occupantId: string;
+        effectId?: string;
     }> = [];
 
     private healingBeacons: Array<{
@@ -74,6 +76,34 @@ export class CardSystem {
         lastPulseTime: number;
     }> = [];
 
+    private bloomHatcheries: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        lastSpawnTime: number;
+    }> = [];
+
+    private altarOfHeroes: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        lastPulseTime: number;
+    }> = [];
+
+    private emeraldShieldBatteries: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        lastWaveApplied: number;
+    }> = [];
+
+    private soulStoneMonuments: Array<{
+        gridX: number;
+        gridY: number;
+        occupantId: string;
+        soulCount: number;
+    }> = [];
+
     constructor(
         private scene: Phaser.Scene,
         private deckSystem: DeckSystem,
@@ -90,6 +120,11 @@ export class CardSystem {
                 console.log(`[CardSystem] Player unit died: ${unitType} (ID: ${unitId}), releasing fortress cell`);
                 this.fortressSystem.releaseCellByOccupant(unitId);
             }
+            this.handleSoulStoneDeath(unit);
+        });
+
+        this.scene.events.on('wave-started', (index: number) => {
+            this.applyShieldBatteries(index);
         });
     }
 
@@ -260,7 +295,13 @@ export class CardSystem {
             this.addRankIndicator(pos.x, pos.y, newLevel);
 
             // If this structure is a turret, update its instance stats immediately.
-            if (effectId === 'triarch_cannon_blast' || effectId === 'cannon_shoot' || effectId === 'jade_archer_volley') {
+            if (
+                effectId === 'triarch_cannon_blast' ||
+                effectId === 'cannon_shoot' ||
+                effectId === 'jade_archer_volley' ||
+                effectId === 'elf_sun_crystal_spire' ||
+                effectId === 'elf_living_vine_wall'
+            ) {
                 const tower = this.cannonTowers.find(t => t.occupantId === cell.occupantId);
                 if (tower) {
                     const baseHp = Number(config?.max_hp) || 200;
@@ -269,6 +310,10 @@ export class CardSystem {
                             ? 55
                             : effectId === 'jade_archer_volley'
                                 ? 18
+                                : effectId === 'elf_sun_crystal_spire'
+                                    ? 32
+                                    : effectId === 'elf_living_vine_wall'
+                                        ? 0
                                 : 40;
                     const mult = 1 + 1.5 * newLevel;
                     tower.maxHp = baseHp * mult;
@@ -480,7 +525,9 @@ export class CardSystem {
         if (
             effectId === 'triarch_cannon_blast' ||
             effectId === 'cannon_shoot' ||
-            effectId === 'jade_archer_volley'
+            effectId === 'jade_archer_volley' ||
+            effectId === 'elf_sun_crystal_spire' ||
+            effectId === 'elf_living_vine_wall'
         ) {
             const baseHp = Number(config?.max_hp) || 200;
             const baseDamage =
@@ -488,9 +535,29 @@ export class CardSystem {
                     ? 55
                     : effectId === 'jade_archer_volley'
                         ? 18
-                        : 40;
-            const cooldownMs = effectId === 'jade_archer_volley' ? 900 : 2000;
-            this.createTurretStructure(worldPos.x, worldPos.y, gridX, gridY, occupantId, textureKey, baseHp, baseDamage, cooldownMs);
+                        : effectId === 'elf_sun_crystal_spire'
+                            ? 32
+                            : effectId === 'elf_living_vine_wall'
+                                ? 0
+                                : 40;
+            const cooldownMs =
+                effectId === 'jade_archer_volley'
+                    ? 900
+                    : effectId === 'elf_sun_crystal_spire'
+                        ? 1800
+                        : 2000;
+            this.createTurretStructure(
+                worldPos.x,
+                worldPos.y,
+                gridX,
+                gridY,
+                occupantId,
+                textureKey,
+                baseHp,
+                baseDamage,
+                cooldownMs,
+                effectId
+            );
             return true;
         }
 
@@ -525,6 +592,25 @@ export class CardSystem {
             case 'jade_resonance_pulse':
                 this.resonanceTowers.push({ gridX, gridY, occupantId, effectId, lastPulseTime: 0 });
                 return;
+            case 'elf_bloom_hatchery':
+                this.bloomHatcheries.push({ gridX, gridY, occupantId, lastSpawnTime: 0 });
+                return;
+            case 'elf_altar_of_heroes':
+                this.altarOfHeroes.push({ gridX, gridY, occupantId, lastPulseTime: 0 });
+                return;
+            case 'elf_emerald_shield_battery':
+                this.emeraldShieldBatteries.push({ gridX, gridY, occupantId, lastWaveApplied: -1 });
+                return;
+            case 'elf_soul_stone_monument':
+                this.soulStoneMonuments.push({ gridX, gridY, occupantId, soulCount: 0 });
+                return;
+            case 'elf_spore_mist_pillar':
+                this.smokeFields.push({ gridX, gridY, occupantId, effectId, lastTickTime: 0 });
+                return;
+            case 'elf_healing_grove':
+            case 'elf_fountain_of_life':
+                this.healingBeacons.push({ gridX, gridY, occupantId, effectId, lastPulseTime: 0 });
+                return;
             default:
                 // Unknown structure effects are currently no-ops (still placeable as visuals).
                 return;
@@ -547,6 +633,8 @@ export class CardSystem {
 
         // 4) Storm/smoke/resonance zones (battle-only meaningful because they target enemies)
         if (phase === 'BATTLE') {
+            this.updateBloomHatcheries(now);
+            this.updateAltarOfHeroes(now);
             this.updateStormGenerators(now, deltaSeconds);
             this.updateSmokeFields(now);
             this.updateResonanceTowers(now);
@@ -605,16 +693,149 @@ export class CardSystem {
         });
     }
 
+    private updateBloomHatcheries(now: number): void {
+        if (this.bloomHatcheries.length === 0) return;
+        this.bloomHatcheries.forEach(hatchery => {
+            const cell = this.fortressSystem.getCell(hatchery.gridX, hatchery.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const intervalMs = 8000 / (1 + 0.4 * level);
+            if (now - hatchery.lastSpawnTime < intervalMs) return;
+            hatchery.lastSpawnTime = now;
+
+            const pos = this.fortressSystem.gridToWorld(hatchery.gridX, hatchery.gridY);
+            const offsetX = Phaser.Math.Between(-8, 8);
+            const offsetY = Phaser.Math.Between(-6, 6);
+            const config = this.unitManager.createUnitConfig(
+                UnitType.ELF_GLOW_SPROUT_SPIRIT,
+                1,
+                pos.x + offsetX,
+                pos.y + offsetY
+            );
+            this.unitManager.spawnUnit(config);
+        });
+    }
+
+    private updateAltarOfHeroes(now: number): void {
+        if (this.altarOfHeroes.length === 0) return;
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        if (allies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3;
+        const intervalMs = 2000;
+
+        this.altarOfHeroes.forEach(altar => {
+            if (now - altar.lastPulseTime < intervalMs) return;
+            altar.lastPulseTime = now;
+            const pos = this.fortressSystem.gridToWorld(altar.gridX, altar.gridY);
+
+            let target: any = null;
+            let bestScore = Infinity;
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                const uPos = u.getPosition?.();
+                if (!uPos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+                if (dist > radius) return;
+                const spawnAmount = Number(u.getConfig?.().unitTemplate?.spawnAmount ?? 0);
+                const score = spawnAmount > 0 ? spawnAmount : Number(u.getMaxHp?.() ?? 9999);
+                if (score < bestScore) {
+                    bestScore = score;
+                    target = u;
+                }
+            });
+
+            if (target) {
+                target.applyDamageTakenModifier?.(0.8, 2400);
+                target.markBuildingBuff?.();
+            }
+        });
+    }
+
+    private applyShieldBatteries(waveIndex: number): void {
+        if (this.emeraldShieldBatteries.length === 0) return;
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        if (allies.length === 0) return;
+
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3;
+
+        this.emeraldShieldBatteries.forEach(battery => {
+            if (battery.lastWaveApplied >= waveIndex) return;
+            battery.lastWaveApplied = waveIndex;
+
+            const pos = this.fortressSystem.gridToWorld(battery.gridX, battery.gridY);
+            const cell = this.fortressSystem.getCell(battery.gridX, battery.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+
+            const shieldAmount = 25 * scale;
+            const durationMs = 4000;
+
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                const uPos = u.getPosition?.();
+                if (!uPos) return;
+                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+                if (dist > radius) return;
+                u.applyShield?.(shieldAmount, durationMs);
+                u.applyDamageTakenModifier?.(0.85, durationMs);
+                u.markBuildingBuff?.();
+            });
+        });
+    }
+
+    private handleSoulStoneDeath(unit: any): void {
+        if (this.soulStoneMonuments.length === 0) return;
+        const uPos = unit.getPosition?.();
+        if (!uPos) return;
+
+        const allies = this.unitManager.getUnitsByTeam(1) as any[];
+        const { width } = this.fortressSystem.getCellDimensions();
+        const radius = width * 3;
+
+        this.soulStoneMonuments.forEach(monument => {
+            const pos = this.fortressSystem.gridToWorld(monument.gridX, monument.gridY);
+            const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
+            if (dist > radius) return;
+
+            monument.soulCount += 1;
+            if (monument.soulCount < 3) return;
+
+            monument.soulCount -= 3;
+            const cell = this.fortressSystem.getCell(monument.gridX, monument.gridY);
+            const level = cell?.enhancementLevel || 0;
+            const scale = 1 + 1.5 * level;
+            const healAmount = 14 * scale;
+
+            allies.forEach(u => {
+                if (u.isDead?.()) return;
+                u.heal?.(healAmount);
+                u.markBuildingBuff?.();
+            });
+        });
+    }
+
     private updateHealingBeacons(now: number): void {
         if (this.healingBeacons.length === 0) return;
         const allies = this.unitManager.getUnitsByTeam(1) as any[];
         if (allies.length === 0) return;
 
         const { width } = this.fortressSystem.getCellDimensions();
-        const radius = width * 3; // 3 tiles
-        const intervalMs = 2000;
 
         this.healingBeacons.forEach(beacon => {
+            let radius = width * 3;
+            let intervalMs = 2000;
+            let baseHeal = 18;
+            if (beacon.effectId === 'elf_healing_grove') {
+                radius = width * 4;
+                intervalMs = 1200;
+                baseHeal = 12;
+            } else if (beacon.effectId === 'elf_fountain_of_life') {
+                radius = width * 3;
+                intervalMs = 2500;
+                baseHeal = 8;
+            }
             if (now - beacon.lastPulseTime < intervalMs) return;
             beacon.lastPulseTime = now;
 
@@ -623,7 +844,6 @@ export class CardSystem {
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
 
-            const baseHeal = 18; // tuned baseline for Healing Beacon
             const healAmount = baseHeal * scale;
 
             allies.forEach(u => {
@@ -635,6 +855,14 @@ export class CardSystem {
                 u.heal?.(healAmount);
                 u.markBuildingBuff?.();
             });
+
+            if (beacon.effectId === 'elf_fountain_of_life') {
+                this.cannonTowers.forEach(tower => {
+                    const dist = Phaser.Math.Distance.Between(pos.x, pos.y, tower.x, tower.y);
+                    if (dist > radius) return;
+                    tower.hp = Math.min(tower.maxHp, tower.hp + healAmount);
+                });
+            }
         });
     }
 
@@ -733,8 +961,12 @@ export class CardSystem {
             const scale = 1 + 1.5 * level;
 
             // Smoke: reduce accuracy (daze) briefly; scaled.
-            const accMult = Math.max(0.15, 0.7 / scale);
-            const durationMs = 900;
+            let accMult = Math.max(0.15, 0.7 / scale);
+            let durationMs = 900;
+            if (field.effectId === 'elf_spore_mist_pillar') {
+                accMult = 0.8;
+                durationMs = 1200;
+            }
 
             enemies.forEach(e => {
                 if (e.isDead?.()) return;
@@ -1039,7 +1271,8 @@ export class CardSystem {
         textureKey: string,
         baseHp: number,
         baseDamage: number,
-        cooldownMs: number = 2000
+        cooldownMs: number = 2000,
+        effectId?: string
     ): void {
         const body = this.scene.add.image(x, y, textureKey);
         body.setOrigin(0.5, 0.8);
@@ -1076,7 +1309,8 @@ export class CardSystem {
             body,
             hpBg,
             hpBar,
-            occupantId
+            occupantId,
+            effectId
         });
     }
 
@@ -1348,6 +1582,9 @@ export class CardSystem {
                     // Enemies deal damage to tower over time
                     const enemyDamage = (enemy as any).getDamage?.() || 10;
                     this.damageTower(tower, enemyDamage * 0.016); // rough DPS per frame at 60fps
+                    if (tower.effectId === 'elf_living_vine_wall' && enemy.getConfig?.().type === 'frontline') {
+                        enemy.takeDamage?.(enemyDamage * 0.1);
+                    }
                 }
             });
         });
@@ -1366,6 +1603,9 @@ export class CardSystem {
         this.cannonTowers.forEach(tower => {
             const cooldownMs = tower.cooldownMs ?? 2000;
             if (now - tower.lastShotTime < cooldownMs) {
+                return;
+            }
+            if (tower.effectId === 'elf_living_vine_wall') {
                 return;
             }
 
@@ -1408,9 +1648,23 @@ export class CardSystem {
                 onComplete: () => shot.destroy()
             });
 
-            const damage = tower.damage || 40;
+            let damage = tower.damage || 40;
+            if (tower.effectId === 'elf_sun_crystal_spire') {
+                const targetType = (closest as any).getConfig?.().unitType as UnitType | undefined;
+                if (targetType && this.isFlyingUnit(targetType)) {
+                    damage = Math.round(damage * 1.35);
+                }
+            }
             (closest as any).takeDamage(damage);
         });
+    }
+
+    private isFlyingUnit(unitType: UnitType): boolean {
+        return [
+            UnitType.ELF_SPORE_WING_SCOUT,
+            UnitType.ELF_EMERALD_DRAGONLING,
+            UnitType.ELF_SOUL_LIGHT_BUTTERFLY
+        ].includes(unitType);
     }
 
     private damageTower(tower: { hp: number; maxHp: number }, damage: number): void {

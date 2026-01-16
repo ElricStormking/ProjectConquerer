@@ -83,6 +83,16 @@ export class Unit extends Phaser.Events.EventEmitter {
     private accuracy: number = 1;
     private moveSpeedMultiplier: number = 1;
     private attackSpeedMultiplier: number = 1;
+    private tempMoveSpeedMultiplier: number = 1;
+    private tempAttackSpeedMultiplier: number = 1;
+    private tempMoveSpeedRemainingMs: number = 0;
+    private tempAttackSpeedRemainingMs: number = 0;
+    private damageTakenMultiplier: number = 1;
+    private damageTakenRemainingMs: number = 0;
+    private armorMultiplier: number = 1;
+    private armorRemainingMs: number = 0;
+    private healingMultiplier: number = 1;
+    private auraDamageMultiplier: number = 1;
     // Building auras should not overwrite temporary multipliers (e.g. Overclock).
     // We keep them separate and combine in getters.
     private buildingAttackSpeedMultiplier: number = 1;
@@ -370,6 +380,14 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.trailGraphics.fillCircle(point.x, point.y, size);
         }
     }
+
+    private resolveTempMultiplier(current: number, incoming: number, stacking?: boolean): number {
+        if (!Number.isFinite(incoming) || incoming <= 0) return current;
+        if (stacking) return current * incoming;
+        const currentDelta = Math.abs(current - 1);
+        const incomingDelta = Math.abs(incoming - 1);
+        return incomingDelta > currentDelta ? incoming : current;
+    }
     
     private isMeleeUnit(): boolean {
         switch (this.config.unitType) {
@@ -400,6 +418,17 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.TRIARCH_CRUSADER_SHIELDBEARER:
             case UnitType.TRIARCH_SERAPH_GUARDIAN:
             case UnitType.TRIARCH_AETHER_GOLEM:
+            case UnitType.ELF_GLOW_SPROUT_SPIRIT:
+            case UnitType.ELF_VINE_TENDRIL:
+            case UnitType.ELF_VERDANT_LEGIONARY:
+            case UnitType.ELF_ROOT_KIN_SWARM:
+            case UnitType.ELF_POLLEN_BURSTER:
+            case UnitType.ELF_EMERALD_JUSTICIAR:
+            case UnitType.ELF_KAELAS_SQUIRE:
+            case UnitType.ELF_GUARDIAN_WORLD_TREE:
+            case UnitType.ELF_CHAMPION_GLADE:
+            case UnitType.ELF_EMERALD_VANGUARD:
+            case UnitType.ELF_HALLOW_TREE_PALADIN:
                 return true;
             default:
                 return false;
@@ -423,7 +452,13 @@ export class Unit extends Phaser.Events.EventEmitter {
                     if (effect === 'stun') {
                         combatSystem.applyStatusEffect(target as any, StatusEffect.STUNNED, Math.max(0.1, stunSec));
                     } else if (effect === 'slow') {
-                        combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, Math.max(0.1, slowSec));
+                        const slowAmount = Number(skill.slowAmount);
+                        const slowDuration = Number(skill.slowDurationMs ?? skill.statusDurationMs ?? 0);
+                        if (Number.isFinite(slowAmount) && slowAmount > 0 && typeof (target as any).applySlow === 'function') {
+                            (target as any).applySlow(slowAmount, slowDuration > 0 ? slowDuration : 1000);
+                        } else {
+                            combatSystem.applyStatusEffect(target as any, StatusEffect.SLOWED, Math.max(0.1, slowSec));
+                        }
                     } else if (effect === 'dot') {
                         const tick = (skill.dotTickMs ?? 1000) / 1000;
                         target.addStatusEffect(StatusEffect.DOT, Math.max(0.1, dotDurationSec || (tick * 3)), skill.dotAmount ?? 1, tick);
@@ -455,6 +490,30 @@ export class Unit extends Phaser.Events.EventEmitter {
             if (skill.taunt && typeof target.applyTaunt === 'function') {
                 const pos = this.getPosition();
                 target.applyTaunt(pos.x, pos.y, skill.statusDurationMs ?? 1500);
+            }
+            const statType = skill.statModType ? String(skill.statModType) : '';
+            const rawAmount = Number(skill.statModAmount);
+            const rawDuration = Number(skill.statModDurationMs ?? skill.statusDurationMs ?? 0);
+            if (statType && Number.isFinite(rawAmount) && Number.isFinite(rawDuration) && rawDuration > 0) {
+                const stacking = Boolean(skill.stacking);
+                if (statType === 'attack_speed') {
+                    const multiplier = rawAmount > 0 ? rawAmount : 1 + rawAmount;
+                    (target as any).applyAttackSpeedModifier?.(multiplier, rawDuration, stacking);
+                } else if (statType === 'move_speed') {
+                    const multiplier = rawAmount > 0 ? rawAmount : 1 + rawAmount;
+                    (target as any).applyMoveSpeedModifier?.(multiplier, rawDuration, stacking);
+                } else if (statType === 'damage_taken' || statType === 'damage_reduction') {
+                    const multiplier = statType === 'damage_reduction' ? 1 - rawAmount : 1 + rawAmount;
+                    (target as any).applyDamageTakenModifier?.(multiplier, rawDuration, stacking);
+                } else if (statType === 'armor' || statType === 'armor_reduction') {
+                    const multiplier = 1 + rawAmount;
+                    (target as any).applyArmorModifier?.(multiplier, rawDuration, stacking);
+                } else if (statType === 'attack' || statType === 'damage_buff') {
+                    const multiplier = rawAmount > 0 ? rawAmount : 1 + rawAmount;
+                    if (Number.isFinite(multiplier) && multiplier > 0) {
+                        (target as any).addDamageBuff?.(multiplier, rawDuration);
+                    }
+                }
             }
         });
         this.markSkillUsed(skill, currentTime);
@@ -661,12 +720,46 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.damageMultiplier *= 1.5;
         }
 
+        const deltaMs = deltaTime * 1000;
+
         // Tick temporary damage buffs
         if (this.damageBuffRemainingMs > 0) {
-            this.damageBuffRemainingMs -= deltaTime * 1000;
+            this.damageBuffRemainingMs -= deltaMs;
             if (this.damageBuffRemainingMs <= 0) {
                 this.damageMultiplier = 1;
                 this.damageBuffRemainingMs = 0;
+            }
+        }
+
+        if (this.tempMoveSpeedRemainingMs > 0) {
+            this.tempMoveSpeedRemainingMs -= deltaMs;
+            if (this.tempMoveSpeedRemainingMs <= 0) {
+                this.tempMoveSpeedMultiplier = 1;
+                this.tempMoveSpeedRemainingMs = 0;
+            }
+        }
+
+        if (this.tempAttackSpeedRemainingMs > 0) {
+            this.tempAttackSpeedRemainingMs -= deltaMs;
+            if (this.tempAttackSpeedRemainingMs <= 0) {
+                this.tempAttackSpeedMultiplier = 1;
+                this.tempAttackSpeedRemainingMs = 0;
+            }
+        }
+
+        if (this.damageTakenRemainingMs > 0) {
+            this.damageTakenRemainingMs -= deltaMs;
+            if (this.damageTakenRemainingMs <= 0) {
+                this.damageTakenMultiplier = 1;
+                this.damageTakenRemainingMs = 0;
+            }
+        }
+
+        if (this.armorRemainingMs > 0) {
+            this.armorRemainingMs -= deltaMs;
+            if (this.armorRemainingMs <= 0) {
+                this.armorMultiplier = 1;
+                this.armorRemainingMs = 0;
             }
         }
 
@@ -808,7 +901,7 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
 
         const moveSpeed = this.getMoveSpeed();
-        const speed = moveSpeed * this.moveSpeedMultiplier;
+        const speed = moveSpeed * this.moveSpeedMultiplier * this.tempMoveSpeedMultiplier;
         const force = {
             x: nx * speed * 0.002, // Reduced to 20% of original speed
             y: ny * speed * 0.002
@@ -872,6 +965,11 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.dead) return;
         let dmg = Number(amount);
         if (!Number.isFinite(dmg) || dmg <= 0) return;
+        const damageMultiplier = this.damageTakenMultiplier;
+        if (Number.isFinite(damageMultiplier) && damageMultiplier !== 1) {
+            dmg *= damageMultiplier;
+        }
+        if (!Number.isFinite(dmg) || dmg <= 0) return;
 
         if (!this.isApplyingDamageShare && this._damageSharePercent > 0 && this._damageShareLinks.length > 0) {
             const recipients = this._damageShareLinks.filter(u => u !== this && u.isAlive());
@@ -906,8 +1004,15 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         const healVal = Number(amount);
         if (!Number.isFinite(healVal) || healVal <= 0) return;
-        this.health = Math.min(this.maxHealth, this.health + healVal);
-        this.updateHealthBar();
+        const multiplier = Number.isFinite(this.healingMultiplier) ? this.healingMultiplier : 1;
+        const scaledHeal = healVal * multiplier;
+        const before = this.health;
+        this.health = Math.min(this.maxHealth, this.health + scaledHeal);
+        const applied = this.health - before;
+        if (applied > 0) {
+            this.updateHealthBar();
+            this.scene.events.emit('unit-healed', { unit: this, amount: applied });
+        }
     }
 
     // Commander skill support methods
@@ -982,6 +1087,10 @@ export class Unit extends Phaser.Events.EventEmitter {
 
     public getMaxHp(): number { return this.maxHealth; }
     public getCurrentHp(): number { return this.health; }
+    public getDamageMultiplier(): number { return this.damageMultiplier; }
+    public getAuraDamageMultiplier(): number { return this.auraDamageMultiplier; }
+    public getShieldAmount(): number { return this._shieldAmount; }
+    public hasBuildingBuff(): boolean { return this.buildingBuffActive; }
     public isAlive(): boolean { return !this.dead; }
     
     private die(): void {
@@ -1157,11 +1266,14 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public getDamage(): number { 
         const baseDamage = this.damage;
-        return RelicManager.getInstance().applyDamageModifier(baseDamage * this.damageMultiplier, this.getRelicContext());
+        return RelicManager.getInstance().applyDamageModifier(
+            baseDamage * this.damageMultiplier * this.auraDamageMultiplier,
+            this.getRelicContext()
+        );
     }
     
     public getArmor(): number { 
-        const baseArmor = this.armor;
+        const baseArmor = this.armor * this.armorMultiplier;
         return RelicManager.getInstance().applyArmorModifier(baseArmor, this.getRelicContext());
     }
     
@@ -1185,7 +1297,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getAttackSpeed(): number { 
         const baseSpeed = this.attackSpeed;
         const relicMod = RelicManager.getInstance().applyAttackSpeedModifier(baseSpeed, this.getRelicContext());
-        return relicMod * this.attackSpeedMultiplier * this.buildingAttackSpeedMultiplier; 
+        return relicMod * this.attackSpeedMultiplier * this.tempAttackSpeedMultiplier * this.buildingAttackSpeedMultiplier; 
     }
     
     public isStunned(): boolean { return this.stunned; }
@@ -1222,6 +1334,38 @@ export class Unit extends Phaser.Events.EventEmitter {
     public setMoveSpeedMultiplier(value: number): void { this.moveSpeedMultiplier = value; }
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
     public setBuildingAttackSpeedMultiplier(value: number): void { this.buildingAttackSpeedMultiplier = value; }
+    public setAuraDamageMultiplier(value: number): void { this.auraDamageMultiplier = value; }
+    public setHealingMultiplier(value: number): void {
+        if (!Number.isFinite(value) || value <= 0) {
+            this.healingMultiplier = 1;
+            return;
+        }
+        this.healingMultiplier = value;
+    }
+    public applyMoveSpeedModifier(multiplier: number, durationMs: number, stacking?: boolean): void {
+        if (this.dead) return;
+        if (!Number.isFinite(multiplier) || multiplier <= 0) return;
+        this.tempMoveSpeedMultiplier = this.resolveTempMultiplier(this.tempMoveSpeedMultiplier, multiplier, stacking);
+        this.tempMoveSpeedRemainingMs = Math.max(this.tempMoveSpeedRemainingMs, durationMs);
+    }
+    public applyAttackSpeedModifier(multiplier: number, durationMs: number, stacking?: boolean): void {
+        if (this.dead) return;
+        if (!Number.isFinite(multiplier) || multiplier <= 0) return;
+        this.tempAttackSpeedMultiplier = this.resolveTempMultiplier(this.tempAttackSpeedMultiplier, multiplier, stacking);
+        this.tempAttackSpeedRemainingMs = Math.max(this.tempAttackSpeedRemainingMs, durationMs);
+    }
+    public applyDamageTakenModifier(multiplier: number, durationMs: number, stacking?: boolean): void {
+        if (this.dead) return;
+        if (!Number.isFinite(multiplier) || multiplier <= 0) return;
+        this.damageTakenMultiplier = this.resolveTempMultiplier(this.damageTakenMultiplier, multiplier, stacking);
+        this.damageTakenRemainingMs = Math.max(this.damageTakenRemainingMs, durationMs);
+    }
+    public applyArmorModifier(multiplier: number, durationMs: number, stacking?: boolean): void {
+        if (this.dead) return;
+        if (!Number.isFinite(multiplier) || multiplier <= 0) return;
+        this.armorMultiplier = this.resolveTempMultiplier(this.armorMultiplier, multiplier, stacking);
+        this.armorRemainingMs = Math.max(this.armorRemainingMs, durationMs);
+    }
     public addDamageBuff(multiplier: number, durationMs: number): void {
         this.damageMultiplier = Math.max(this.damageMultiplier, multiplier);
         this.damageBuffRemainingMs = Math.max(this.damageBuffRemainingMs, durationMs);
@@ -1317,6 +1461,28 @@ export class Unit extends Phaser.Events.EventEmitter {
                 return this.scene.textures.exists('army_Aether_Archer')
                     ? 'army_Aether_Archer'
                     : 'triarch_aether_archer';
+            case UnitType.ELF_GLOW_SPROUT_SPIRIT: return 'army_Soul-Seer_Disciple';
+            case UnitType.ELF_VINE_TENDRIL: return 'army_Verdant_Legionary';
+            case UnitType.ELF_SPORE_WING_SCOUT: return 'army_Starlight_Sky-Skimmers';
+            case UnitType.ELF_VERDANT_LEGIONARY: return 'army_Verdant_Legionary';
+            case UnitType.ELF_ROOT_KIN_SWARM: return 'army_Emerald_Shadow-Guards';
+            case UnitType.ELF_SEED_POD_ARTILLERY: return 'army_Emerald_Vanguard';
+            case UnitType.ELF_POLLEN_BURSTER: return 'army_Verdant_Legionary';
+            case UnitType.ELF_BLOOM_THROWER: return 'army_Oracle';
+            case UnitType.ELF_EMERALD_JUSTICIAR: return 'army_Emerald_Justiciar';
+            case UnitType.ELF_KAELAS_SQUIRE: return "army_Kaelas's_Squire";
+            case UnitType.ELF_GUARDIAN_WORLD_TREE: return 'army_Hallow_Tree_Paladin';
+            case UnitType.ELF_EMERALD_DRAGONLING: return 'army_Starlight_Sky-Skimmers';
+            case UnitType.ELF_CHAMPION_GLADE: return 'army_Emerald_Justiciar';
+            case UnitType.ELF_EMERALD_VANGUARD: return 'army_Emerald_Vanguard';
+            case UnitType.ELF_HALLOW_TREE_PALADIN: return 'army_Hallow_Tree_Paladin';
+            case UnitType.ELF_SOUL_SEER_DISCIPLE: return 'army_Soul-Seer_Disciple';
+            case UnitType.ELF_SPIRIT_BOUND_DEER: return 'army_Spirit-Bound_Hunter';
+            case UnitType.ELF_ORACLE: return 'army_Oracle';
+            case UnitType.ELF_ETHEREAL_WEAVER: return 'army_Turmaline_Weaver';
+            case UnitType.ELF_GROVE_PETITIONER: return 'army_Oracle';
+            case UnitType.ELF_SOUL_LIGHT_BUTTERFLY: return 'army_Starlight_Sky-Skimmers';
+            case UnitType.ELF_VITALITY_BONDER: return 'army_Vitality_Bonder';
             default: return 'warrior';
         }
     }

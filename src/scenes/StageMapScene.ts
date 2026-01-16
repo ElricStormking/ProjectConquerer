@@ -398,6 +398,7 @@ export class StageMapScene extends Phaser.Scene {
         this.time.delayedCall(4000, () => title.destroy());
     }
 
+
     private drawPaths(stage: IStageConfig): void {
         this.pathGraphics.clear();
         const currentNode = this.runManager.getCurrentNode();
@@ -516,8 +517,10 @@ export class StageMapScene extends Phaser.Scene {
             // Get the player's current fortress image key
             const runState = this.runManager.getRunState();
             const factionId = runState?.factionId ?? 'jade_dynasty';
-            const gridConfig = this.factionRegistry.getFortressGridConfig(`fortress_${factionId}_01`);
-            const imageKey = gridConfig?.imageKey ?? 'fortress_jade_dynasty_01';
+            const faction = this.factionRegistry.getFaction(factionId);
+            const fortressId = faction?.fortressId ?? `fortress_${factionId}_01`;
+            const gridConfig = this.factionRegistry.getFortressGridConfig(fortressId);
+            const imageKey = gridConfig?.imageKey ?? fortressId;
             
             // Create fortress image as the map token
             if (this.textures.exists(imageKey)) {

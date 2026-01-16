@@ -89,6 +89,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('commander_valerius', 'assets/commanders/triarch_commanders/Valerius_Dawnward.png');
         this.load.image('commander_elara', 'assets/commanders/triarch_commanders/Elara_Blackiron.png');
         this.load.image('commander_rex', 'assets/commanders/triarch_commanders/Rex_Aetherfall.png');
+        // Commander portraits (Elf Covenant)
+        this.load.image('commander_liana', 'assets/commanders/elf_commanders/Commander_Liana.png');
+        this.load.image('commander_kaelas', 'assets/commanders/elf_commanders/Commander_Kaelas.png');
+        this.load.image('commander_mara', 'assets/commanders/elf_commanders/Commander_Mara.png');
         // Jade Dynasty unit card art
         this.load.image('card_jade_azure_spear', 'assets/cards/Jade_dynasty/units/Azure_Spear_Chargers.png');
         this.load.image('card_jade_chi_dragoon', 'assets/cards/Jade_dynasty/units/Chi_Dragoon.png');
@@ -122,8 +126,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('stage_jade_map', 'assets/stage_map/map_stage_jade.png'); // current stage 1 key
         this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
         this.load.image('stage_triarch_map', 'assets/stage_map/map_stage_triarch.png');
+        this.load.image('stage_elf_map', 'assets/stage_map/map_stage_elf.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
+        this.load.image('battle_bg_stage_4', 'assets/background/gamemap_elf_04.png');
         
         // Fortress grid CSVs (metadata + tilemap pairs)
         this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');
@@ -132,6 +138,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('fortress_grid_frost_clan_01_tilemap', 'data/fortress_grids/fortress_eternal_frost_clan_01_grid.csv');
         this.load.text('fortress_grid_triarch_dominion_01_meta', 'data/fortress_grids/fortress_triarch_dominion_01.csv');
         this.load.text('fortress_grid_triarch_dominion_01_tilemap', 'data/fortress_grids/fortress_triarch_dominion_01_grid.csv');
+        this.load.text('fortress_grid_elf_covenant_02_meta', 'data/fortress_grids/fortress_elf_covenant_02.csv');
+        this.load.text('fortress_grid_elf_covenant_02_tilemap', 'data/fortress_grids/fortress_elf_covenant_02_grid.csv');
 
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
@@ -141,10 +149,12 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
         this.load.image('fortress_frost_clan_01', 'assets/fortress/Fortress_eternal_frost_clan_01.png');
         this.load.image('fortress_triarch_dominion_01', 'assets/fortress/Fortress_Triarch_Dominion_01.png');
+        this.load.image('fortress_elf_covenant_02', 'assets/fortress/Fortress_Elf_Covenant_02.png');
         // Faction selection backgrounds
         this.load.image('faction_bg_jade_dynasty', 'assets/faction_selection/faction_selection_jade_dynasty.png');
         this.load.image('faction_bg_frost_clan', 'assets/faction_selection/faction_selection_eternal_frost_clan.png');
         this.load.image('faction_bg_triarch_dominion', 'assets/faction_selection/faction_selection_triarch_dominion.png');
+        this.load.image('faction_bg_elf_covenant', 'assets/faction_selection/faction_selection_elf_covenant_01.png');
         this.load.image('ui_arrow_left', 'assets/ui/ui_faction_selection/arrow_L.png');
         this.load.image('ui_arrow_right', 'assets/ui/ui_faction_selection/arrow_R.png');
         this.load.image('logo_jade_dynasty', 'assets/ui/ui_faction_selection/Logo_Jade_Dynasty.png');
@@ -264,6 +274,41 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_triarch_cannon_turret', `${triarchBuildingCardPath}Cannon_Turret.png`);
         this.load.image('card_triarch_storm_generator', `${triarchBuildingCardPath}Storm_Generator.png`);
 
+        // Elf Covenant card art (units / structures)
+        const elfUnitCardPath = 'assets/cards/Elf_covenant/units/';
+        this.load.image('card_elf_glow_sprout_spirit', `${elfUnitCardPath}Glow_Sprout_Spirit.png`);
+        this.load.image('card_elf_seed_pod_artillery', `${elfUnitCardPath}Seed_Pod_Artillery.png`);
+        this.load.image('card_elf_pollen_burster', `${elfUnitCardPath}Pollen_Burster.png`);
+        this.load.image('card_elf_bloom_thrower', `${elfUnitCardPath}Bloom_Thrower.png`);
+        this.load.image('card_elf_emerald_justiciar', `${elfUnitCardPath}Emerald_Justiciar.png`);
+        this.load.image('card_elf_emerald_shadow_guards', `${elfUnitCardPath}Emerald_Shadow_Guards.png`);
+        this.load.image('card_elf_emerald_dragonling', `${elfUnitCardPath}Emerald_Dragonling.png`);
+        this.load.image('card_elf_champion_glade', `${elfUnitCardPath}Champion_of_the_Glade.png`);
+        this.load.image('card_elf_emerald_vanguard', `${elfUnitCardPath}Emerald_Vanguard.png`);
+        this.load.image('card_elf_hallow_tree_paladin', `${elfUnitCardPath}Hallow_Tree_Paladin.png`);
+        this.load.image('card_elf_guardian_world_tree', `${elfUnitCardPath}Guardian_of_the_World_Tree.png`);
+        this.load.image('card_elf_kaelas_squire', `${elfUnitCardPath}Kaelas_Squire.png`);
+        this.load.image('card_elf_grove_petitioner', `${elfUnitCardPath}Grove_Petitioner.png`);
+        this.load.image('card_elf_oracle', `${elfUnitCardPath}Oracle.png`);
+        this.load.image('card_elf_soul_seer_disciple', `${elfUnitCardPath}Soul_Seer_Disciple.png`);
+        this.load.image('card_elf_soul_light_butterfly', `${elfUnitCardPath}Soul_Light_Butterfly.png`);
+        this.load.image('card_elf_spirit_bound_hunter', `${elfUnitCardPath}Spirit_Bound_Hunter.png`);
+        this.load.image('card_elf_starlight_sky_skimmers', `${elfUnitCardPath}Starlight_Sky_Skimmers.png`);
+        this.load.image('card_elf_turmaline_weaver', `${elfUnitCardPath}Turmaline_Weaver.png`);
+        this.load.image('card_elf_verdant_legionary', `${elfUnitCardPath}Verdant_Legionary.png`);
+        this.load.image('card_elf_vitality_bonder', `${elfUnitCardPath}Vitality_Bonder.png`);
+
+        const elfBuildingCardPath = 'assets/cards/Elf_covenant/buildings/';
+        this.load.image('card_elf_altar_of_heroes', `${elfBuildingCardPath}Altar_of_Heroes.png`);
+        this.load.image('card_elf_bloom_hatchery', `${elfBuildingCardPath}Bloom_Hatchery.png`);
+        this.load.image('card_elf_emerald_shield_battery', `${elfBuildingCardPath}Emerald_Shield_Battery.png`);
+        this.load.image('card_elf_fountain_of_life', `${elfBuildingCardPath}Fountain_of_Life.png`);
+        this.load.image('card_elf_healing_grove', `${elfBuildingCardPath}Healing_Grove.png`);
+        this.load.image('card_elf_living_vine_wall', `${elfBuildingCardPath}Living_Vine_Wall.png`);
+        this.load.image('card_elf_soul_stone_monument', `${elfBuildingCardPath}Soul-Stone_Monument.png`);
+        this.load.image('card_elf_spore_mist_pillar', `${elfBuildingCardPath}Spore-Mist_Pillar.png`);
+        this.load.image('card_elf_sun_crystal_spire', `${elfBuildingCardPath}Sun-Crystal_Spire.png`);
+
         // Victory / SFX
         this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
         // Prototype background music
@@ -375,6 +420,32 @@ export class PreloadScene extends Phaser.Scene {
         // Alias load to support any legacy references
         this.load.spritesheet('triarch_aether_archer', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer.png', { frameWidth: 96, frameHeight: 96 });
         this.load.json('triarch_aether_archer_an', 'assets/units/Triarch_Dominion/army_Aether_Archer/army_Aether_Archer_an.json');
+
+        // Elf Covenant units
+        this.load.spritesheet('army_Emerald_Justiciar', 'assets/units/Elf_Covenant/army_Emerald_Justiciar/army_Emerald_Justiciar.png', { frameWidth: 80, frameHeight: 80 });
+        this.load.json('army_Emerald_Justiciar_an', 'assets/units/Elf_Covenant/army_Emerald_Justiciar/army_Emerald_Justiciar_an.json');
+        this.load.spritesheet('army_Emerald_Shadow-Guards', 'assets/units/Elf_Covenant/army_Emerald_Shadow-Guards/army_Emerald_Shadow-Guards.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Emerald_Shadow-Guards_an', 'assets/units/Elf_Covenant/army_Emerald_Shadow-Guards/army_Emerald_Shadow-Guards_an.json');
+        this.load.spritesheet('army_Emerald_Vanguard', 'assets/units/Elf_Covenant/army_Emerald_Vanguard/army_Emerald_Vanguard.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('army_Emerald_Vanguard_an', 'assets/units/Elf_Covenant/army_Emerald_Vanguard/army_Emerald_Vanguard_an.json');
+        this.load.spritesheet('army_Hallow_Tree_Paladin', 'assets/units/Elf_Covenant/army_Hallow_Tree_Paladin/army_Hallow_Tree_Paladin.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('army_Hallow_Tree_Paladin_an', 'assets/units/Elf_Covenant/army_Hallow_Tree_Paladin/army_Hallow_Tree_Paladin_an.json');
+        this.load.spritesheet("army_Kaelas's_Squire", 'assets/units/Elf_Covenant/army_Kaelas_s_Squire/army_Kaelas_s_Squire.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json("army_Kaelas's_Squire_an", 'assets/units/Elf_Covenant/army_Kaelas_s_Squire/army_Kaelas_s_Squire_an.json');
+        this.load.spritesheet('army_Oracle', 'assets/units/Elf_Covenant/army_Oracle/army_Oracle.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Oracle_an', 'assets/units/Elf_Covenant/army_Oracle/army_Oracle_an.json');
+        this.load.spritesheet('army_Soul-Seer_Disciple', 'assets/units/Elf_Covenant/army_Soul-Seer_Disciple/army_Soul-Seer_Disciple.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Soul-Seer_Disciple_an', 'assets/units/Elf_Covenant/army_Soul-Seer_Disciple/army_Soul-Seer_Disciple_an.json');
+        this.load.spritesheet('army_Spirit-Bound_Hunter', 'assets/units/Elf_Covenant/army_Spirit-Bound_Hunter/army_Spirit-Bound_Hunter.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.json('army_Spirit-Bound_Hunter_an', 'assets/units/Elf_Covenant/army_Spirit-Bound_Hunter/army_Spirit-Bound_Hunter_an.json');
+        this.load.spritesheet('army_Starlight_Sky-Skimmers', 'assets/units/Elf_Covenant/army_Starlight_Sky-Skimmers/army_Starlight_Sky-Skimmers.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Starlight_Sky-Skimmers_an', 'assets/units/Elf_Covenant/army_Starlight_Sky-Skimmers/army_Starlight_Sky-Skimmers_an.json');
+        this.load.spritesheet('army_Turmaline_Weaver', 'assets/units/Elf_Covenant/army_Turmaline_Weaver/army_Turmaline_Weaver.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Turmaline_Weaver_an', 'assets/units/Elf_Covenant/army_Turmaline_Weaver/army_Turmaline_Weaver_an.json');
+        this.load.spritesheet('army_Verdant_Legionary', 'assets/units/Elf_Covenant/army_Verdant_Legionary/army_Verdant_Legionary.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('army_Verdant_Legionary_an', 'assets/units/Elf_Covenant/army_Verdant_Legionary/army_Verdant_Legionary_an.json');
+        this.load.spritesheet('army_Vitality_Bonder', 'assets/units/Elf_Covenant/army_Vitality_Bonder/army_Vitality_Bonder.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Vitality_Bonder_an', 'assets/units/Elf_Covenant/army_Vitality_Bonder/army_Vitality_Bonder_an.json');
     }
 
     create() {

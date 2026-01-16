@@ -5,6 +5,38 @@ import { IFactionConfig, ICommanderFullConfig } from '../types/ironwars';
 
 const CARD_WIDTH = 1920;
 const CARD_SPACING = 50;
+const ELF_CARD_PORTRAITS: Record<string, string> = {
+    card_elf_glow_sprout_spirit: 'assets/cards/Elf_covenant/units/Glow_Sprout_Spirit.png',
+    card_elf_seed_pod_artillery: 'assets/cards/Elf_covenant/units/Seed_Pod_Artillery.png',
+    card_elf_pollen_burster: 'assets/cards/Elf_covenant/units/Pollen_Burster.png',
+    card_elf_bloom_thrower: 'assets/cards/Elf_covenant/units/Bloom_Thrower.png',
+    card_elf_emerald_justiciar: 'assets/cards/Elf_covenant/units/Emerald_Justiciar.png',
+    card_elf_emerald_shadow_guards: 'assets/cards/Elf_covenant/units/Emerald_Shadow_Guards.png',
+    card_elf_emerald_dragonling: 'assets/cards/Elf_covenant/units/Emerald_Dragonling.png',
+    card_elf_champion_glade: 'assets/cards/Elf_covenant/units/Champion_of_the_Glade.png',
+    card_elf_emerald_vanguard: 'assets/cards/Elf_covenant/units/Emerald_Vanguard.png',
+    card_elf_hallow_tree_paladin: 'assets/cards/Elf_covenant/units/Hallow_Tree_Paladin.png',
+    card_elf_guardian_world_tree: 'assets/cards/Elf_covenant/units/Guardian_of_the_World_Tree.png',
+    card_elf_kaelas_squire: 'assets/cards/Elf_covenant/units/Kaelas_Squire.png',
+    card_elf_grove_petitioner: 'assets/cards/Elf_covenant/units/Grove_Petitioner.png',
+    card_elf_oracle: 'assets/cards/Elf_covenant/units/Oracle.png',
+    card_elf_soul_seer_disciple: 'assets/cards/Elf_covenant/units/Soul_Seer_Disciple.png',
+    card_elf_soul_light_butterfly: 'assets/cards/Elf_covenant/units/Soul_Light_Butterfly.png',
+    card_elf_spirit_bound_hunter: 'assets/cards/Elf_covenant/units/Spirit_Bound_Hunter.png',
+    card_elf_starlight_sky_skimmers: 'assets/cards/Elf_covenant/units/Starlight_Sky_Skimmers.png',
+    card_elf_turmaline_weaver: 'assets/cards/Elf_covenant/units/Turmaline_Weaver.png',
+    card_elf_verdant_legionary: 'assets/cards/Elf_covenant/units/Verdant_Legionary.png',
+    card_elf_vitality_bonder: 'assets/cards/Elf_covenant/units/Vitality_Bonder.png',
+    card_elf_altar_of_heroes: 'assets/cards/Elf_covenant/buildings/Altar_of_Heroes.png',
+    card_elf_bloom_hatchery: 'assets/cards/Elf_covenant/buildings/Bloom_Hatchery.png',
+    card_elf_emerald_shield_battery: 'assets/cards/Elf_covenant/buildings/Emerald_Shield_Battery.png',
+    card_elf_fountain_of_life: 'assets/cards/Elf_covenant/buildings/Fountain_of_Life.png',
+    card_elf_healing_grove: 'assets/cards/Elf_covenant/buildings/Healing_Grove.png',
+    card_elf_living_vine_wall: 'assets/cards/Elf_covenant/buildings/Living_Vine_Wall.png',
+    card_elf_soul_stone_monument: 'assets/cards/Elf_covenant/buildings/Soul-Stone_Monument.png',
+    card_elf_spore_mist_pillar: 'assets/cards/Elf_covenant/buildings/Spore-Mist_Pillar.png',
+    card_elf_sun_crystal_spire: 'assets/cards/Elf_covenant/buildings/Sun-Crystal_Spire.png'
+};
 
 export class FactionSelectionScene extends Phaser.Scene {
     private readonly factionRegistry = FactionRegistry.getInstance();
@@ -22,6 +54,7 @@ export class FactionSelectionScene extends Phaser.Scene {
     private backgroundImage?: Phaser.GameObjects.Image;
     private backgroundFallback?: Phaser.GameObjects.Graphics;
     private bgLoadInFlight: Set<string> = new Set();
+    private cardPortraitLoadInFlight: Set<string> = new Set();
 
     constructor() {
         super({ key: 'FactionSelectionScene' });
@@ -39,7 +72,7 @@ export class FactionSelectionScene extends Phaser.Scene {
         }
         
         // Only show supported factions
-        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion']);
+        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion', 'elf_covenant']);
         this.factions = this.factionRegistry.getAllFactions().filter(f => allowedFactions.has(f.id));
         if (this.factions.length === 0) {
             // Fallback if no factions loaded
@@ -288,6 +321,7 @@ export class FactionSelectionScene extends Phaser.Scene {
             return;
         }
         const cards = this.commanderManager.getCardsForCommander(selectedId).slice(0, 6);
+        this.queueMissingElfCardPortraits(cards, panel, factionId, factionColor);
 
         const startX = 100;
         const cardWidth = 80;
@@ -361,6 +395,48 @@ export class FactionSelectionScene extends Phaser.Scene {
             }).setOrigin(0.5);
             container.add(nameText);
         });
+    }
+
+    private queueMissingElfCardPortraits(
+        cards: { portraitKey: string }[],
+        panel: Phaser.GameObjects.Container,
+        factionId: string,
+        factionColor: number
+    ): void {
+        if (factionId !== 'elf_covenant') return;
+
+        let queued = false;
+        cards.forEach(card => {
+            const portraitKey = card.portraitKey;
+            const portraitPath = ELF_CARD_PORTRAITS[portraitKey];
+            if (!portraitPath || this.textures.exists(portraitKey) || this.cardPortraitLoadInFlight.has(portraitKey)) {
+                return;
+            }
+
+            this.cardPortraitLoadInFlight.add(portraitKey);
+            this.load.image(portraitKey, portraitPath);
+            queued = true;
+
+            const onLoadError = (file: Phaser.Loader.File) => {
+                if (file.key !== portraitKey) return;
+                this.cardPortraitLoadInFlight.delete(portraitKey);
+                this.load.off('loaderror', onLoadError);
+            };
+
+            this.load.once(`filecomplete-image-${portraitKey}`, () => {
+                this.cardPortraitLoadInFlight.delete(portraitKey);
+                this.load.off('loaderror', onLoadError);
+                if (this.sys && this.sys.isActive() && this.factions[this.currentIndex]?.id === factionId) {
+                    this.renderCardsPreview(panel, factionId, factionColor);
+                }
+            });
+
+            this.load.on('loaderror', onLoadError);
+        });
+
+        if (queued && this.load.isReady()) {
+            this.load.start();
+        }
     }
 
     private addFortressPreview(
@@ -440,7 +516,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         const fortressKeyMap: Record<string, string> = {
             jade_dynasty: 'fortress_jade_dynasty_01',
             frost_clan: 'fortress_frost_clan_01',
-            triarch_dominion: 'fortress_triarch_dominion_01'
+            triarch_dominion: 'fortress_triarch_dominion_01',
+            elf_covenant: 'fortress_elf_covenant_02'
         };
         const fortressKey = fortressKeyMap[factionId];
         if (fortressKey && this.textures.exists(fortressKey)) {
@@ -573,7 +650,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         const keyMap: Record<string, string> = {
             jade_dynasty: 'faction_bg_jade_dynasty',
             frost_clan: 'faction_bg_frost_clan',
-            triarch_dominion: 'faction_bg_triarch_dominion'
+            triarch_dominion: 'faction_bg_triarch_dominion',
+            elf_covenant: 'faction_bg_elf_covenant'
         };
         const bgKey = keyMap[factionId];
 
@@ -581,7 +659,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         const fileMap: Record<string, string> = {
             faction_bg_jade_dynasty: 'assets/faction_selection/faction_selection_jade_dynasty.png',
             faction_bg_frost_clan: 'assets/faction_selection/faction_selection_eternal_frost_clan.png',
-            faction_bg_triarch_dominion: 'assets/faction_selection/faction_selection_triarch_dominion.png'
+            faction_bg_triarch_dominion: 'assets/faction_selection/faction_selection_triarch_dominion.png',
+            faction_bg_elf_covenant: 'assets/faction_selection/faction_selection_elf_covenant_01.png'
         };
 
         if (bgKey && !this.textures.exists(bgKey) && fileMap[bgKey] && !this.bgLoadInFlight.has(bgKey)) {
@@ -737,4 +816,3 @@ export class FactionSelectionScene extends Phaser.Scene {
         });
     }
 }
-

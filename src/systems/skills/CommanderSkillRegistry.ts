@@ -8,6 +8,7 @@ import { DataManager } from '../DataManager';
 import { SkyfallCataclysm, JudgmentOfTheDawn, GrandBombardment } from './TriarchDominionSkills';
 import { DragonSpearBarrage, ShikigamiSummoning, ShadowCloneAmbush } from './JadeDynastySkills';
 import { SoulBlasphemy, SacrificialFeast, FleshLink } from './ForbiddenBloodlineSkills';
+import { Overgrowth, JudgmentOfWorldTree, SoulBond } from './ElfCovenantSkills';
 
 export class CommanderSkillRegistry {
     private static instance: CommanderSkillRegistry;
@@ -45,6 +46,11 @@ export class CommanderSkillRegistry {
         this.register(new SoulBlasphemy());
         this.register(new SacrificialFeast());
         this.register(new FleshLink());
+
+        // Elf Covenant
+        this.register(new Overgrowth());
+        this.register(new JudgmentOfWorldTree());
+        this.register(new SoulBond());
 
         // Legacy aliases for backward compatibility with older data/save files
         this.registerAlias('orbital_strike', 'grand_bombardment');

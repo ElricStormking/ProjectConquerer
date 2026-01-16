@@ -88,9 +88,12 @@ export class DataManager {
 
     private parseUnits(csv: string): void {
         if (!csv) return;
-        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
         result.data.forEach((row: any) => {
+            const id = typeof row.id === 'string' ? row.id.trim() : row.id;
+            if (!id) return;
             const rawSpawnAmount = row.spawn_amount;
             const parsedSpawnAmount =
                 typeof rawSpawnAmount === 'number'
@@ -104,7 +107,7 @@ export class DataManager {
                     : undefined;
 
             const template: UnitTemplate = {
-                type: row.id as UnitType, // Casting to UnitType, assuming CSV IDs match enum
+                type: id as UnitType, // Casting to UnitType, assuming CSV IDs match enum
                 name: row.name,
                 description: row.description,
                 unitClass: row.role, // 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner'
@@ -122,11 +125,11 @@ export class DataManager {
                     range: row.range,
                     mass: row.mass
                 },
-                skillPrimaryId: row.skill_primary_id || undefined,
-                skillSecondaryId: row.skill_secondary_id || undefined,
-                passiveSkillId: row.passive_skill_id || undefined
+                skillPrimaryId: typeof row.skill_primary_id === 'string' ? row.skill_primary_id.trim() : row.skill_primary_id || undefined,
+                skillSecondaryId: typeof row.skill_secondary_id === 'string' ? row.skill_secondary_id.trim() : row.skill_secondary_id || undefined,
+                passiveSkillId: typeof row.passive_skill_id === 'string' ? row.passive_skill_id.trim() : row.passive_skill_id || undefined
             };
-            this.units.set(row.id, template);
+            this.units.set(id, template);
         });
     }
 
@@ -248,8 +251,11 @@ export class DataManager {
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
         result.data.forEach((row: any) => {
+            const id = typeof row.id === 'string' ? row.id.trim() : row.id;
+            if (!id) return;
+            const targetId = typeof row.target_id === 'string' ? row.target_id.trim() : row.target_id;
             const card: ICard = {
-                id: row.id,
+                id,
                 name: row.name,
                 type: row.type as CardType,
                 cost: row.cost,
@@ -259,12 +265,12 @@ export class DataManager {
                 rarity: row.rarity
             };
 
-            if (card.type === CardType.UNIT) card.unitId = row.target_id;
-            else if (card.type === CardType.SPELL) card.spellEffectId = row.target_id;
-            else if (card.type === CardType.STRUCTURE) card.structureId = row.target_id;
-            else if (card.type === CardType.MODULE) card.moduleId = row.target_id;
+            if (card.type === CardType.UNIT) card.unitId = targetId;
+            else if (card.type === CardType.SPELL) card.spellEffectId = targetId;
+            else if (card.type === CardType.STRUCTURE) card.structureId = targetId;
+            else if (card.type === CardType.MODULE) card.moduleId = targetId;
 
-            this.cards.set(card.id, card);
+            this.cards.set(id, card);
         });
     }
 
@@ -511,7 +517,14 @@ export class DataManager {
 
     // Accessors
     public getUnitTemplate(id: string): UnitTemplate | undefined {
-        return this.units.get(id);
+        if (!id) return undefined;
+        const direct = this.units.get(id);
+        if (direct) return direct;
+        const trimmed = id.trim();
+        if (trimmed !== id) {
+            return this.units.get(trimmed);
+        }
+        return undefined;
     }
 
     public getAllUnitTemplates(): UnitTemplate[] {
@@ -660,7 +673,7 @@ export class DataManager {
      */
     private parseFortressGridsFromCache(cache: Phaser.Cache.CacheManager): void {
         // Known fortress grid IDs - add more here as they're created
-        const fortressIds = ['jade_dynasty_01', 'frost_clan_01', 'triarch_dominion_01'];
+        const fortressIds = ['jade_dynasty_01', 'frost_clan_01', 'triarch_dominion_01', 'elf_covenant_02'];
         
         for (const id of fortressIds) {
             const metaKey = `fortress_grid_${id}_meta`;

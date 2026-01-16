@@ -8,3 +8,12 @@ triarch_field_command_post,Field Command Post,210,1,1,triarch_command_zone,build
 triarch_healing_beacon,Healing Beacon,180,1,1,triarch_healing_pulse,building_triarch_healing_beacon
 triarch_cannon_turret,Cannon Turret,260,1,1,triarch_cannon_blast,building_triarch_cannon_turret
 triarch_storm_generator,Storm Generator,200,1,1,triarch_storm_zone,building_triarch_storm_generator
+elf_altar_of_heroes,Altar of Heroes,200,1,1,elf_altar_of_heroes,card_elf_altar_of_heroes
+elf_bloom_hatchery,Bloom Hatchery,220,1,1,elf_bloom_hatchery,card_elf_bloom_hatchery
+elf_emerald_shield_battery,Emerald Shield Battery,240,1,1,elf_emerald_shield_battery,card_elf_emerald_shield_battery
+elf_fountain_of_life,Fountain of Life,200,1,1,elf_fountain_of_life,card_elf_fountain_of_life
+elf_healing_grove,Healing Grove,260,1,1,elf_healing_grove,card_elf_healing_grove
+elf_living_vine_wall,Living Vine Wall,260,1,1,elf_living_vine_wall,card_elf_living_vine_wall
+elf_soul_stone_monument,Soul-Stone Monument,210,1,1,elf_soul_stone_monument,card_elf_soul_stone_monument
+elf_spore_mist_pillar,Spore-Mist Pillar,180,1,1,elf_spore_mist_pillar,card_elf_spore_mist_pillar
+elf_sun_crystal_spire,Sun-Crystal Spire,240,1,1,elf_sun_crystal_spire,card_elf_sun_crystal_spire

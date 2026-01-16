@@ -87,6 +87,15 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         gridHeight: 5,
         maxHp: 520,
         abilities: ['triarch_command', 'triarch_resolve']
+    },
+    fortress_elf_covenant_02: {
+        id: 'fortress_elf_covenant_02',
+        name: 'Emerald Sanctuary',
+        factionId: 'elf_covenant',
+        gridWidth: 5,
+        gridHeight: 5,
+        maxHp: 540,
+        abilities: ['verdant_aegis', 'soul_bloom']
     }
 };
 
@@ -176,9 +185,9 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
             verdant_covenant: 0x27ae60,   // Forest green
             frost_clan: 0x74b9ff,         // Ice blue
             bloodfang_warborn: 0xc0392b,  // Blood red
-            triarch_dominion: 0xd6c58b    // Gold-white holy brass
+            triarch_dominion: 0xd6c58b,   // Gold-white holy brass
+            elf_covenant: 0x4caf50        // Verdant emerald
         };
         return colors[factionId] ?? 0x888888;
     }
 }
-
