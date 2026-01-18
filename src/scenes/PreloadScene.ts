@@ -129,6 +129,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('stage_elf_map', 'assets/stage_map/map_stage_elf.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
+        this.load.image('battle_bg_stage_3', 'assets/background/gamemap_triarch_03.png');
         this.load.image('battle_bg_stage_4', 'assets/background/gamemap_elf_04.png');
         
         // Fortress grid CSVs (metadata + tilemap pairs)
@@ -181,8 +182,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.audio('bgm_faction_select', 'assets/audio/bgm/bgm_01_dragonbattle_title.mp3');
         this.load.audio('bgm_stage_jade', 'assets/audio/bgm/bgm_01_jade_dynasty_map.mp3');
         this.load.audio('bgm_stage_frost', 'assets/audio/bgm/bgm_02_eternal_frost_clan.mp3');
+        this.load.audio('bgm_stage_triarch', 'assets/audio/bgm/bgm_03_triarch_dominion.mp3');
         this.load.audio('bgm_battle_jade', 'assets/audio/bgm/battle/bgm_01_jade_dynasty_battle.mp3');
         this.load.audio('bgm_battle_frost', 'assets/audio/bgm/battle/bgm_02_eternal_frost_clan_battle.mp3');
+        this.load.audio('bgm_battle_triarch', 'assets/audio/bgm/battle/bgm_03_triarch_dominion_battle.mp3');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

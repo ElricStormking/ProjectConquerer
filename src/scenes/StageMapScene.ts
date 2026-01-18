@@ -343,7 +343,12 @@ export class StageMapScene extends Phaser.Scene {
     private playStageBgm(): void {
         const state = this.runManager.getRunState();
         const stageIndex = state?.currentStageIndex ?? 0;
-        const key = stageIndex === 0 ? 'bgm_stage_jade' : 'bgm_stage_frost';
+        const key =
+            stageIndex === 0
+                ? 'bgm_stage_jade'
+                : stageIndex === 2
+                ? 'bgm_stage_triarch'
+                : 'bgm_stage_frost';
         this.stageBgmKey = key;
 
         // If already playing correct track, keep it.

@@ -518,8 +518,19 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const removeIndex = Phaser.Math.Between(0, indices.length - 1);
         const index = indices[removeIndex];
         const [removed] = deck.splice(index, 1);
+        this.saveRun();
         this.emit('deck-updated', [...deck]);
         return removed;
+    }
+
+    public damageFortress(amount: number): void {
+        if (!this.runState) return;
+        const loss = Math.max(0, Math.floor(amount));
+        if (loss === 0) return;
+        const nextHp = Math.max(0, this.runState.fortressHp - loss);
+        this.runState.fortressHp = nextHp;
+        this.saveRun();
+        this.emit('fortress-updated', { hp: nextHp, max: this.runState.fortressMaxHp });
     }
 
     private handleRunFailure(): void {
@@ -628,7 +639,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         });
 
         const currentStage = this.stageGraph.get(this.runState.currentStageIndex);
-        if (!currentStage || !currentNode) {
+        if (!currentStage || !currentNode || currentNode.stageIndex !== currentStage.index) {
             // Fallback: if current node is missing (e.g., new stage entry), jump to stage entry node
             const entryId = this.findEntryNodeId(this.runState.currentStageIndex);
             if (entryId) {
@@ -636,6 +647,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
                 const entryNode = this.nodeGraph.get(entryId);
                 if (entryNode) {
                     entryNode.isAccessible = true;
+                    this.saveRun();
                     return;
                 }
             }

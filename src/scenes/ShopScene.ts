@@ -53,7 +53,7 @@ export class ShopScene extends Phaser.Scene {
         });
 
         if (this.payload.inventory.relic) {
-            this.createRelicListing(960, 650, this.payload.inventory.relic.relic, this.payload.inventory.relic.cost);
+            this.createRelicListing(960, 660, this.payload.inventory.relic.relic, this.payload.inventory.relic.cost);
         }
 
         const curses = this.payload.curses || [];
@@ -66,28 +66,54 @@ export class ShopScene extends Phaser.Scene {
 
     private createCardListing(x: number, y: number, card: ICard, cost: number): void {
         const container = this.add.container(x, y);
-        const bg = this.add.rectangle(0, 0, 220, 200, 0x1f2b3a, 0.9)
+        const cardWidth = 240;
+        const cardHeight = 240;
+        const bg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0x1f2b3a, 0.9)
             .setStrokeStyle(3, 0x6cd3ff)
             .setOrigin(0.5);
-        const title = this.add.text(0, -40, card.name, {
-            fontSize: '22px',
+        const title = this.add.text(0, -95, card.name, {
+            fontSize: '20px',
             color: '#ffffff',
             align: 'center',
-            wordWrap: { width: 180 }
+            wordWrap: { width: 200 }
         }).setOrigin(0.5);
-        const rarity = this.add.text(0, 10, `${card.rarity ?? 'common'}`.toUpperCase(), {
-            fontSize: '18px',
+        const rarity = this.add.text(0, -70, `${card.rarity ?? 'common'}`.toUpperCase(), {
+            fontSize: '16px',
             color: '#f4c95d'
         }).setOrigin(0.5);
-        const costText = this.add.text(0, 60, `${cost} gold`, {
-            fontSize: '20px',
+
+        const portraitBounds = { w: 170, h: 90 };
+        const portraitBg = this.add.rectangle(0, -20, portraitBounds.w + 10, portraitBounds.h + 8, 0x182231, 0.9);
+        let portraitDisplay: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+        if (card.portraitKey && this.textures.exists(card.portraitKey)) {
+            const img = this.add.image(0, -20, card.portraitKey).setOrigin(0.5);
+            const texW = img.width || portraitBounds.w;
+            const texH = img.height || portraitBounds.h;
+            const scale = Math.min(portraitBounds.w / texW, portraitBounds.h / texH);
+            img.setScale(scale);
+            portraitDisplay = img;
+        } else {
+            portraitDisplay = this.add.text(0, -20, 'No Art', {
+                fontSize: '12px',
+                color: '#6c7a89'
+            }).setOrigin(0.5);
+        }
+
+        const description = this.add.text(0, 45, card.description || 'No effect description.', {
+            fontSize: '12px',
+            color: '#d2dbe6',
+            align: 'center',
+            wordWrap: { width: 200 }
+        }).setOrigin(0.5, 0);
+        const costText = this.add.text(0, 95, `${cost} gold`, {
+            fontSize: '18px',
             color: '#ffefad'
         }).setOrigin(0.5);
-        container.add([bg, title, rarity, costText]);
+        container.add([bg, title, rarity, portraitBg, portraitDisplay, description, costText]);
 
         // Interactive on the background rect instead of the container
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-110, -100, 220, 200),
+            new Phaser.Geom.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight),
             Phaser.Geom.Rectangle.Contains
         );
         bg.on('pointerover', () => container.setScale(1.05));
@@ -104,28 +130,46 @@ export class ShopScene extends Phaser.Scene {
 
     private createRelicListing(x: number, y: number, relic: IRelicConfig, cost: number): void {
         const container = this.add.container(x, y);
-        const bg = this.add.rectangle(0, 0, 420, 180, 0x2a1e2f, 0.92)
+        const cardWidth = 420;
+        const cardHeight = 220;
+        const bg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0x2a1e2f, 0.92)
             .setStrokeStyle(3, 0xffa5d8)
             .setOrigin(0.5);
-        const title = this.add.text(0, -40, relic.name, {
+        const iconSize = 72;
+        const iconBg = this.add.rectangle(0, -70, iconSize, iconSize, 0x3c2a42, 0.8);
+        iconBg.setStrokeStyle(2, 0xffffff, 0.4);
+        let iconDisplay: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+        const iconKey = relic.iconKey || 'relic_default';
+        if (this.textures.exists(iconKey)) {
+            iconDisplay = this.add.image(0, -70, iconKey);
+            iconDisplay.setDisplaySize(iconSize - 14, iconSize - 14);
+        } else {
+            iconDisplay = this.add.text(0, -70, relic.name.charAt(0).toUpperCase(), {
+                fontSize: '32px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+        }
+
+        const title = this.add.text(0, -15, relic.name, {
             fontSize: '26px',
             color: '#ffe5ff'
         }).setOrigin(0.5);
-        const description = this.add.text(0, 10, relic.description, {
-            fontSize: '20px',
+        const description = this.add.text(0, 35, relic.description, {
+            fontSize: '18px',
             color: '#fbe5ff',
             align: 'center',
-            wordWrap: { width: 360 }
+            wordWrap: { width: cardWidth - 60 }
         }).setOrigin(0.5);
-        const costText = this.add.text(0, 60, `${cost} gold`, {
+        const costText = this.add.text(0, 90, `${cost} gold`, {
             fontSize: '22px',
             color: '#ffefad'
         }).setOrigin(0.5);
-        container.add([bg, title, description, costText]);
+        container.add([bg, iconBg, iconDisplay, title, description, costText]);
 
         // Interactive on relic background
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-210, -90, 420, 180),
+            new Phaser.Geom.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight),
             Phaser.Geom.Rectangle.Contains
         );
         bg.on('pointerdown', () => {

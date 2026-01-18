@@ -271,7 +271,8 @@ export class CardSystem {
             
             for (let i = 0; i < batchesToAdd; i++) {
                 // Offset slightly to avoid perfect stacking, though physics handles it
-                this.spawnUnitCard(card.unitId, cell.x, cell.y, statMultiplier);
+                const batchIndex = newLevel + i;
+                this.spawnUnitCard(card.unitId, cell.x, cell.y, statMultiplier, batchIndex);
             }
             // Note: We don't update existing units' stats here, only new ones. 
             // Ideally we would find and buff existing ones, but without tracking them it's hard.
@@ -397,7 +398,13 @@ export class CardSystem {
         });
     }
 
-    private spawnUnitCard(unitId: string | undefined, gridX: number, gridY: number, statMultiplier: number = 1): boolean {
+    private spawnUnitCard(
+        unitId: string | undefined,
+        gridX: number,
+        gridY: number,
+        statMultiplier: number = 1,
+        batchIndex: number = 0
+    ): boolean {
         if (!unitId) return false;
 
         // Use DataManager to get unit template directly
@@ -417,7 +424,8 @@ export class CardSystem {
         // Spawn logic using unit template
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
         const spawnCount = Math.max(1, unitTemplate.spawnAmount ?? 3);
-        const offsets = this.getSpawnOffsets(spawnCount);
+        const cellSize = this.fortressSystem.getCellDimensions();
+        const offsets = this.getSpawnOffsets(spawnCount, cellSize, batchIndex);
 
         const spawned: any[] = [];
         offsets.forEach(offset => {
@@ -457,10 +465,16 @@ export class CardSystem {
         return true;
     }
 
-    private spawnUnitFromLegacyConfig(unitConfig: any, gridX: number, gridY: number): boolean {
+    private spawnUnitFromLegacyConfig(
+        unitConfig: any,
+        gridX: number,
+        gridY: number,
+        batchIndex: number = 0
+    ): boolean {
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
         // Legacy starter-data path retains the original behavior of spawning 3 units.
-        const offsets = this.getSpawnOffsets(3);
+        const cellSize = this.fortressSystem.getCellDimensions();
+        const offsets = this.getSpawnOffsets(3, cellSize, batchIndex);
 
         const spawned: any[] = [];
         offsets.forEach(offset => {
@@ -481,43 +495,64 @@ export class CardSystem {
 
     /**
      * Compute local offsets for spawning multiple units around a fortress cell center.
-     * Preserves the original triangle layout for 3 units and uses sensible patterns for other counts.
+     * Preserves the original triangle layout for 3 units and keeps enhancement batches clustered.
      */
-    private getSpawnOffsets(count: number): Array<{ x: number; y: number }> {
+    private getSpawnOffsets(
+        count: number,
+        cellSize?: { width: number; height: number },
+        batchIndex: number = 0
+    ): Array<{ x: number; y: number }> {
         if (count <= 0) {
             count = 1;
         }
 
+        const halfW = Math.max(1, (cellSize?.width ?? 64) / 2);
+        const halfH = Math.max(1, (cellSize?.height ?? 32) / 2);
+        const safeW = Math.max(4, Math.round(halfW * 0.45));
+        const safeH = Math.max(4, Math.round(halfH * 0.45));
+        const clusterW = Math.max(3, Math.round(safeW * 0.55));
+        const clusterH = Math.max(3, Math.round(safeH * 0.55));
+        const anchorW = Math.max(0, safeW - clusterW);
+        const anchorH = Math.max(0, safeH - clusterH);
+
+        const anchors = [
+            { x: 0, y: 0 },
+            { x: -anchorW, y: -Math.round(anchorH * 0.4) },
+            { x: anchorW, y: -Math.round(anchorH * 0.4) },
+            { x: 0, y: anchorH }
+        ];
+        const anchor = anchors[batchIndex % anchors.length];
+
+        let offsets: Array<{ x: number; y: number }> = [];
         if (count === 1) {
-            return [{ x: 0, y: 0 }];
-        }
-
-        if (count === 2) {
-            return [
-                { x: -18, y: 0 },
-                { x: 18, y: 0 }
+            offsets = [{ x: 0, y: 0 }];
+        } else if (count === 2) {
+            offsets = [
+                { x: -clusterW, y: 0 },
+                { x: clusterW, y: 0 }
             ];
-        }
-
-        if (count === 3) {
-            // Original offsets used before spawn_amount was introduced.
-            return [
-                { x: -20, y: -10 },
-                { x: 20, y: -10 },
-                { x: 0, y: 12 }
+        } else if (count === 3) {
+            // Keep a tight triangle that stays inside the fortress cell.
+            offsets = [
+                { x: -clusterW, y: -clusterH },
+                { x: clusterW, y: -clusterH },
+                { x: 0, y: clusterH }
             ];
+        } else {
+            const radius = Math.max(3, Math.min(clusterW, clusterH));
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count;
+                offsets.push({
+                    x: Math.round(Math.cos(angle) * radius),
+                    y: Math.round(Math.sin(angle) * radius)
+                });
+            }
         }
 
-        const radius = 20;
-        const offsets: Array<{ x: number; y: number }> = [];
-        for (let i = 0; i < count; i++) {
-            const angle = (Math.PI * 2 * i) / count;
-            offsets.push({
-                x: Math.round(Math.cos(angle) * radius),
-                y: Math.round(Math.sin(angle) * radius)
-            });
-        }
-        return offsets;
+        return offsets.map(offset => ({
+            x: Phaser.Math.Clamp(offset.x + anchor.x, -safeW, safeW),
+            y: Phaser.Math.Clamp(offset.y + anchor.y, -safeH, safeH)
+        }));
     }
 
     private castSpell(effectId: string | undefined, gridX: number, gridY: number): boolean {

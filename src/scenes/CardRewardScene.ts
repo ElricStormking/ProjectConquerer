@@ -8,6 +8,11 @@ type WeightedCardEntry = {
     weight: number;
 };
 
+type CardRewardText = {
+    title?: string;
+    instruction?: string;
+};
+
 export class CardRewardScene extends Phaser.Scene {
     private cardOptions: ICard[] = [];
     private cardSprites: CardSprite[] = [];
@@ -25,8 +30,20 @@ export class CardRewardScene extends Phaser.Scene {
      */
     public showCardReward(deckPool: ICard[], onCardSelected: (card: ICard) => void): void {
         console.log('[CardRewardScene] showCardReward (New Reinforcement) called with deck size:', deckPool.length);
+        this.cleanupRewardUI();
         this.cardOptions = this.generateCardOptionsFromDeck(deckPool, 3);
         this.createRewardUI(onCardSelected);
+    }
+
+    public showCardOptions(
+        cardOptions: ICard[],
+        onCardSelected: (card: ICard) => void,
+        textOverrides?: CardRewardText
+    ): void {
+        console.log('[CardRewardScene] showCardOptions called with options:', cardOptions.length);
+        this.cleanupRewardUI();
+        this.cardOptions = [...cardOptions];
+        this.createRewardUI(onCardSelected, textOverrides);
     }
 
     /**
@@ -82,14 +99,17 @@ export class CardRewardScene extends Phaser.Scene {
         return base;
     }
 
-    private createRewardUI(onCardSelected: (card: ICard) => void): void {
+    private createRewardUI(onCardSelected: (card: ICard) => void, textOverrides?: CardRewardText): void {
         console.log('[CardRewardScene] createRewardUI - options:', this.cardOptions.length);
         // Semi-transparent overlay
         this.overlay = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.85);
         this.overlay.setDepth(9000);
 
+        const titleText = textOverrides?.title ?? 'New Reinforcements';
+        const instructionText = textOverrides?.instruction ?? 'Select one reinforcement card from your deck';
+
         // Title
-        this.titleText = this.add.text(960, 200, 'New Reinforcements', {
+        this.titleText = this.add.text(960, 200, titleText, {
             fontSize: '48px',
             color: '#ffffff',
             fontStyle: 'bold',
@@ -104,7 +124,7 @@ export class CardRewardScene extends Phaser.Scene {
         this.titleText.setDepth(9001);
 
         // Instruction
-        this.instructionText = this.add.text(960, 270, 'Select one reinforcement card from your deck', {
+        this.instructionText = this.add.text(960, 270, instructionText, {
             fontSize: '24px',
             color: '#b8c2d3',
             fontStyle: 'italic'
@@ -211,8 +231,11 @@ export class CardRewardScene extends Phaser.Scene {
 
     private cleanupRewardUI(): void {
         this.overlay?.destroy();
+        this.overlay = undefined;
         this.titleText?.destroy();
+        this.titleText = undefined;
         this.instructionText?.destroy();
+        this.instructionText = undefined;
         this.cardSprites.forEach(sprite => sprite.destroy());
         this.cardSprites = [];
         this.cardOptions = [];

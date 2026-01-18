@@ -160,7 +160,12 @@ export class BattleScene extends Phaser.Scene {
     private startBackgroundMusic() {
         const runManager = RunProgressionManager.getInstance();
         const stageIndex = runManager.getRunState()?.currentStageIndex ?? 0;
-        const key = stageIndex === 0 ? 'bgm_battle_jade' : 'bgm_battle_frost';
+        const key =
+            stageIndex === 0
+                ? 'bgm_battle_jade'
+                : stageIndex === 2
+                ? 'bgm_battle_triarch'
+                : 'bgm_battle_frost';
         this.bgmKey = key;
 
         this.sound.stopAll();
@@ -243,6 +248,8 @@ export class BattleScene extends Phaser.Scene {
         let bgKey = 'world_bg';
         if (stageIndex === 0 && this.textures.exists('battle_bg_stage_1')) {
             bgKey = 'battle_bg_stage_1';
+        } else if (stageIndex === 2 && this.textures.exists('battle_bg_stage_3')) {
+            bgKey = 'battle_bg_stage_3';
         } else if (stageIndex === 3 && this.textures.exists('battle_bg_stage_4')) {
             bgKey = 'battle_bg_stage_4';
         }
@@ -410,6 +417,7 @@ export class BattleScene extends Phaser.Scene {
 
         // Start in building phase view, zoomed in on the fortress grid.
         this.updateCameraForPhase('PREPARATION');
+        this.updateSpawnGridCollisions(this.gameState.getState().phase);
     }
 
     private bindCommanderHotkeys(): void {
@@ -507,6 +515,7 @@ export class BattleScene extends Phaser.Scene {
         this.gameState.on('phase-changed', (phase: BattlePhase) => {
             this.events.emit('phase-changed', phase);
             this.updateCameraForPhase(phase);
+            this.updateSpawnGridCollisions(phase);
         });
 
         this.gameState.on('fortress-damaged', (payload: { hp: number; max: number }) => {
@@ -1764,6 +1773,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private onUnitSpawned(unit: any): void {
+        this.applySpawnGridCollision(unit);
         const skills = unit.getSkillTemplates
             ? unit.getSkillTemplates().filter((s: any) => s.trigger === 'on_spawn' && !this.shouldSkipSkill(s))
             : [];
@@ -2581,6 +2591,41 @@ export class BattleScene extends Phaser.Scene {
         this.isometricRenderer.addToRenderGroup(bush);
     }
 
+    private isUnitInsideFortressGrid(unit: any): boolean {
+        if (!this.fortressSystem) return false;
+        const pos = unit.getPosition?.();
+        if (!pos) return false;
+        const grid = this.fortressSystem.worldToGrid(pos.x, pos.y);
+        const cell = this.fortressSystem.getCell(grid.x, grid.y);
+        if (!cell || cell.type === 'blocked') return false;
+        const center = this.fortressSystem.gridToWorld(grid.x, grid.y);
+        const dims = this.fortressSystem.getCellDimensions();
+        const halfW = dims.width / 2;
+        const halfH = dims.height / 2;
+        if (halfW <= 0 || halfH <= 0) return false;
+        const dx = Math.abs(pos.x - center.x);
+        const dy = Math.abs(pos.y - center.y);
+        return dx / halfW + dy / halfH <= 1;
+    }
+
+    private applySpawnGridCollision(unit: any): void {
+        if (!unit?.getTeam || unit.getTeam() !== 1) return;
+        const phase = this.gameState.getState().phase;
+        const inGrid = this.isUnitInsideFortressGrid(unit);
+        const enable = !(phase === 'PREPARATION' && inGrid);
+        unit.setCollisionEnabled?.(enable);
+    }
+
+    private updateSpawnGridCollisions(phase: BattlePhase): void {
+        const inPreparation = phase === 'PREPARATION';
+        const allies = this.unitManager.getUnitsByTeam(1);
+        allies.forEach(unit => {
+            const inGrid = this.isUnitInsideFortressGrid(unit);
+            const enable = !(inPreparation && inGrid);
+            unit.setCollisionEnabled?.(enable);
+        });
+    }
+
     private resetAlliedUnitsToSpawnPositions(): void {
         const allies = this.unitManager.getUnitsByTeam(1);
         allies.forEach(unit => {
@@ -2591,5 +2636,6 @@ export class BattleScene extends Phaser.Scene {
                 (unit as any).teleportTo(spawnX, spawnY);
             }
         });
+        this.updateSpawnGridCollisions(this.gameState.getState().phase);
     }
 }

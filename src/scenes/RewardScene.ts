@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ICard, IRelicConfig } from '../types/ironwars';
+import { CardSprite } from '../ui/CardSprite';
 
 export interface RewardSceneResult {
     card?: ICard;
@@ -61,37 +62,20 @@ export class RewardScene extends Phaser.Scene {
         const startX = 960 - ((cards.length - 1) * spacing) / 2;
         cards.forEach((card, index) => {
             const x = startX + index * spacing;
-            const container = this.add.container(x, 540);
-            const panel = this.add.rectangle(0, 0, 260, 360, 0x1b2235, 0.92)
-                .setStrokeStyle(3, 0xf6d75c)
-                .setOrigin(0.5);
-            const name = this.add.text(0, -130, card.name, {
-                fontSize: '24px',
-                color: '#ffffff',
-                fontStyle: 'bold',
-                align: 'center',
-                wordWrap: { width: 220 }
-            }).setOrigin(0.5);
-            const cost = this.add.text(0, -80, `Cost: ${card.cost}`, {
-                fontSize: '20px',
-                color: '#f6d75c'
-            }).setOrigin(0.5);
-            const rarity = this.add.text(0, -40, `Rarity: ${(card.rarity ?? 'common').toUpperCase()}`, {
-                fontSize: '18px',
-                color: '#b5c6ff'
-            }).setOrigin(0.5);
-            const desc = this.add.text(0, 20, card.description, {
-                fontSize: '18px',
-                color: '#d6ddf0',
-                align: 'center',
-                wordWrap: { width: 220 }
-            }).setOrigin(0.5);
-            container.add([panel, name, cost, rarity, desc]);
-            container.setSize(260, 360);
-            container.setInteractive(new Phaser.Geom.Rectangle(-130, -180, 260, 360), Phaser.Geom.Rectangle.Contains);
-            container.on('pointerover', () => container.setScale(1.03));
-            container.on('pointerout', () => container.setScale(1));
-            container.on('pointerdown', () => this.finishSelection({ card }));
+            const y = 540;
+            const cardSprite = new CardSprite(this, card);
+            this.add.existing(cardSprite);
+            cardSprite.setPosition(x, y);
+
+            const inputTarget = cardSprite.getInputTarget();
+            inputTarget.removeAllListeners();
+            inputTarget.on('pointerover', () => {
+                this.tweens.add({ targets: cardSprite, scale: 1.05, duration: 120 });
+            });
+            inputTarget.on('pointerout', () => {
+                this.tweens.add({ targets: cardSprite, scale: 1, duration: 120 });
+            });
+            inputTarget.on('pointerdown', () => this.finishSelection({ card }));
         });
     }
 

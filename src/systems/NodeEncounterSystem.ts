@@ -3,7 +3,7 @@ import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
 import { RelicManager } from './RelicManager';
 import { CommanderManager } from './CommanderManager';
-import { IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger } from '../types/ironwars';
+import { CardType, IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger } from '../types/ironwars';
 
 type RewardSceneResult = {
     card?: ICard;
@@ -287,15 +287,40 @@ export class NodeEncounterSystem {
     }
 
     private startRecruitmentEncounter(node: IMapNode): void {
-        const starterDeck = this.runManager.getDeckSnapshot();
-        if (starterDeck.length === 0) {
+        const commanderRoster = this.runManager.getCommanderRoster();
+        const rosterCards = this.commanderManager.getCardsForCommanders(commanderRoster);
+        const unitCards = rosterCards.filter(card => card.type === CardType.UNIT);
+        if (unitCards.length === 0) {
             this.finishEncounter(node);
             return;
         }
-        const bonusCard = Phaser.Utils.Array.GetRandom(starterDeck);
-        // Recruitment grants a new copy of an existing card into the collection.
-        this.runManager.addCardToCollection(bonusCard);
-        this.finishEncounter(node);
+
+        const cardOptions = Phaser.Utils.Array.Shuffle([...unitCards]).slice(0, 3);
+        while (cardOptions.length < 3) {
+            cardOptions.push(Phaser.Utils.Array.GetRandom(unitCards));
+        }
+        const rewardSceneKey = 'CardRewardScene';
+        const scenePlugin = this.hostScene.scene;
+
+        if (!scenePlugin.isActive(rewardSceneKey)) {
+            scenePlugin.launch(rewardSceneKey);
+        }
+
+        scenePlugin.bringToTop(rewardSceneKey);
+
+        const rewardScene = scenePlugin.get(rewardSceneKey) as any;
+        rewardScene.showCardOptions(
+            cardOptions,
+            (selectedCard: ICard) => {
+                this.runManager.addCardToCollection(selectedCard);
+                scenePlugin.stop(rewardSceneKey);
+                this.finishEncounter(node);
+            },
+            {
+                title: 'Recruitment',
+                instruction: 'Choose a unit to add to your collection'
+            }
+        );
     }
 
     private finishEncounter(node: IMapNode): void {
@@ -349,6 +374,12 @@ export class NodeEncounterSystem {
             return;
         }
 
+        if (lower.startsWith('lose_fortress_') || lower.startsWith('damage_fortress_')) {
+            const value = parseInt(lower.replace('lose_fortress_', '').replace('damage_fortress_', ''), 10) || 0;
+            this.runManager.damageFortress(value);
+            return;
+        }
+
         if (lower.startsWith('gain_gold_')) {
             const value = parseInt(lower.replace('gain_gold_', ''), 10) || 0;
             this.runManager.gainGold(value);
@@ -381,19 +412,19 @@ export class NodeEncounterSystem {
             return;
         }
 
-        if (lower.includes('add_card_epic')) {
+        if (lower.includes('add_card_epic') || lower.includes('gain_card_epic')) {
             const cards = this.generateCardChoices(3);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
-        if (lower.includes('add_card_rare')) {
+        if (lower.includes('add_card_rare') || lower.includes('gain_card_rare')) {
             const cards = this.generateCardChoices(2);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
-        if (lower.includes('gain_random_card')) {
+        if (lower.includes('gain_random_card') || lower.includes('gain_card_common') || lower.includes('add_card_common')) {
             const cards = this.generateCardChoices(1);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
@@ -404,7 +435,7 @@ export class NodeEncounterSystem {
             return;
         }
 
-        if (lower.includes('remove_card')) {
+        if (lower.includes('remove_card') || lower.includes('lose_card')) {
             this.runManager.removeRandomCard();
         }
     }

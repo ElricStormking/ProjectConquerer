@@ -1271,6 +1271,13 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getDeathTimer(): number { return this.deathTimer; }
     public getHealth(): number { return this.health; }
     public getMaxHealth(): number { return this.maxHealth; }
+    public setCollisionEnabled(enabled: boolean): void {
+        if (!this.body || this.dead) return;
+        const sensor = !enabled;
+        if ((this.body as any).isSensor !== sensor) {
+            (this.body as any).isSensor = sensor;
+        }
+    }
     
     public getDamage(): number { 
         const baseDamage = this.damage;
