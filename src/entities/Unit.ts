@@ -1029,8 +1029,16 @@ export class Unit extends Phaser.Events.EventEmitter {
 
     public applySlow(amount: number, durationMs: number): void {
         if (this.dead) return;
+        let slowAmount = Number(amount);
+        if (!Number.isFinite(slowAmount) || slowAmount <= 0) return;
+        // Normalize legacy slow values that were authored as percentages or basis points.
+        if (slowAmount > 1) {
+            slowAmount = slowAmount > 100 ? slowAmount / 10000 : slowAmount / 100;
+        }
+        slowAmount = Math.max(0, Math.min(slowAmount, 0.95));
+        if (slowAmount <= 0) return;
         const durationSec = durationMs / 1000;
-        this.moveSpeedMultiplier = 1 - amount;
+        this.moveSpeedMultiplier = 1 - slowAmount;
         this.addStatusEffect(StatusEffect.SLOWED, durationSec);
     }
 

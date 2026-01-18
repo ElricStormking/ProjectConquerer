@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CardType, ICardPlacementPayload, ICard } from '../types/ironwars';
+import { CardType, ICardPlacementPayload, ICard, IFortressCellState, ResourceType } from '../types/ironwars';
 import { DeckSystem } from './DeckSystem';
 import { GameStateManager } from './GameStateManager';
 import { FortressSystem } from './FortressSystem';
@@ -10,6 +10,7 @@ import { RunProgressionManager } from './RunProgressionManager';
 import { UnitType } from '../data/UnitTypes';
 
 export class CardSystem {
+    private isRestoring: boolean = false;
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
     private cannonTowers: Array<{
         x: number;
@@ -118,7 +119,8 @@ export class CardSystem {
                 const unitId = unit.getId();
                 const unitType = unit.getConfig?.()?.unitType || 'unknown';
                 console.log(`[CardSystem] Player unit died: ${unitType} (ID: ${unitId}), releasing fortress cell`);
-                this.fortressSystem.releaseCellByOccupant(unitId);
+                const released = this.fortressSystem.releaseCellByOccupant(unitId);
+                this.clearPersistedCells(released);
             }
             this.handleSoulStoneDeath(unit);
         });
@@ -230,6 +232,29 @@ export class CardSystem {
             return false;
         }
 
+        let occupantType: string | undefined;
+        switch (card.type) {
+            case CardType.UNIT:
+                occupantType = card.unitId;
+                break;
+            case CardType.STRUCTURE:
+                occupantType = card.structureId;
+                break;
+            case CardType.MODULE:
+                occupantType = card.moduleId;
+                break;
+            case CardType.SPELL:
+                occupantType = card.spellEffectId;
+                break;
+            default:
+                occupantType = undefined;
+                break;
+        }
+
+        if (occupantType) {
+            this.persistCellState(gridX, gridY, card.type, occupantType);
+        }
+
         this.deckSystem.discard(card.id);
         return true;
     }
@@ -322,6 +347,28 @@ export class CardSystem {
                     this.updateTowerHPBar(tower);
                 }
             }
+        }
+
+        let occupantType: string | undefined;
+        switch (card.type) {
+            case CardType.UNIT:
+                occupantType = card.unitId;
+                break;
+            case CardType.STRUCTURE:
+                occupantType = card.structureId;
+                break;
+            case CardType.MODULE:
+                occupantType = card.moduleId;
+                break;
+            case CardType.SPELL:
+                occupantType = card.spellEffectId;
+                break;
+            default:
+                occupantType = undefined;
+                break;
+        }
+        if (occupantType) {
+            this.persistCellState(cell.x, cell.y, card.type, occupantType);
         }
     }
 
@@ -1117,6 +1164,121 @@ export class CardSystem {
         newlyUnlocked.forEach(k => updated.add(k));
         runManager.updateFortressUnlocks(fortressId, Array.from(updated));
     }
+
+    private getCardForOccupant(occupantKind: CardType, occupantType: string): ICard | undefined {
+        const cards = DataManager.getInstance().getAllCards();
+        return cards.find(card => {
+            switch (occupantKind) {
+                case CardType.UNIT:
+                    return card.unitId === occupantType;
+                case CardType.STRUCTURE:
+                    return card.structureId === occupantType;
+                case CardType.MODULE:
+                    return card.moduleId === occupantType;
+                case CardType.SPELL:
+                    return card.spellEffectId === occupantType;
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private buildFallbackCard(occupantKind: CardType, occupantType: string): ICard {
+        return {
+            id: `restored_${occupantKind}_${occupantType}`,
+            name: occupantType,
+            type: occupantKind,
+            cost: 0,
+            resourceType: ResourceType.GOLD,
+            portraitKey: occupantType,
+            description: ''
+        };
+    }
+
+    private inferOccupantKind(occupantType: string): CardType | null {
+        const cards = DataManager.getInstance().getAllCards();
+        const match = cards.find(card =>
+            card.unitId === occupantType ||
+            card.structureId === occupantType ||
+            card.moduleId === occupantType ||
+            card.spellEffectId === occupantType
+        );
+        return match?.type ?? null;
+    }
+
+    private persistCellState(gridX: number, gridY: number, occupantKind: CardType, occupantType?: string): void {
+        if (this.isRestoring) return;
+        if (!occupantType) return;
+        const cell = this.fortressSystem.getCell(gridX, gridY);
+        if (!cell || !cell.occupantId) return;
+        const entry: IFortressCellState = {
+            x: gridX,
+            y: gridY,
+            occupantKind,
+            occupantType,
+            enhancementLevel: cell.enhancementLevel || 0
+        };
+        const fortressId = this.fortressSystem.getFortressId();
+        RunProgressionManager.getInstance().upsertFortressCellState(fortressId, entry);
+    }
+
+    private clearCellState(gridX: number, gridY: number): void {
+        if (this.isRestoring) return;
+        const fortressId = this.fortressSystem.getFortressId();
+        RunProgressionManager.getInstance().removeFortressCellState(fortressId, gridX, gridY);
+    }
+
+    private clearPersistedCells(released: Array<{ x: number; y: number }>): void {
+        released.forEach(cell => this.clearCellState(cell.x, cell.y));
+    }
+
+    public restoreFortressState(states: IFortressCellState[]): void {
+        if (!states || states.length === 0) return;
+        this.isRestoring = true;
+        try {
+            states.forEach(state => {
+                const cell = this.fortressSystem.getCell(state.x, state.y);
+                if (!cell || cell.type === 'blocked' || cell.type === 'core') return;
+                if (cell.occupantId) return;
+
+                const occupantKind = state.occupantKind ?? this.inferOccupantKind(state.occupantType);
+                if (!occupantKind || !state.occupantType) return;
+
+                const card = this.getCardForOccupant(occupantKind, state.occupantType)
+                    ?? this.buildFallbackCard(occupantKind, state.occupantType);
+
+                let placed = false;
+                switch (occupantKind) {
+                    case CardType.UNIT:
+                        placed = this.spawnUnitCard(state.occupantType, state.x, state.y);
+                        break;
+                    case CardType.STRUCTURE:
+                        placed = this.placeStructure(state.occupantType, state.x, state.y, card);
+                        break;
+                    case CardType.MODULE:
+                        placed = this.placeModule(state.occupantType, state.x, state.y, card);
+                        break;
+                    case CardType.SPELL:
+                        placed = this.castSpell(state.occupantType, state.x, state.y);
+                        break;
+                    default:
+                        placed = false;
+                        break;
+                }
+
+                if (!placed) return;
+                const level = Math.max(0, Math.min(state.enhancementLevel ?? 0, 3));
+                if (level <= 0) return;
+                const targetCell = this.fortressSystem.getCell(state.x, state.y);
+                if (!targetCell) return;
+                for (let i = 0; i < level; i++) {
+                    this.enhanceEntity(targetCell, card);
+                }
+            });
+        } finally {
+            this.isRestoring = false;
+        }
+    }
     private createBarrierField(x: number, y: number, gridX: number, gridY: number, spellId: string) {
         const occupantId = `armor_shop_${this.buildingBuffs.length}`;
         this.fortressSystem.occupyCell(gridX, gridY, occupantId, spellId);
@@ -1705,7 +1867,8 @@ export class CardSystem {
         occupantId: string;
     }): void {
         // Release the fortress cell
-        this.fortressSystem.releaseCellByOccupant(tower.occupantId);
+        const released = this.fortressSystem.releaseCellByOccupant(tower.occupantId);
+        this.clearPersistedCells(released);
 
         // Store position before destroying
         const x = tower.x;

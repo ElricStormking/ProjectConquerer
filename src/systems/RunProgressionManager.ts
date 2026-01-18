@@ -13,7 +13,8 @@ import {
     NodeType,
     RelicTrigger,
     IFortressConfig,
-    IFortressCell
+    IFortressCell,
+    IFortressCellState
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -48,6 +49,17 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return this.runState !== null;
     }
 
+    private cloneFortressCellStates(
+        states?: Record<string, IFortressCellState[]>
+    ): Record<string, IFortressCellState[]> | undefined {
+        if (!states) return undefined;
+        const clone: Record<string, IFortressCellState[]> = {};
+        Object.keys(states).forEach(fortressId => {
+            clone[fortressId] = states[fortressId].map(cell => ({ ...cell }));
+        });
+        return clone;
+    }
+
     public getRunState(): RunStateSnapshot | null {
         if (!this.runState) return null;
         const snapshot = {
@@ -60,7 +72,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             cardCollection: [...(this.runState.cardCollection ?? [])],
             factionId: this.runState.factionId,
             lives: this.runState.lives,
-            fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined
+            fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined,
+            fortressCellStates: this.cloneFortressCellStates(this.runState.fortressCellStates)
         };
         return snapshot;
     }
@@ -177,7 +190,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
             factionId: factionId,
-            fortressUnlockedCells: { [fortressId]: initialUnlocked }
+            fortressUnlockedCells: { [fortressId]: initialUnlocked },
+            fortressCellStates: { [fortressId]: [] }
         };
 
         this.updateNodeAccessibility();
@@ -199,6 +213,10 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (this.runState && !this.runState.fortressUnlockedCells) {
             const fortress = this.factionRegistry.getFortressForFaction(this.runState.factionId) ?? COG_DOMINION_STARTER.fortress;
             this.runState.fortressUnlockedCells = { [fortress.id]: this.getInitialUnlockedCells(fortress) };
+        }
+        if (this.runState && !this.runState.fortressCellStates) {
+            const fortress = this.factionRegistry.getFortressForFaction(this.runState.factionId) ?? COG_DOMINION_STARTER.fortress;
+            this.runState.fortressCellStates = { [fortress.id]: [] };
         }
         if (this.runState && (this.runState as any).lives === undefined) {
             this.runState.lives = 3;
@@ -237,6 +255,37 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const record = this.runState.fortressUnlockedCells ?? {};
         record[fortressId] = unlockedKeys;
         this.runState.fortressUnlockedCells = record;
+        this.saveRun();
+    }
+
+    public getFortressCellStates(fortressId: string): IFortressCellState[] {
+        if (!this.runState) return [];
+        const states = this.runState.fortressCellStates?.[fortressId] ?? [];
+        return states.map(cell => ({ ...cell }));
+    }
+
+    public upsertFortressCellState(fortressId: string, entry: IFortressCellState): void {
+        if (!this.runState) return;
+        const record = this.runState.fortressCellStates ?? {};
+        const states = record[fortressId] ? [...record[fortressId]] : [];
+        const index = states.findIndex(cell => cell.x === entry.x && cell.y === entry.y);
+        if (index >= 0) {
+            states[index] = { ...entry };
+        } else {
+            states.push({ ...entry });
+        }
+        record[fortressId] = states;
+        this.runState.fortressCellStates = record;
+        this.saveRun();
+    }
+
+    public removeFortressCellState(fortressId: string, x: number, y: number): void {
+        if (!this.runState) return;
+        const record = this.runState.fortressCellStates ?? {};
+        const states = record[fortressId] ? [...record[fortressId]] : [];
+        const nextStates = states.filter(cell => cell.x !== x || cell.y !== y);
+        record[fortressId] = nextStates;
+        this.runState.fortressCellStates = record;
         this.saveRun();
     }
 

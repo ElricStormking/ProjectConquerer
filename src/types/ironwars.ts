@@ -42,6 +42,14 @@ export interface IFortressCell {
     enhancementLevel: number; // 0 to 3
 }
 
+export interface IFortressCellState {
+    x: number;
+    y: number;
+    occupantKind: CardType;
+    occupantType: string;
+    enhancementLevel: number;
+}
+
 export interface IFortressConfig {
     id: string;
     name: string;
@@ -353,6 +361,11 @@ export interface IRunState {
      * Keys: fortressId, Values: array of "x,y" strings representing unlocked cells.
      */
     fortressUnlockedCells?: Record<string, string[]>;
+    /**
+     * Tracks the occupant + enhancement level for each fortress cell so upgrades
+     * persist between battle nodes.
+     */
+    fortressCellStates?: Record<string, IFortressCellState[]>;
 }
 
 export type UnitSkillTrigger = 'on_attack' | 'on_hit' | 'on_kill' | 'passive_tick' | 'on_death' | 'on_spawn';

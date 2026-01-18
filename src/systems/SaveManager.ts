@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { IRunState, IMetaProgression, ISaveData, ICard } from '../types/ironwars';
+import { IRunState, IMetaProgression, ISaveData, ICard, IFortressCellState } from '../types/ironwars';
 
 const SAVE_KEY = 'ironwars_save';
 const SAVE_VERSION = '1.0.0';
@@ -65,6 +65,17 @@ export class SaveManager extends Phaser.Events.EventEmitter {
         }
     }
 
+    private cloneFortressCellStates(
+        states?: Record<string, IFortressCellState[]>
+    ): Record<string, IFortressCellState[]> | undefined {
+        if (!states) return undefined;
+        const clone: Record<string, IFortressCellState[]> = {};
+        Object.keys(states).forEach(fortressId => {
+            clone[fortressId] = states[fortressId].map(cell => ({ ...cell }));
+        });
+        return clone;
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // Run State Methods
     // ─────────────────────────────────────────────────────────────────
@@ -82,7 +93,8 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...runState.relics],
             curses: [...runState.curses],
             commanderRoster: [...runState.commanderRoster],
-            fortressUnlockedCells: runState.fortressUnlockedCells
+            fortressUnlockedCells: runState.fortressUnlockedCells,
+            fortressCellStates: this.cloneFortressCellStates(runState.fortressCellStates)
         };
         this.persist();
         console.log('[SaveManager] Run saved');
@@ -101,7 +113,8 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...run.relics],
             curses: [...run.curses],
             commanderRoster: [...run.commanderRoster],
-            fortressUnlockedCells: run.fortressUnlockedCells ? { ...run.fortressUnlockedCells } : undefined
+            fortressUnlockedCells: run.fortressUnlockedCells ? { ...run.fortressUnlockedCells } : undefined,
+            fortressCellStates: this.cloneFortressCellStates(run.fortressCellStates)
         };
     }
 

@@ -367,6 +367,7 @@ export class BattleScene extends Phaser.Scene {
             this.fortressSystem,
             this.unitManager
         );
+        this.restoreFortressStateFromRun();
 
         // Destroy old WaveManager if it exists to clean up event listeners
         if (this.waveManager) {
@@ -706,6 +707,15 @@ export class BattleScene extends Phaser.Scene {
             this.waveManager.startNextWave();
         }
         this.hideStartButton();
+    }
+
+    private restoreFortressStateFromRun(): void {
+        const run = RunProgressionManager.getInstance().getRunState();
+        if (!run) return;
+        const fortressId = this.fortressSystem.getFortressId();
+        const states = run.fortressCellStates?.[fortressId] ?? [];
+        if (states.length === 0) return;
+        this.cardSystem.restoreFortressState(states);
     }
 
     private setupPointerBridge() {
