@@ -131,10 +131,12 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
         this.load.image('stage_triarch_map', 'assets/stage_map/map_stage_triarch.png');
         this.load.image('stage_elf_map', 'assets/stage_map/map_stage_elf.png');
+        this.load.image('stage_abyss_map', 'assets/stage_map/map_stage_abyss.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         this.load.image('battle_bg_stage_3', 'assets/background/gamemap_triarch_03.png');
         this.load.image('battle_bg_stage_4', 'assets/background/gamemap_elf_04.png');
+        this.load.image('battle_bg_stage_5', 'assets/background/gamemap_Abyss_05.png');
         
         // Fortress grid CSVs (metadata + tilemap pairs)
         this.load.text('fortress_grid_jade_dynasty_01_meta', 'data/fortress_grids/fortress_jade_dynasty_01.csv');

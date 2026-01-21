@@ -256,6 +256,8 @@ export class BattleScene extends Phaser.Scene {
             bgKey = 'battle_bg_stage_3';
         } else if (stageIndex === 3 && this.textures.exists('battle_bg_stage_4')) {
             bgKey = 'battle_bg_stage_4';
+        } else if (stageIndex === 4 && this.textures.exists('battle_bg_stage_5')) {
+            bgKey = 'battle_bg_stage_5';
         }
         const bg = this.add.image(960, 540, bgKey);
         bg.setDepth(-10000);

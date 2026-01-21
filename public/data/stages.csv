@@ -2,4 +2,5 @@ id,index,name,theme,background_key,music_key,boss_node_id,next_stage_id
 stage_1,0,Jade Homeland,jade_dynasty,stage_jade_map,stage_1_theme,s1_boss,stage_2
 stage_2,1,Eternal Frost Wastes,frost_clan,stage_frost_map,stage_2_theme,s2_boss,stage_3
 stage_3,2,Triarch Dominion,triarch_dominion,stage_triarch_map,stage_3_theme,s3_boss,stage_4
-stage_4,3,Elf Covenant,elf_covenant,stage_elf_map,stage_4_theme,s4_boss,
+stage_4,3,Elf Covenant,elf_covenant,stage_elf_map,stage_4_theme,s4_boss,stage_5
+stage_5,4,Abyssal Realm,abyss_legion,stage_abyss_map,stage_5_theme,s5_boss,
