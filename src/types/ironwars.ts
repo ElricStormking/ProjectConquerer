@@ -337,6 +337,15 @@ export interface IRelicConfig {
     cost?: number;
 }
 
+export interface IStorySlideState {
+    preludeSeen: boolean;
+    stageIntroSeen: number[];
+    stageOutroSeen: number[];
+    finalSeen: boolean;
+    pendingStageOutroStageIndex?: number;
+    pendingFinal?: boolean;
+}
+
 export interface IRunState {
     currentStageIndex: number;
     currentNodeId: string;
@@ -357,6 +366,7 @@ export interface IRunState {
     curses: string[];
     commanderRoster: string[];
     factionId: string;
+    storySlides?: IStorySlideState;
     /**
      * Tracks which fortress grid cells are unlocked for building per fortress id.
      * Keys: fortressId, Values: array of "x,y" strings representing unlocked cells.

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { NodeEncounterSystem } from '../systems/NodeEncounterSystem';
 import { FactionRegistry } from '../systems/FactionRegistry';
+import { getFinalSlides, getStageIntroSlides, getStageOutroSlides } from '../data/StorySlides';
 import { IMapNode, IStageConfig } from '../types/ironwars';
 
 const MAP_WIDTH = 2400;
@@ -25,6 +26,7 @@ export class StageMapScene extends Phaser.Scene {
     private loadSavedRun = false;
     private stageBgm?: Phaser.Sound.BaseSound;
     private stageBgmKey: string = '';
+    private storySlidesActive = false;
 
     constructor() {
         super({ key: 'StageMapScene' });
@@ -61,6 +63,7 @@ export class StageMapScene extends Phaser.Scene {
         this.createHudButtons();
         this.registerRunEvents();
         this.renderCurrentStage();
+        this.maybeShowStorySlides();
 
         this.events.on(Phaser.Scenes.Events.WAKE, this.onSceneWake, this);
         this.events.on(Phaser.Scenes.Events.RESUME, this.onSceneWake, this);
@@ -348,6 +351,10 @@ export class StageMapScene extends Phaser.Scene {
                 ? 'bgm_stage_jade'
                 : stageIndex === 2
                 ? 'bgm_stage_triarch'
+                : stageIndex === 3
+                ? 'bgm_stage_elf'
+                : stageIndex === 4
+                ? 'bgm_stage_abyss'
                 : 'bgm_stage_frost';
         this.stageBgmKey = key;
 
@@ -378,6 +385,7 @@ export class StageMapScene extends Phaser.Scene {
 
     private onSceneWake(): void {
         this.playStageBgm();
+        this.maybeShowStorySlides();
     }
 
     private drawBackground(stage: IStageConfig): void {
@@ -401,6 +409,86 @@ export class StageMapScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(2);
         this.stageDecor.add(title);
         this.time.delayedCall(4000, () => title.destroy());
+    }
+
+    private maybeShowStorySlides(): void {
+        if (this.storySlidesActive) return;
+        const state = this.runManager.getRunState();
+        if (!state) return;
+
+        const stageIndex = state.currentStageIndex;
+        const slides: string[] = [];
+        let shouldMarkIntro = false;
+        let shouldMarkOutro = false;
+        let shouldMarkFinal = false;
+        let outroStageIndex: number | undefined;
+
+        const pendingOutro = this.runManager.getPendingStageOutroStageIndex();
+        if (pendingOutro !== undefined) {
+            if (!this.runManager.hasSeenStageOutro(pendingOutro)) {
+                outroStageIndex = pendingOutro;
+                const outroSlides = getStageOutroSlides(pendingOutro).filter(key => this.textures.exists(key));
+                if (outroSlides.length > 0) {
+                    slides.push(...outroSlides);
+                }
+                shouldMarkOutro = true;
+            } else {
+                this.runManager.clearPendingStageOutro();
+            }
+        }
+
+        const pendingFinal = this.runManager.isFinalSlidesPending();
+        if (pendingFinal) {
+            if (!this.runManager.hasSeenFinalSlides()) {
+                const finalSlides = getFinalSlides().filter(key => this.textures.exists(key));
+                if (finalSlides.length > 0) {
+                    slides.push(...finalSlides);
+                }
+                shouldMarkFinal = true;
+            } else {
+                this.runManager.clearFinalSlidesPending();
+            }
+        }
+
+        if (!pendingFinal && !this.runManager.hasSeenStageIntro(stageIndex)) {
+            const introSlides = getStageIntroSlides(stageIndex).filter(key => this.textures.exists(key));
+            if (introSlides.length > 0) {
+                slides.push(...introSlides);
+            }
+            shouldMarkIntro = true;
+        }
+
+        if (!shouldMarkIntro && !shouldMarkOutro && !shouldMarkFinal) {
+            return;
+        }
+
+        const finalize = () => {
+            if (shouldMarkOutro && outroStageIndex !== undefined) {
+                this.runManager.markStageOutroSeen(outroStageIndex);
+                this.runManager.clearPendingStageOutro();
+            }
+            if (shouldMarkFinal) {
+                this.runManager.markFinalSlidesSeen();
+                this.runManager.clearFinalSlidesPending();
+            }
+            if (shouldMarkIntro) {
+                this.runManager.markStageIntroSeen(stageIndex);
+            }
+            this.storySlidesActive = false;
+        };
+
+        if (slides.length === 0) {
+            finalize();
+            return;
+        }
+
+        this.storySlidesActive = true;
+        this.scene.launch('StorySlidesScene', {
+            slideKeys: slides,
+            returnSceneKey: 'StageMapScene',
+            onComplete: finalize
+        });
+        this.scene.pause();
     }
 
 

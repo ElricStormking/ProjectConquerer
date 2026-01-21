@@ -168,6 +168,10 @@ export class BattleScene extends Phaser.Scene {
                 ? 'bgm_battle_jade'
                 : stageIndex === 2
                 ? 'bgm_battle_triarch'
+                : stageIndex === 3
+                ? 'bgm_battle_elf'
+                : stageIndex === 4
+                ? 'bgm_battle_abyss'
                 : 'bgm_battle_frost';
         this.bgmKey = key;
 

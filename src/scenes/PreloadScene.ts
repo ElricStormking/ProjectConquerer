@@ -132,6 +132,17 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('stage_triarch_map', 'assets/stage_map/map_stage_triarch.png');
         this.load.image('stage_elf_map', 'assets/stage_map/map_stage_elf.png');
         this.load.image('stage_abyss_map', 'assets/stage_map/map_stage_abyss.png');
+        // Story slides
+        this.load.image('story_begining_01_prelude', 'assets/StorySlides/begining_01_prelude.png');
+        this.load.image('story_begining_01_stage1', 'assets/StorySlides/begining_01_stage1.png');
+        this.load.image('story_begining_01_stage3', 'assets/StorySlides/begining_01_stage3.png');
+        this.load.image('story_begining_01_stage4', 'assets/StorySlides/begining_01_stage4.png');
+        this.load.image('story_begining_01_final', 'assets/StorySlides/begining_01_final.png');
+        this.load.image('story_ending_01_stage1', 'assets/StorySlides/ending_01_stage1.png');
+        this.load.image('story_ending_01_stage2', 'assets/StorySlides/ending_01_stage2.png');
+        this.load.image('story_ending_01_stage3', 'assets/StorySlides/ending_01_stage3.png');
+        this.load.image('story_ending_01_stage4', 'assets/StorySlides/ending_01_stage4.png');
+        this.load.image('story_ending_01_stage5', 'assets/StorySlides/ending_01_stage5.png');
         // Battle backgrounds (stage-specific)
         this.load.image('battle_bg_stage_1', 'assets/background/gamemap_jade_01.png');
         this.load.image('battle_bg_stage_3', 'assets/background/gamemap_triarch_03.png');
@@ -193,9 +204,13 @@ export class PreloadScene extends Phaser.Scene {
         this.load.audio('bgm_stage_jade', 'assets/audio/bgm/bgm_01_jade_dynasty_map.mp3');
         this.load.audio('bgm_stage_frost', 'assets/audio/bgm/bgm_02_eternal_frost_clan.mp3');
         this.load.audio('bgm_stage_triarch', 'assets/audio/bgm/bgm_03_triarch_dominion.mp3');
+        this.load.audio('bgm_stage_elf', 'assets/audio/bgm/bgm_04_elf_covenent_map.mp3');
+        this.load.audio('bgm_stage_abyss', 'assets/audio/bgm/bgm_05_abyss_legion_map.mp3');
         this.load.audio('bgm_battle_jade', 'assets/audio/bgm/battle/bgm_01_jade_dynasty_battle.mp3');
         this.load.audio('bgm_battle_frost', 'assets/audio/bgm/battle/bgm_02_eternal_frost_clan_battle.mp3');
         this.load.audio('bgm_battle_triarch', 'assets/audio/bgm/battle/bgm_03_triarch_dominion_battle.mp3');
+        this.load.audio('bgm_battle_elf', 'assets/audio/bgm/battle/bgm_04_elf_covenent_battle.mp3');
+        this.load.audio('bgm_battle_abyss', 'assets/audio/bgm/battle/bgm_05_abyss_legion_battle.mp3');
         
         // Cog Dominion buildings
         this.load.image('building_cannon_tower', 'assets/buildings/cog_buildings/Building_CannonTower.png');

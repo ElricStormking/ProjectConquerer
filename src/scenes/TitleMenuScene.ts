@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SaveManager } from '../systems/SaveManager';
+import { getPreludeSlides } from '../data/StorySlides';
 
 const MENU_BUTTON_WIDTH = 320;
 const MENU_BUTTON_HEIGHT = 60;
@@ -185,7 +186,15 @@ export class TitleMenuScene extends Phaser.Scene {
     private onNewGame(): void {
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.time.delayedCall(400, () => {
-            this.scene.start('FactionSelectionScene');
+            const slides = getPreludeSlides().filter(key => this.textures.exists(key));
+            if (slides.length === 0) {
+                this.scene.start('FactionSelectionScene');
+                return;
+            }
+            this.scene.start('StorySlidesScene', {
+                slideKeys: slides,
+                nextSceneKey: 'FactionSelectionScene'
+            });
         });
     }
 

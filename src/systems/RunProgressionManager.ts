@@ -14,7 +14,8 @@ import {
     RelicTrigger,
     IFortressConfig,
     IFortressCell,
-    IFortressCellState
+    IFortressCellState,
+    IStorySlideState
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -60,6 +61,42 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return clone;
     }
 
+    private createStorySlidesState(preludeSeen = true): IStorySlideState {
+        return {
+            preludeSeen,
+            stageIntroSeen: [],
+            stageOutroSeen: [],
+            finalSeen: false,
+            pendingFinal: false
+        };
+    }
+
+    private ensureStorySlidesState(preludeSeen = true): IStorySlideState {
+        if (!this.runState) {
+            return this.createStorySlidesState(preludeSeen);
+        }
+        if (!this.runState.storySlides) {
+            this.runState.storySlides = this.createStorySlidesState(preludeSeen);
+        }
+        this.runState.storySlides.stageIntroSeen = this.runState.storySlides.stageIntroSeen ?? [];
+        this.runState.storySlides.stageOutroSeen = this.runState.storySlides.stageOutroSeen ?? [];
+        this.runState.storySlides.finalSeen = this.runState.storySlides.finalSeen ?? false;
+        this.runState.storySlides.preludeSeen = this.runState.storySlides.preludeSeen ?? preludeSeen;
+        return this.runState.storySlides;
+    }
+
+    private cloneStorySlides(state?: IStorySlideState): IStorySlideState | undefined {
+        if (!state) return undefined;
+        return {
+            preludeSeen: state.preludeSeen,
+            stageIntroSeen: [...(state.stageIntroSeen ?? [])],
+            stageOutroSeen: [...(state.stageOutroSeen ?? [])],
+            finalSeen: state.finalSeen,
+            pendingStageOutroStageIndex: state.pendingStageOutroStageIndex,
+            pendingFinal: state.pendingFinal
+        };
+    }
+
     public getRunState(): RunStateSnapshot | null {
         if (!this.runState) return null;
         const snapshot = {
@@ -73,13 +110,103 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             factionId: this.runState.factionId,
             lives: this.runState.lives,
             fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined,
-            fortressCellStates: this.cloneFortressCellStates(this.runState.fortressCellStates)
+            fortressCellStates: this.cloneFortressCellStates(this.runState.fortressCellStates),
+            storySlides: this.cloneStorySlides(this.runState.storySlides)
         };
         return snapshot;
     }
 
     public getFactionId(): string {
         return this.runState?.factionId ?? 'cog_dominion';
+    }
+
+    public hasSeenStageIntro(stageIndex: number): boolean {
+        if (!this.runState) return false;
+        const story = this.ensureStorySlidesState(true);
+        return story.stageIntroSeen.includes(stageIndex);
+    }
+
+    public markStageIntroSeen(stageIndex: number): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        if (!story.stageIntroSeen.includes(stageIndex)) {
+            story.stageIntroSeen.push(stageIndex);
+            this.saveRun();
+        }
+    }
+
+    public hasSeenStageOutro(stageIndex: number): boolean {
+        if (!this.runState) return false;
+        const story = this.ensureStorySlidesState(true);
+        return story.stageOutroSeen.includes(stageIndex);
+    }
+
+    public markStageOutroSeen(stageIndex: number): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        if (!story.stageOutroSeen.includes(stageIndex)) {
+            story.stageOutroSeen.push(stageIndex);
+            this.saveRun();
+        }
+    }
+
+    public hasSeenFinalSlides(): boolean {
+        if (!this.runState) return false;
+        const story = this.ensureStorySlidesState(true);
+        return story.finalSeen;
+    }
+
+    public markFinalSlidesSeen(): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        if (!story.finalSeen) {
+            story.finalSeen = true;
+            this.saveRun();
+        }
+    }
+
+    public getPendingStageOutroStageIndex(): number | undefined {
+        if (!this.runState) return undefined;
+        const story = this.ensureStorySlidesState(true);
+        return story.pendingStageOutroStageIndex;
+    }
+
+    public setPendingStageOutro(stageIndex: number): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        story.pendingStageOutroStageIndex = stageIndex;
+        this.saveRun();
+    }
+
+    public clearPendingStageOutro(): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        if (story.pendingStageOutroStageIndex !== undefined) {
+            story.pendingStageOutroStageIndex = undefined;
+            this.saveRun();
+        }
+    }
+
+    public isFinalSlidesPending(): boolean {
+        if (!this.runState) return false;
+        const story = this.ensureStorySlidesState(true);
+        return !!story.pendingFinal;
+    }
+
+    public setFinalSlidesPending(pending: boolean): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        story.pendingFinal = pending;
+        this.saveRun();
+    }
+
+    public clearFinalSlidesPending(): void {
+        if (!this.runState) return;
+        const story = this.ensureStorySlidesState(true);
+        if (story.pendingFinal) {
+            story.pendingFinal = false;
+            this.saveRun();
+        }
     }
 
     private getInitialUnlockedCells(fortress: IFortressConfig): string[] {
@@ -190,6 +317,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
             factionId: factionId,
+            storySlides: this.createStorySlidesState(true),
             fortressUnlockedCells: { [fortressId]: initialUnlocked },
             fortressCellStates: { [fortressId]: [] }
         };
@@ -220,6 +348,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         }
         if (this.runState && (this.runState as any).lives === undefined) {
             this.runState.lives = 3;
+        }
+        if (this.runState) {
+            const storySlides = this.ensureStorySlidesState(true);
+            if (storySlides.stageIntroSeen.length === 0) {
+                storySlides.stageIntroSeen = [this.runState.currentStageIndex];
+            }
+            this.saveRun();
         }
         
         // Restore relics
@@ -602,10 +737,15 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     private handleStageCompletion(stageIndex: number): void {
         if (!this.runState) return;
         const stage = this.stageGraph.get(stageIndex);
+        const storySlides = this.ensureStorySlidesState(true);
+        storySlides.pendingStageOutroStageIndex = stageIndex;
+        storySlides.pendingFinal = false;
         this.emit('stage-completed', this.getStageSnapshot(stageIndex));
 
         const nextStage = this.resolveNextStage(stage);
         if (!nextStage) {
+            storySlides.pendingFinal = true;
+            this.saveRun();
             this.emit('run-completed', this.getRunState());
             return;
         }

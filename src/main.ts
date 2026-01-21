@@ -4,6 +4,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { TitleMenuScene } from './scenes/TitleMenuScene';
 import { OptionsScene } from './scenes/OptionsScene';
 import { FactionSelectionScene } from './scenes/FactionSelectionScene';
+import { StorySlidesScene } from './scenes/StorySlidesScene';
 import { DeckBuildingScene } from './scenes/DeckBuildingScene';
 import { BattleScene } from './scenes/BattleScene';
 import { UIScene } from './scenes/UIScene';
@@ -52,6 +53,7 @@ const config: Phaser.Types.Core.GameConfig = {
     scene: [
         BootScene,
         PreloadScene,
+        StorySlidesScene,
         TitleMenuScene,
         OptionsScene,
         FactionSelectionScene,
