@@ -108,3 +108,40 @@ card_elf_healing_grove,Healing Grove,structure,5,lifeforce,elf_healing_grove,car
 card_elf_sun_crystal_spire,Sun-Crystal Spire,structure,5,lifeforce,elf_sun_crystal_spire,card_elf_sun_crystal_spire,Accurate beam turret strong vs flying.,epic
 card_elf_living_vine_wall,Living Vine Wall,structure,1,lifeforce,elf_living_vine_wall,card_elf_living_vine_wall,High health wall that deals thorn damage.,common
 card_elf_fountain_of_life,Fountain of Life,structure,3,lifeforce,elf_fountain_of_life,card_elf_fountain_of_life,Restores health to nearby units and structures.,common
+card_abyss_abyssal_imp,Abyssal Imp,unit,1,chaos_essence,abyss_abyssal_imp,card_abyss_abyssal_imp,Swarm fodder that explodes on death.,common
+card_abyss_demon_brute,Demon Brute,unit,3,chaos_essence,abyss_demon_brute,card_abyss_demon_brute,Regenerating frontline bruiser.,rare
+card_abyss_gorefiend_crusher,Gorefiend Crusher,unit,5,chaos_essence,abyss_gorefiend_crusher,card_abyss_gorefiend_crusher,Taunting tank that hardens under pressure.,epic
+card_abyss_archdemon,Archdemon,unit,6,chaos_essence,abyss_archdemon,card_abyss_archdemon,Overlord anchor with fear aura.,epic
+card_abyss_ballista_fiend,Abyss Ballista Fiend,unit,3,chaos_essence,abyss_ballista_fiend,card_abyss_ballista_fiend,Long-range siege bolts with corruption.,rare
+card_abyss_hellcannon_behemoth,Hellcannon Behemoth,unit,4,chaos_essence,abyss_hellcannon_behemoth,card_abyss_hellcannon_behemoth,Artillery beast firing explosive shells.,rare
+card_abyss_succubus_temptress,Succubus Temptress,unit,3,chaos_essence,abyss_succubus_temptress,card_abyss_succubus_temptress,Charm controller that turns foes.,rare
+card_abyss_crimson_acolyte,Crimson Acolyte,unit,2,chaos_essence,abyss_crimson_acolyte,card_abyss_crimson_acolyte,Support cultist that fuels Chaos Essence.,common
+card_abyss_veiled_enchantress,Veiled Enchantress,unit,3,chaos_essence,abyss_veiled_enchantress,card_abyss_veiled_enchantress,Area charm and damage debuff.,rare
+card_abyss_blood_siren,Blood Siren,unit,4,chaos_essence,abyss_blood_siren,card_abyss_blood_siren,Assassin that lifesteals from charmed enemies.,rare
+card_abyss_cult_magister,Cult Magister,unit,3,chaos_essence,abyss_cult_magister,card_abyss_cult_magister,High DPS chaos caster applying corruption.,rare
+card_abyss_oracle_abyss,Oracle of the Abyss,unit,3,chaos_essence,abyss_oracle_abyss,card_abyss_oracle_abyss,Debuff specialist that marks targets.,rare
+card_abyss_sacrifice_master,Sacrifice Master,unit,4,chaos_essence,abyss_sacrifice_master,card_abyss_sacrifice_master,Ritual engine that converts allies into power.,rare
+card_abyss_abyssal_prophet,Abyssal Prophet,unit,4,chaos_essence,abyss_abyssal_prophet,card_abyss_abyssal_prophet,Summoner support that spawns imps.,rare
+card_abyss_spawning_pit,Abyssal Spawning Pit,structure,3,chaos_essence,abyss_spawning_pit,card_cannon_tower,Spawns imps periodically.,common
+card_abyss_blood_altar,Blood Altar,structure,3,chaos_essence,abyss_blood_altar,card_cannon_tower,Boosts sacrifice power and essence gain.,common
+card_abyss_infernal_obelisk,Infernal Obelisk,structure,4,chaos_essence,abyss_infernal_obelisk,card_cannon_tower,Chaos damage aura with corruption stacks.,rare
+card_abyss_demon_forge,Demon Forge,structure,3,chaos_essence,abyss_demon_forge,card_cannon_tower,Increases demon HP and armor.,common
+card_abyss_corruption_tower,Corruption Tower,structure,4,chaos_essence,abyss_corruption_tower,card_cannon_tower,Applies corruption to enemies in range.,rare
+card_abyss_hellgate_portal,Hellgate Portal,structure,2,chaos_essence,abyss_hellgate_portal,card_cannon_tower,Reinforcement portal with speed boost.,common
+card_abyss_regeneration_pool,Flesh Regeneration Pool,structure,3,chaos_essence,abyss_regeneration_pool,card_cannon_tower,Heals nearby allies over time.,common
+card_abyss_shrine_of_terror,Shrine of Terror,structure,4,chaos_essence,abyss_shrine_of_terror,card_cannon_tower,Periodic fear pulses in area.,rare
+card_abyss_chaos_heart,Chaos Heart Node,module,2,chaos_essence,abyss_chaos_heart,card_spell_barrier,Boosts Chaos Essence generation.,common
+card_abyss_bloodlust_sigil,Bloodlust Sigil,module,2,chaos_essence,abyss_bloodlust_sigil,card_spell_barrier,Kill-based attack speed surges.,common
+card_abyss_corruption_amplifier,Corruption Amplifier,module,3,chaos_essence,abyss_corruption_amplifier,card_spell_barrier,Strengthens corruption damage.,rare
+card_abyss_soul_harvest_core,Soul Harvest Core,module,2,chaos_essence,abyss_soul_harvest_core,card_spell_barrier,Essence gain on nearby deaths.,common
+card_abyss_infernal_armor,Infernal Armor Plates,module,2,chaos_essence,abyss_infernal_armor,card_spell_barrier,Adjacent demons gain armor.,common
+card_abyss_demonic_frenzy,Demonic Frenzy Node,module,2,chaos_essence,abyss_demonic_frenzy,card_spell_barrier,Low-health frenzy for allies.,common
+card_abyss_fear_resonance,Fear Resonance Totem,module,3,chaos_essence,abyss_fear_resonance,card_spell_barrier,Extends fear and amplifies damage.,rare
+card_abyss_hellfire_conduit,Hellfire Conduit,module,3,chaos_essence,abyss_hellfire_conduit,card_spell_barrier,Spells ignite enemies with burn.,rare
+card_abyss_chaos_bolt,Chaos Bolt,spell,1,chaos_essence,chaos_bolt,card_spell_barrier,Single-target chaos damage with corruption.,common
+card_abyss_infernal_explosion,Infernal Explosion,spell,2,chaos_essence,infernal_explosion,card_spell_barrier,Explosive chaos burst in an area.,rare
+card_abyss_mass_fear,Mass Fear,spell,2,chaos_essence,mass_fear,card_spell_barrier,Briefly fears enemies in an area.,rare
+card_abyss_blood_pact,Blood Pact,spell,1,chaos_essence,blood_pact,card_spell_barrier,Sacrifice a unit to heal allies.,common
+card_abyss_corruption_wave,Corruption Wave,spell,3,chaos_essence,corruption_wave,card_spell_barrier,Wide arc applying corruption stacks.,epic
+card_abyss_demonic_regrowth,Demonic Regrowth,spell,2,chaos_essence,demonic_regrowth,card_spell_barrier,Mass regeneration buff for allies.,rare
+card_abyss_abyssal_rift,Abyssal Rift,spell,4,chaos_essence,abyssal_rift,card_spell_barrier,Damage zone that spawns imps.,epic

@@ -102,6 +102,21 @@ export class Unit extends Phaser.Events.EventEmitter {
     // Status effect timers are tracked in SECONDS (remaining, tickInterval, accumulator).
     private statusEffects: Map<StatusEffect, { remaining: number; magnitude?: number; tickInterval?: number; accumulator?: number }> = new Map();
     private stunned: boolean = false;
+    private evasionChance: number = 0;
+    private evasionRemainingMs: number = 0;
+    private charmWindowStartMs: number = 0;
+    private charmCount: number = 0;
+    private charmImmunityUntilMs: number = 0;
+    private fearWindowStartMs: number = 0;
+    private fearCount: number = 0;
+    private corruptionStacks: number = 0;
+    private corruptionDurationMs: number = 6000;
+    private corruptionRemainingMs: number = 0;
+    private corruptionTickMs: number = 1000;
+    private corruptionTickAccumulatorMs: number = 0;
+    private corruptionDamagePerStack: number = 6;
+    private corruptionDetonationDamage: number = 90;
+    private corruptionDetonationRadius: number = 120;
     
     // Commander skill effect state (prefixed with _ as they are set but not read in this class)
     private _shieldAmount: number = 0;
@@ -429,6 +444,11 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.ELF_CHAMPION_GLADE:
             case UnitType.ELF_EMERALD_VANGUARD:
             case UnitType.ELF_HALLOW_TREE_PALADIN:
+            case UnitType.ABYSS_ABYSSAL_IMP:
+            case UnitType.ABYSS_DEMON_BRUTE:
+            case UnitType.ABYSS_GOREFIEND_CRUSHER:
+            case UnitType.ABYSS_ARCHDEMON:
+            case UnitType.ABYSS_BLOOD_SIREN:
                 return true;
             default:
                 return false;
@@ -442,9 +462,10 @@ export class Unit extends Phaser.Events.EventEmitter {
         const slowSec = (skill.slowDurationMs ?? skill.statusDurationMs ?? 0) / 1000;
         const dotDurationSec = statusDurationSec;
         const hotDurationSec = statusDurationSec;
+        const hasCorruption = Array.isArray(skill.statusEffects) && skill.statusEffects.includes('corruption');
         targets.forEach(target => {
             // Direct damage (data-driven)
-            if (typeof skill.damage === 'number' && skill.damage > 0 && combatSystem?.dealDamage) {
+            if (!hasCorruption && typeof skill.damage === 'number' && skill.damage > 0 && combatSystem?.dealDamage) {
                 combatSystem.dealDamage(this as any, target as any, skill.damage);
             }
             if (skill.statusEffects) {
@@ -471,6 +492,42 @@ export class Unit extends Phaser.Events.EventEmitter {
                         combatSystem.applyStatusEffect(target as any, StatusEffect.DAZED, Math.max(0.1, statusDurationSec || 1));
                     } else if (effect === 'snared') {
                         combatSystem.applyStatusEffect(target as any, StatusEffect.SNARED, Math.max(0.1, statusDurationSec || 1));
+                    } else if (effect === 'charm') {
+                        const durationMs = Number(skill.statusDurationMs ?? 0) || 1600;
+                        (target as any).applyCharm?.(durationMs, currentTime);
+                        const notes = typeof skill.notes === 'string' ? skill.notes.toLowerCase() : '';
+                        if (notes.includes('fear_on_end')) {
+                            const radius = Number(skill.aoeRadius ?? 0);
+                            const fearDurationMs = Math.max(0, Number(skill.slowDurationMs ?? 600));
+                            this.scene.time.delayedCall(durationMs, () => {
+                                if (target.isDead?.()) return;
+                                if (combatSystem?.getUnitsInRadius && radius > 0) {
+                                    const nearby = combatSystem.getUnitsInRadius(target.getPosition(), radius, target.getTeam());
+                                    nearby.forEach(u => (u as any).applyFear?.(fearDurationMs, this.scene.time.now));
+                                } else {
+                                    (target as any).applyFear?.(fearDurationMs, this.scene.time.now);
+                                }
+                            });
+                        }
+                    } else if (effect === 'fear') {
+                        const durationMs = Number(skill.statusDurationMs ?? 0) || 800;
+                        (target as any).applyFear?.(durationMs, currentTime);
+                    } else if (effect === 'corruption') {
+                        const durationMs = Number(skill.statusDurationMs ?? 6000);
+                        const tickMs = Number(skill.dotTickMs ?? 1000);
+                        const damagePerStack = Number(skill.dotAmount ?? 6);
+                        const detonationDamage = Number(skill.damage ?? 90);
+                        const detonationRadius = Number(skill.aoeRadius ?? 120);
+                        (target as any).applyCorruption?.(
+                            1,
+                            durationMs,
+                            tickMs,
+                            damagePerStack,
+                            detonationDamage,
+                            detonationRadius,
+                            combatSystem,
+                            this
+                        );
                     }
                 });
             }
@@ -513,6 +570,11 @@ export class Unit extends Phaser.Events.EventEmitter {
                     if (Number.isFinite(multiplier) && multiplier > 0) {
                         (target as any).addDamageBuff?.(multiplier, rawDuration);
                     }
+                } else if (statType === 'evasion') {
+                    const chance = Math.max(0, Math.min(1, rawAmount));
+                    if (Number.isFinite(chance) && chance > 0) {
+                        (target as any).setEvasionChance?.(chance, rawDuration);
+                    }
                 }
             }
         });
@@ -553,6 +615,7 @@ export class Unit extends Phaser.Events.EventEmitter {
                 let appliedStormStun = false;
                 const hitEnemies: Unit[] = [];
                 const meleeSkill = this.skillPrimary && this.skillPrimary.trigger === 'on_attack' ? this.skillPrimary : undefined;
+                let appliedBruteRegen = false;
 
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
@@ -566,6 +629,16 @@ export class Unit extends Phaser.Events.EventEmitter {
                     if (Math.abs(diff) <= swingAngle / 2) {
                         combatSystem.dealDamage(this as any, enemy as any, this.getDamage());
                         hitEnemies.push(enemy as any);
+
+                        if (this.config.unitType === UnitType.ABYSS_BLOOD_SIREN && enemy.hasStatusEffect?.(StatusEffect.CHARMED)) {
+                            const healAmount = Math.max(1, Math.round(this.getDamage() * 0.25));
+                            this.heal?.(healAmount);
+                        }
+                        if (!appliedBruteRegen && this.config.unitType === UnitType.ABYSS_DEMON_BRUTE) {
+                            appliedBruteRegen = true;
+                            const regenAmount = Math.max(1, Math.round(this.getMaxHealth() * 0.02));
+                            this.heal?.(regenAmount);
+                        }
 
                         // Legacy hardcoded CC only if no data-driven skill
                         if (!meleeSkill) {
@@ -965,6 +1038,10 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.dead) return;
         let dmg = Number(amount);
         if (!Number.isFinite(dmg) || dmg <= 0) return;
+        if (this.evasionChance > 0 && Math.random() < this.evasionChance) {
+            this.emit('damage-taken', 0);
+            return;
+        }
         const damageMultiplier = this.damageTakenMultiplier;
         if (Number.isFinite(damageMultiplier) && damageMultiplier !== 1) {
             dmg *= damageMultiplier;
@@ -1152,8 +1229,83 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.stunned = true;
         }
     }
+
+    public hasStatusEffect(effect: StatusEffect): boolean {
+        return this.statusEffects.has(effect);
+    }
+
+    public applyCharm(durationMs: number, nowMs: number): boolean {
+        if (nowMs < this.charmImmunityUntilMs) return false;
+        if (nowMs - this.charmWindowStartMs > 18000) {
+            this.charmWindowStartMs = nowMs;
+            this.charmCount = 0;
+        }
+        this.charmCount += 1;
+        if (this.charmCount >= 4) {
+            this.charmImmunityUntilMs = nowMs + 3000;
+            return false;
+        }
+        const multipliers = [1, 0.5, 0.25];
+        const mult = multipliers[this.charmCount - 1] ?? 0;
+        if (mult <= 0) return false;
+        const durationSec = Math.max(0.1, (durationMs * mult) / 1000);
+        this.addStatusEffect(StatusEffect.CHARMED, durationSec);
+        this.charmImmunityUntilMs = nowMs + durationMs * mult + 3000;
+        return true;
+    }
+
+    public applyFear(durationMs: number, nowMs: number): boolean {
+        if (nowMs - this.fearWindowStartMs > 12000) {
+            this.fearWindowStartMs = nowMs;
+            this.fearCount = 0;
+        }
+        this.fearCount += 1;
+        if (this.fearCount >= 4) {
+            return false;
+        }
+        const multipliers = [1, 0.6, 0.3];
+        const mult = multipliers[this.fearCount - 1] ?? 0;
+        if (mult <= 0) return false;
+        const durationSec = Math.max(0.1, (durationMs * mult) / 1000);
+        this.addStatusEffect(StatusEffect.FEARED, durationSec);
+        return true;
+    }
+
+    public applyCorruption(
+        stacks: number,
+        durationMs: number,
+        tickMs: number,
+        damagePerStack: number,
+        detonationDamage: number,
+        detonationRadius: number,
+        combatSystem?: CombatSystem,
+        attacker?: Unit
+    ): void {
+        if (!Number.isFinite(stacks) || stacks <= 0) return;
+        if (Number.isFinite(durationMs) && durationMs > 0) {
+            this.corruptionDurationMs = durationMs;
+            this.corruptionRemainingMs = Math.max(this.corruptionRemainingMs, durationMs);
+        }
+        if (Number.isFinite(tickMs) && tickMs > 0) {
+            this.corruptionTickMs = tickMs;
+        }
+        if (Number.isFinite(damagePerStack) && damagePerStack > 0) {
+            this.corruptionDamagePerStack = damagePerStack;
+        }
+        if (Number.isFinite(detonationDamage) && detonationDamage > 0) {
+            this.corruptionDetonationDamage = detonationDamage;
+        }
+        if (Number.isFinite(detonationRadius) && detonationRadius > 0) {
+            this.corruptionDetonationRadius = detonationRadius;
+        }
+        this.corruptionStacks = Math.min(5, this.corruptionStacks + stacks);
+        if (this.corruptionStacks >= 5) {
+            this.triggerCorruptionDetonation(combatSystem, attacker);
+        }
+    }
     
     public updateStatusEffects(deltaTime: number): void {
+        const deltaMs = deltaTime * 1000;
         this.statusEffects.forEach((entry, effect) => {
             const newRemaining = entry.remaining - deltaTime; // all in seconds
             let accumulator = entry.accumulator ?? 0;
@@ -1191,6 +1343,31 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.health = 0;
             this.die();
         }
+
+        if (this.evasionRemainingMs > 0) {
+            this.evasionRemainingMs -= deltaMs;
+            if (this.evasionRemainingMs <= 0) {
+                this.evasionRemainingMs = 0;
+                this.evasionChance = 0;
+            }
+        }
+
+        if (this.corruptionStacks > 0 && this.corruptionRemainingMs > 0) {
+            this.corruptionRemainingMs -= deltaMs;
+            this.corruptionTickAccumulatorMs += deltaMs;
+            while (this.corruptionTickAccumulatorMs >= this.corruptionTickMs) {
+                this.corruptionTickAccumulatorMs -= this.corruptionTickMs;
+                const tickDamage = this.corruptionDamagePerStack * this.corruptionStacks;
+                if (tickDamage > 0) {
+                    this.takeDamage(tickDamage);
+                }
+            }
+            if (this.corruptionRemainingMs <= 0) {
+                this.corruptionRemainingMs = 0;
+                this.corruptionStacks = 0;
+                this.corruptionTickAccumulatorMs = 0;
+            }
+        }
     }
     
     private removeStatusEffect(effect: StatusEffect): void {
@@ -1213,6 +1390,9 @@ export class Unit extends Phaser.Events.EventEmitter {
                 this.stunned = false;
                 break;
             case StatusEffect.SLOWED:
+                this.moveSpeedMultiplier = 1;
+                break;
+            case StatusEffect.FEARED:
                 this.moveSpeedMultiplier = 1;
                 break;
         }
@@ -1350,6 +1530,17 @@ export class Unit extends Phaser.Events.EventEmitter {
     public setAttackSpeedMultiplier(value: number): void { this.attackSpeedMultiplier = value; }
     public setBuildingAttackSpeedMultiplier(value: number): void { this.buildingAttackSpeedMultiplier = value; }
     public setAuraDamageMultiplier(value: number): void { this.auraDamageMultiplier = value; }
+    public setEvasionChance(value: number, durationMs?: number): void {
+        if (!Number.isFinite(value) || value <= 0) {
+            this.evasionChance = 0;
+            this.evasionRemainingMs = 0;
+            return;
+        }
+        this.evasionChance = Math.max(this.evasionChance, value);
+        if (Number.isFinite(durationMs) && durationMs && durationMs > 0) {
+            this.evasionRemainingMs = Math.max(this.evasionRemainingMs, durationMs);
+        }
+    }
     public setHealingMultiplier(value: number): void {
         if (!Number.isFinite(value) || value <= 0) {
             this.healingMultiplier = 1;
@@ -1390,13 +1581,44 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     public clearDebuffs(): void {
         // Remove selected debuffing status effects
-        ['STUNNED','SLOWED','SUPPRESSED','SNARED','DAZED','DOT'].forEach(key => {
+        ['STUNNED','SLOWED','SUPPRESSED','SNARED','DAZED','DOT','CHARMED','FEARED'].forEach(key => {
             const effect = (StatusEffect as any)[key] as StatusEffect | undefined;
             if (effect && this.statusEffects.has(effect)) {
                 this.removeStatusEffect(effect);
                 this.statusEffects.delete(effect);
             }
         });
+    }
+
+    private triggerCorruptionDetonation(combatSystem?: CombatSystem, attacker?: Unit): void {
+        const center = this.getPosition();
+        const targets = combatSystem
+            ? combatSystem.getUnitsInRadius(center, this.corruptionDetonationRadius, this.getTeam())
+            : [];
+        if (combatSystem && attacker) {
+            targets.forEach(target => {
+                combatSystem.dealDamage(attacker, target as any, this.corruptionDetonationDamage);
+            });
+        }
+        this.corruptionStacks = 0;
+        this.corruptionRemainingMs = 0;
+        this.corruptionTickAccumulatorMs = 0;
+
+        if (combatSystem && attacker) {
+            targets.forEach(target => {
+                if (target === this) return;
+                (target as any).applyCorruption?.(
+                    2,
+                    this.corruptionDurationMs,
+                    this.corruptionTickMs,
+                    this.corruptionDamagePerStack,
+                    this.corruptionDetonationDamage,
+                    this.corruptionDetonationRadius,
+                    combatSystem,
+                    attacker
+                );
+            });
+        }
     }
     public setFriction(value: number): void { this.friction = value; }
     public setAccuracy(value: number): void { this.accuracy = value; }
@@ -1498,6 +1720,20 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.ELF_GROVE_PETITIONER: return 'army_Oracle';
             case UnitType.ELF_SOUL_LIGHT_BUTTERFLY: return 'army_Starlight_Sky-Skimmers';
             case UnitType.ELF_VITALITY_BONDER: return 'army_Vitality_Bonder';
+            case UnitType.ABYSS_ABYSSAL_IMP: return 'army_abyssal_lmp';
+            case UnitType.ABYSS_DEMON_BRUTE: return 'army_Demon_Brute';
+            case UnitType.ABYSS_GOREFIEND_CRUSHER: return 'army_Archdemon';
+            case UnitType.ABYSS_ARCHDEMON: return 'army_Archdemon';
+            case UnitType.ABYSS_BALLISTA_FIEND: return 'army_Ballista_Fiend';
+            case UnitType.ABYSS_HELLCANNON_BEHEMOTH: return 'army_Ballista_Fiend';
+            case UnitType.ABYSS_SUCCUBUS_TEMPTRESS: return 'army_Succubus_Temptress';
+            case UnitType.ABYSS_CRIMSON_ACOLYTE: return 'army_Crimson_Acolyte';
+            case UnitType.ABYSS_VEILED_ENCHANTRESS: return 'army_Veiled_Enchantress';
+            case UnitType.ABYSS_BLOOD_SIREN: return 'army_blood_siren';
+            case UnitType.ABYSS_CULT_MAGISTER: return 'army_Cult_Magister';
+            case UnitType.ABYSS_ORACLE_ABYSS: return 'army_Abyssal_Prophet';
+            case UnitType.ABYSS_SACRIFICE_MASTER: return 'army_Sacrifice_Master';
+            case UnitType.ABYSS_ABYSSAL_PROPHET: return 'army_Abyssal_Prophet';
             default: return 'warrior';
         }
     }

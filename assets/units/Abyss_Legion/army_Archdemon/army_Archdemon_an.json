@@ -1,0 +1,582 @@
+{
+    "anims": [
+        {
+            "key": "idle_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 4,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 5,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 6,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 7,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 8,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 9,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 10,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 11,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 12,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 13,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 14,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 15,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 16,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 17,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 18,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 19,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 20,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 21,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 22,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 23,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 24,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 25,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 26,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 27,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 28,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 29,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 30,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 31,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 32,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 33,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 34,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 35,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 36,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 37,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 38,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 39,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "die",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 40,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 41,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 42,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 43,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 44,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 8,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 48,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 49,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 50,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 51,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 52,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 53,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 54,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 56,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 57,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 58,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 59,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 60,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 61,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 62,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 64,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 65,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 66,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 67,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 68,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 69,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 70,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Archdemon",
+                    "frame": 72,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 73,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 74,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 75,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 76,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 77,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Archdemon",
+                    "frame": 78,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

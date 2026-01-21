@@ -57,6 +57,10 @@ export class CommanderSkillRegistry {
         this.registerAlias('dragon_spear_barrage', 'dragon_strike');
         this.registerAlias('shikigami_summoning', 'shikigami_ritual');
         this.registerAlias('shadow_clone_ambush', 'shadowstep_backroll');
+        // Abyss Legion aliases (reuse existing skill implementations for now)
+        this.registerAlias('abyssal_bloodlink', 'flesh_link');
+        this.registerAlias('crimson_veil', 'shadowstep_backroll');
+        this.registerAlias('abyssal_ritual', 'soul_blasphemy');
         
         console.log('[CommanderSkillRegistry] Initialized with skills:', this.getAllSkillIds());
     }

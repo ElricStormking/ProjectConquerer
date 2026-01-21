@@ -17,7 +17,9 @@ export enum StatusEffect {
     STUNNED = 'stunned',
     SLOWED = 'slowed',
     DOT = 'dot',
-    HOT = 'hot'
+    HOT = 'hot',
+    CHARMED = 'charmed',
+    FEARED = 'feared'
 }
 
 export interface DamageEvent {
@@ -159,11 +161,25 @@ export class CombatSystem {
             case StatusEffect.SLOWED:
                 target.setMoveSpeedMultiplier(0.6);
                 break;
+            case StatusEffect.FEARED:
+                // Slight speed boost so fear retreat is noticeable.
+                target.setMoveSpeedMultiplier(1.2);
+                break;
             case StatusEffect.DOT:
             case StatusEffect.HOT:
                 // DOT/HOT are handled by target's status tick; no immediate action here.
                 break;
         }
+    }
+
+    public getUnitsInRadius(center: { x: number; y: number }, radius: number, team?: number): Unit[] {
+        const units = this.unitManager.getAllUnits();
+        return units.filter(unit => {
+            if (unit.isDead()) return false;
+            if (team !== undefined && unit.getTeam() !== team) return false;
+            const pos = unit.getPosition();
+            return Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y) <= radius;
+        });
     }
     
     private startBurningEffect(target: Unit): void {

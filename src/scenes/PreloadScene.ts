@@ -93,6 +93,10 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('commander_liana', 'assets/commanders/elf_commanders/Commander_Liana.png');
         this.load.image('commander_kaelas', 'assets/commanders/elf_commanders/Commander_Kaelas.png');
         this.load.image('commander_mara', 'assets/commanders/elf_commanders/Commander_Mara.png');
+        // Commander portraits (Abyss Legion)
+        this.load.image('commander_baelgor', 'assets/commanders/abyss_commanders/Baelgor_The_Worldbreaker.png');
+        this.load.image('commander_lilithra', 'assets/commanders/abyss_commanders/Lilithra_The_Crimson_Temptress.png');
+        this.load.image('commander_zhakorr', "assets/commanders/abyss_commanders/Zha'Korr_The_Abyssal_Magister.png");
         // Jade Dynasty unit card art
         this.load.image('card_jade_azure_spear', 'assets/cards/Jade_dynasty/units/Azure_Spear_Chargers.png');
         this.load.image('card_jade_chi_dragoon', 'assets/cards/Jade_dynasty/units/Chi_Dragoon.png');
@@ -141,6 +145,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('fortress_grid_triarch_dominion_01_tilemap', 'data/fortress_grids/fortress_triarch_dominion_01_grid.csv');
         this.load.text('fortress_grid_elf_covenant_02_meta', 'data/fortress_grids/fortress_elf_covenant_02.csv');
         this.load.text('fortress_grid_elf_covenant_02_tilemap', 'data/fortress_grids/fortress_elf_covenant_02_grid.csv');
+        this.load.text('fortress_grid_abyss_legion_01_meta', 'data/fortress_grids/fortress_abyss_legion_01.csv');
+        this.load.text('fortress_grid_abyss_legion_01_tilemap', 'data/fortress_grids/fortress_abyss_legion_01_grid.csv');
 
         // Load unit spritesheets with full frame dimensions (96x96 for complete unit)
         this.load.image('world_bg', 'assets/gamemap_01.png');
@@ -151,11 +157,13 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('fortress_frost_clan_01', 'assets/fortress/Fortress_eternal_frost_clan_01.png');
         this.load.image('fortress_triarch_dominion_01', 'assets/fortress/Fortress_Triarch_Dominion_01.png');
         this.load.image('fortress_elf_covenant_02', 'assets/fortress/Fortress_Elf_Covenant_02.png');
+        this.load.image('fortress_abyss_legion_01', 'assets/fortress/Fortress_Abyss_Legion_01.png');
         // Faction selection backgrounds
         this.load.image('faction_bg_jade_dynasty', 'assets/faction_selection/faction_selection_jade_dynasty.png');
         this.load.image('faction_bg_frost_clan', 'assets/faction_selection/faction_selection_eternal_frost_clan.png');
         this.load.image('faction_bg_triarch_dominion', 'assets/faction_selection/faction_selection_triarch_dominion.png');
         this.load.image('faction_bg_elf_covenant', 'assets/faction_selection/faction_selection_elf_covenant_01.png');
+        this.load.image('faction_bg_abyss_legion', 'assets/faction_selection/faction_selection_abyss_legion.png');
         this.load.image('ui_arrow_left', 'assets/ui/ui_faction_selection/arrow_L.png');
         this.load.image('ui_arrow_right', 'assets/ui/ui_faction_selection/arrow_R.png');
         this.load.image('logo_jade_dynasty', 'assets/ui/ui_faction_selection/Logo_Jade_Dynasty.png');
@@ -312,6 +320,23 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_elf_spore_mist_pillar', `${elfBuildingCardPath}Spore-Mist_Pillar.png`);
         this.load.image('card_elf_sun_crystal_spire', `${elfBuildingCardPath}Sun-Crystal_Spire.png`);
 
+        // Abyss Legion card art (units)
+        const abyssUnitCardPath = 'assets/cards/Abyss_Legion/units/';
+        this.load.image('card_abyss_abyssal_imp', `${abyssUnitCardPath}Abyssal_Imp.png`);
+        this.load.image('card_abyss_demon_brute', `${abyssUnitCardPath}Demon_Brute.png`);
+        this.load.image('card_abyss_gorefiend_crusher', `${abyssUnitCardPath}Demon_Brute.png`);
+        this.load.image('card_abyss_archdemon', `${abyssUnitCardPath}Archdemon.png`);
+        this.load.image('card_abyss_ballista_fiend', `${abyssUnitCardPath}Abyss_Ballista_Fiend.png`);
+        this.load.image('card_abyss_hellcannon_behemoth', `${abyssUnitCardPath}Abyss_Ballista_Fiend.png`);
+        this.load.image('card_abyss_succubus_temptress', `${abyssUnitCardPath}Succubus_Temptress.png`);
+        this.load.image('card_abyss_crimson_acolyte', `${abyssUnitCardPath}Crimson_Acolyte.png`);
+        this.load.image('card_abyss_veiled_enchantress', `${abyssUnitCardPath}Veiled_Enchantress.png`);
+        this.load.image('card_abyss_blood_siren', `${abyssUnitCardPath}Blood_Siren.png`);
+        this.load.image('card_abyss_cult_magister', `${abyssUnitCardPath}Cult_Magister.png`);
+        this.load.image('card_abyss_oracle_abyss', `${abyssUnitCardPath}Abyssal_Prophet.png`);
+        this.load.image('card_abyss_sacrifice_master', `${abyssUnitCardPath}Sacrifice_Master.png`);
+        this.load.image('card_abyss_abyssal_prophet', `${abyssUnitCardPath}Abyssal_Prophet.png`);
+
         // Victory / SFX
         this.load.audio('sfx_victory', 'assets/audio/sounds/victory.mp3');
         // Prototype background music
@@ -449,6 +474,30 @@ export class PreloadScene extends Phaser.Scene {
         this.load.json('army_Verdant_Legionary_an', 'assets/units/Elf_Covenant/army_Verdant_Legionary/army_Verdant_Legionary_an.json');
         this.load.spritesheet('army_Vitality_Bonder', 'assets/units/Elf_Covenant/army_Vitality_Bonder/army_Vitality_Bonder.png', { frameWidth: 64, frameHeight: 64 });
         this.load.json('army_Vitality_Bonder_an', 'assets/units/Elf_Covenant/army_Vitality_Bonder/army_Vitality_Bonder_an.json');
+
+        // Abyss Legion units
+        this.load.spritesheet('army_abyssal_lmp', 'assets/units/Abyss_Legion/army_abyssal_lmp/army_abyssal_lmp.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_abyssal_lmp_an', 'assets/units/Abyss_Legion/army_abyssal_lmp/army_abyssal_lmp_an.json');
+        this.load.spritesheet('army_Demon_Brute', 'assets/units/Abyss_Legion/army_Demon_Brute/army_Demon_Brute.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Demon_Brute_an', 'assets/units/Abyss_Legion/army_Demon_Brute/army_Demon_Brute_an.json');
+        this.load.spritesheet('army_Archdemon', 'assets/units/Abyss_Legion/army_Archdemon/army_Archdemon.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Archdemon_an', 'assets/units/Abyss_Legion/army_Archdemon/army_Archdemon_an.json');
+        this.load.spritesheet('army_Ballista_Fiend', 'assets/units/Abyss_Legion/army_Ballista_Fiend/army_Ballista_Fiend.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Ballista_Fiend_an', 'assets/units/Abyss_Legion/army_Ballista_Fiend/army_Ballista_Fiend_an.json');
+        this.load.spritesheet('army_Crimson_Acolyte', 'assets/units/Abyss_Legion/army_Crimson_Acolyte/army_Crimson_Acolyte.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Crimson_Acolyte_an', 'assets/units/Abyss_Legion/army_Crimson_Acolyte/army_Crimson_Acolyte_an.json');
+        this.load.spritesheet('army_Cult_Magister', 'assets/units/Abyss_Legion/army_Cult_Magister/army_Cult_Magister.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Cult_Magister_an', 'assets/units/Abyss_Legion/army_Cult_Magister/army_Cult_Magister_an.json');
+        this.load.spritesheet('army_Sacrifice_Master', 'assets/units/Abyss_Legion/army_Sacrifice_Master/army_Sacrifice_Master.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Sacrifice_Master_an', 'assets/units/Abyss_Legion/army_Sacrifice_Master/army_Sacrifice_Master_an.json');
+        this.load.spritesheet('army_Succubus_Temptress', 'assets/units/Abyss_Legion/army_Succubus_Temptress/army_Succubus_Temptress.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Succubus_Temptress_an', 'assets/units/Abyss_Legion/army_Succubus_Temptress/army_Succubus_Temptress_an.json');
+        this.load.spritesheet('army_Veiled_Enchantress', 'assets/units/Abyss_Legion/army_Veiled_Enchantress/army_Veiled_Enchantress.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Veiled_Enchantress_an', 'assets/units/Abyss_Legion/army_Veiled_Enchantress/army_Veiled_Enchantress_an.json');
+        this.load.spritesheet('army_Abyssal_Prophet', 'assets/units/Abyss_Legion/army_Abyssal_Prophet/army_Abyssal_Prophet.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.json('army_Abyssal_Prophet_an', 'assets/units/Abyss_Legion/army_Abyssal_Prophet/army_Abyssal_Prophet_an.json');
+        this.load.spritesheet('army_blood_siren', 'assets/units/Abyss_Legion/army_blood_siren/army_blood_siren.png', { frameWidth: 160, frameHeight: 160 });
+        this.load.json('army_blood_siren_an', 'assets/units/Abyss_Legion/army_blood_siren/army_blood_siren_an.json');
     }
 
     create() {

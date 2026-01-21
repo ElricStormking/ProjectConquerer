@@ -77,7 +77,21 @@ export enum UnitType {
     ELF_ETHEREAL_WEAVER = 'elf_ethereal_weaver',
     ELF_GROVE_PETITIONER = 'elf_grove_petitioner',
     ELF_SOUL_LIGHT_BUTTERFLY = 'elf_soul_light_butterfly',
-    ELF_VITALITY_BONDER = 'elf_vitality_bonder'
+    ELF_VITALITY_BONDER = 'elf_vitality_bonder',
+    ABYSS_ABYSSAL_IMP = 'abyss_abyssal_imp',
+    ABYSS_DEMON_BRUTE = 'abyss_demon_brute',
+    ABYSS_GOREFIEND_CRUSHER = 'abyss_gorefiend_crusher',
+    ABYSS_ARCHDEMON = 'abyss_archdemon',
+    ABYSS_BALLISTA_FIEND = 'abyss_ballista_fiend',
+    ABYSS_HELLCANNON_BEHEMOTH = 'abyss_hellcannon_behemoth',
+    ABYSS_SUCCUBUS_TEMPTRESS = 'abyss_succubus_temptress',
+    ABYSS_CRIMSON_ACOLYTE = 'abyss_crimson_acolyte',
+    ABYSS_VEILED_ENCHANTRESS = 'abyss_veiled_enchantress',
+    ABYSS_BLOOD_SIREN = 'abyss_blood_siren',
+    ABYSS_CULT_MAGISTER = 'abyss_cult_magister',
+    ABYSS_ORACLE_ABYSS = 'abyss_oracle_abyss',
+    ABYSS_SACRIFICE_MASTER = 'abyss_sacrifice_master',
+    ABYSS_ABYSSAL_PROPHET = 'abyss_abyssal_prophet'
 }
 
 export interface UnitTemplate {

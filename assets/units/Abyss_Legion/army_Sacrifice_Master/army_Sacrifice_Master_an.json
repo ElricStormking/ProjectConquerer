@@ -1,0 +1,558 @@
+{
+    "anims": [
+        {
+            "key": "idle_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 4,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 5,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "idle_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 6,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 7,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 4,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 8,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 9,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 10,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 11,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 12,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 13,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 16,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 17,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 18,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 19,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 20,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 21,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 24,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 25,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 26,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 27,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 28,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 29,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "attack_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 32,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 33,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 34,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 35,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 36,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 37,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_up",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 40,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 41,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 42,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 43,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 44,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 45,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 46,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 47,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_left",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 48,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 49,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 50,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 51,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 52,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 53,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 54,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 55,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_down",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 56,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 57,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 58,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 59,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 60,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 61,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 62,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 63,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "walk_right",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 64,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 65,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 66,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 67,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 68,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 69,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 70,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 71,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        },
+        {
+            "key": "die",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 72,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 73,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 74,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 75,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "army_Sacrifice_Master",
+                    "frame": 76,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 8,
+            "skipMissedFrames": true,
+            "repeat": -1,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

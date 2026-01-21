@@ -1,0 +1,2 @@
+id,faction_id,name,image_key,max_hp,cell_size_width,cell_size_height,image_offset_x,image_offset_y,image_scale
+fortress_abyss_legion_01,abyss_legion,Abyssal Citadel,fortress_abyss_legion_01,1000,128,64,0,100,1

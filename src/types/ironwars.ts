@@ -5,7 +5,8 @@ export enum ResourceType {
     TACTICAL_ORDERS = 'tactical_orders',
     LIFEFORCE = 'lifeforce',
     SOULFROST = 'soulfrost',
-    BLOOD_FRENZY = 'blood_frenzy'
+    BLOOD_FRENZY = 'blood_frenzy',
+    CHAOS_ESSENCE = 'chaos_essence'
 }
 
 export enum CardType {

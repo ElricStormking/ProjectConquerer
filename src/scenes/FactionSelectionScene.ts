@@ -72,7 +72,7 @@ export class FactionSelectionScene extends Phaser.Scene {
         }
         
         // Only show supported factions
-        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion', 'elf_covenant']);
+        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion', 'elf_covenant', 'abyss_legion']);
         this.factions = this.factionRegistry.getAllFactions().filter(f => allowedFactions.has(f.id));
         if (this.factions.length === 0) {
             // Fallback if no factions loaded
@@ -517,7 +517,8 @@ export class FactionSelectionScene extends Phaser.Scene {
             jade_dynasty: 'fortress_jade_dynasty_01',
             frost_clan: 'fortress_frost_clan_01',
             triarch_dominion: 'fortress_triarch_dominion_01',
-            elf_covenant: 'fortress_elf_covenant_02'
+            elf_covenant: 'fortress_elf_covenant_02',
+            abyss_legion: 'fortress_abyss_legion_01'
         };
         const fortressKey = fortressKeyMap[factionId];
         if (fortressKey && this.textures.exists(fortressKey)) {
@@ -651,7 +652,8 @@ export class FactionSelectionScene extends Phaser.Scene {
             jade_dynasty: 'faction_bg_jade_dynasty',
             frost_clan: 'faction_bg_frost_clan',
             triarch_dominion: 'faction_bg_triarch_dominion',
-            elf_covenant: 'faction_bg_elf_covenant'
+            elf_covenant: 'faction_bg_elf_covenant',
+            abyss_legion: 'faction_bg_abyss_legion'
         };
         const bgKey = keyMap[factionId];
 
@@ -660,7 +662,8 @@ export class FactionSelectionScene extends Phaser.Scene {
             faction_bg_jade_dynasty: 'assets/faction_selection/faction_selection_jade_dynasty.png',
             faction_bg_frost_clan: 'assets/faction_selection/faction_selection_eternal_frost_clan.png',
             faction_bg_triarch_dominion: 'assets/faction_selection/faction_selection_triarch_dominion.png',
-            faction_bg_elf_covenant: 'assets/faction_selection/faction_selection_elf_covenant_01.png'
+            faction_bg_elf_covenant: 'assets/faction_selection/faction_selection_elf_covenant_01.png',
+            faction_bg_abyss_legion: 'assets/faction_selection/faction_selection_abyss_legion.png'
         };
 
         if (bgKey && !this.textures.exists(bgKey) && fileMap[bgKey] && !this.bgLoadInFlight.has(bgKey)) {

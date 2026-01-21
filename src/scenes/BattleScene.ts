@@ -78,6 +78,9 @@ export class BattleScene extends Phaser.Scene {
     private elfSquireLastGuard: Map<string, number> = new Map();
     private elfGrovePetitionerLastHeal: Map<string, number> = new Map();
     private etherealSlowStacks: Map<string, { stacks: number; expiresAt: number }> = new Map();
+    private abyssGorefiendArmorTick: Map<string, number> = new Map();
+    private abyssHellcannonRegenTick: Map<string, number> = new Map();
+    private abyssSacrificeTick: Map<string, number> = new Map();
     
     // Scene data passed from NodeEncounterSystem
     private encounterId: string = 'default';
@@ -206,6 +209,7 @@ export class BattleScene extends Phaser.Scene {
             this.updateJadeAuras();
             this.updateElfAuras(deltaSeconds);
             this.updateFrostAuras();
+            this.updateAbyssAuras(deltaSeconds);
             this.updateMedicHealing(this.time.now);
             this.cardSystem.update(this.time.now, deltaSeconds);
         }
@@ -976,13 +980,25 @@ export class BattleScene extends Phaser.Scene {
                 return;
             }
 
-            const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            const isCharmed = unit.hasStatusEffect?.(StatusEffect.CHARMED) ?? false;
+            const isFeared = unit.hasStatusEffect?.(StatusEffect.FEARED) ?? false;
+            const enemyTeam = isCharmed ? unit.getTeam() : (unit.getTeam() === 1 ? 2 : 1);
+            const enemies = this.unitManager
+                .getUnitsByTeam(enemyTeam)
+                .filter(e => e.getId?.() !== unit.getId?.());
             let targetPos: { x: number; y: number } | null = null;
 
             if (enemies.length > 0) {
                 let closestEnemy: any = null;
                 let closestDistance = Infinity;
-                enemies.forEach(enemy => {
+                let candidates = enemies;
+                if (unit.getConfig().unitType === UnitType.ABYSS_BLOOD_SIREN) {
+                    const charmed = candidates.filter(e => e.hasStatusEffect?.(StatusEffect.CHARMED));
+                    if (charmed.length > 0) {
+                        candidates = charmed;
+                    }
+                }
+                candidates.forEach(enemy => {
                     if (enemy.isDead()) return;
                     const distance = Phaser.Math.Distance.Between(
                         unit.getPosition().x, unit.getPosition().y,
@@ -997,7 +1013,7 @@ export class BattleScene extends Phaser.Scene {
                 if (closestEnemy) {
                     targetPos = closestEnemy.getPosition();
                 }
-            } else if (unit.getTeam() === 2) {
+            } else if (unit.getTeam() === 2 && !isCharmed) {
                 // When there are no player units left, enemy units should
                 // advance directly toward the fortress core at full speed.
                 targetPos = this.fortressCoreWorld;
@@ -1009,6 +1025,10 @@ export class BattleScene extends Phaser.Scene {
 
             let dxToTarget = targetPos.x - currentPos.x;
             let dyToTarget = targetPos.y - currentPos.y;
+            if (isFeared) {
+                dxToTarget *= -1;
+                dyToTarget *= -1;
+            }
             const distanceToTarget = Math.sqrt(dxToTarget * dxToTarget + dyToTarget * dyToTarget);
 
             const unitConfig = unit.getConfig();
@@ -1073,10 +1093,22 @@ export class BattleScene extends Phaser.Scene {
         units.forEach(unit => {
             if (unit.isDead()) return;
             if (!unit.canAttack(currentTime)) return;
+            if (unit.hasStatusEffect?.(StatusEffect.FEARED)) return;
 
-            const enemies = this.unitManager.getUnitsByTeam(unit.getTeam() === 1 ? 2 : 1);
+            const isCharmed = unit.hasStatusEffect?.(StatusEffect.CHARMED) ?? false;
+            const enemyTeam = isCharmed ? unit.getTeam() : (unit.getTeam() === 1 ? 2 : 1);
+            let enemies = this.unitManager
+                .getUnitsByTeam(enemyTeam)
+                .filter(e => e.getId?.() !== unit.getId?.());
             let targetEnemy = null;
             let closestDistance = unit.getRange();
+
+            if (unit.getConfig().unitType === UnitType.ABYSS_BLOOD_SIREN) {
+                const charmedTargets = enemies.filter(e => e.hasStatusEffect?.(StatusEffect.CHARMED));
+                if (charmedTargets.length > 0) {
+                    enemies = charmedTargets;
+                }
+            }
 
             enemies.forEach(enemy => {
                 if (enemy.isDead()) return;
@@ -1134,6 +1166,9 @@ export class BattleScene extends Phaser.Scene {
     private handleRangedAttack(attacker: any, target: any): void {
         const unitType = attacker.getConfig().unitType as UnitType;
         const now = this.time.now;
+        const enemyTeam = attacker.hasStatusEffect?.(StatusEffect.CHARMED)
+            ? attacker.getTeam()
+            : (attacker.getTeam() === 1 ? 2 : 1);
 
         if (unitType === UnitType.ELF_SOUL_LIGHT_BUTTERFLY) {
             attacker.setLastAttackTime(now);
@@ -1152,7 +1187,7 @@ export class BattleScene extends Phaser.Scene {
             const rawSkill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
             // Force cooldown-less usage so every attack is chain lightning
             const skill = rawSkill ? { ...rawSkill, cooldownMs: 0 } : undefined;
-            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
+            const enemies = this.unitManager.getUnitsByTeam(enemyTeam).filter((e: any) => !e.isDead());
 
             const buildChain = (): any[] => {
                 const chain: any[] = [target];
@@ -1200,10 +1235,14 @@ export class BattleScene extends Phaser.Scene {
         if (damage > 0) {
             this.combatSystem.dealDamage(attacker as any, target as any, damage);
         }
+        if (unitType === UnitType.ABYSS_HELLCANNON_BEHEMOTH) {
+            const selfDamage = Math.max(1, Math.round(attacker.getMaxHealth() * 0.05));
+            attacker.takeDamage(selfDamage);
+        }
 
         const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
         if (skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now)) {
-            const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
+            const enemies = this.unitManager.getUnitsByTeam(enemyTeam).filter((e: any) => !e.isDead());
             const center = target.getPosition();
 
             const buildChain = (): any[] => {
@@ -1242,10 +1281,10 @@ export class BattleScene extends Phaser.Scene {
             attacker.triggerSkill(skill, targets, this.time.now, this.combatSystem);
         } else {
             if (unitType === UnitType.FROST_PUTRID_ARCHER) {
-                this.applySlowCloud(target.getPosition(), attacker.getTeam());
+                this.applySlowCloud(target.getPosition(), enemyTeam);
             } else if (unitType === UnitType.FROST_AGONY_SCREAMER) {
                 const center = target.getPosition();
-                const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1);
+                const enemies = this.unitManager.getUnitsByTeam(enemyTeam);
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
                     const pos = enemy.getPosition();
@@ -1279,6 +1318,9 @@ export class BattleScene extends Phaser.Scene {
     private handleAetherPiercingAttack(attacker: any, target: any): void {
         const skill: any = attacker.getPrimarySkill ? attacker.getPrimarySkill() : undefined;
         const canPierce = skill && skill.trigger === 'on_attack' && attacker.canUseSkill?.(skill, this.time.now);
+        const enemyTeam = attacker.hasStatusEffect?.(StatusEffect.CHARMED)
+            ? attacker.getTeam()
+            : (attacker.getTeam() === 1 ? 2 : 1);
 
         if (!canPierce) {
             const damage = attacker.getDamage();
@@ -1308,7 +1350,7 @@ export class BattleScene extends Phaser.Scene {
         const rawMaxTargets = typeof skill.maxTargets === 'number' ? skill.maxTargets : Number(skill.maxTargets);
         const maxTargets = Number.isFinite(rawMaxTargets) && rawMaxTargets > 0 ? rawMaxTargets : 3;
 
-        const enemies = this.unitManager.getUnitsByTeam(attacker.getTeam() === 1 ? 2 : 1).filter((e: any) => !e.isDead());
+        const enemies = this.unitManager.getUnitsByTeam(enemyTeam).filter((e: any) => !e.isDead());
 
         // Pick targets along the shot line for piercing.
         const candidates: Array<{ unit: any; proj: number }> = [];
@@ -1484,8 +1526,8 @@ export class BattleScene extends Phaser.Scene {
         });
     }
 
-    private applySlowCloud(center: { x: number; y: number }, attackerTeam: number): void {
-        const enemies = this.unitManager.getUnitsByTeam(attackerTeam === 1 ? 2 : 1);
+    private applySlowCloud(center: { x: number; y: number }, enemyTeam: number): void {
+        const enemies = this.unitManager.getUnitsByTeam(enemyTeam);
         enemies.forEach(enemy => {
             if (enemy.isDead()) return;
             const pos = enemy.getPosition();
@@ -2226,6 +2268,72 @@ export class BattleScene extends Phaser.Scene {
         });
     }
 
+    private updateAbyssAuras(_deltaSeconds: number): void {
+        const now = this.time.now;
+        const allUnits = this.unitManager.getAllUnits();
+        allUnits.forEach(unit => {
+            const type = unit.getConfig().unitType as UnitType;
+            const team = unit.getTeam();
+            const pos = unit.getPosition();
+
+            if (type === UnitType.ABYSS_GOREFIEND_CRUSHER) {
+                const last = this.abyssGorefiendArmorTick.get(unit.getId()) ?? 0;
+                if (now - last > 1000) {
+                    const maxHp = unit.getMaxHealth();
+                    const hpPct = maxHp > 0 ? unit.getHealth() / maxHp : 1;
+                    const missingPct = Math.max(0, Math.min(1, 1 - hpPct));
+                    const armorMultiplier = 1 + missingPct * 0.6;
+                    unit.applyArmorModifier?.(armorMultiplier, 1200);
+                    this.abyssGorefiendArmorTick.set(unit.getId(), now);
+                }
+            } else if (type === UnitType.ABYSS_HELLCANNON_BEHEMOTH) {
+                const maxHp = unit.getMaxHealth();
+                const hpPct = maxHp > 0 ? unit.getHealth() / maxHp : 1;
+                if (hpPct < 0.5) {
+                    const last = this.abyssHellcannonRegenTick.get(unit.getId()) ?? 0;
+                    if (now - last > 1000) {
+                        const healAmount = Math.max(1, Math.round(maxHp * 0.02));
+                        unit.heal?.(healAmount);
+                        this.abyssHellcannonRegenTick.set(unit.getId(), now);
+                    }
+                }
+            } else if (type === UnitType.ABYSS_SACRIFICE_MASTER) {
+                const last = this.abyssSacrificeTick.get(unit.getId()) ?? 0;
+                if (now - last > 8000) {
+                    const allies = this.unitManager
+                        .getUnitsByTeam(team)
+                        .filter(a => a.getId() !== unit.getId() && !a.isDead());
+                    let target: any = null;
+                    let lowestPct = Infinity;
+                    allies.forEach(a => {
+                        const aPos = a.getPosition();
+                        const dist = Phaser.Math.Distance.Between(pos.x, pos.y, aPos.x, aPos.y);
+                        if (dist > 160) return;
+                        const maxHp = a.getMaxHealth();
+                        const hpPct = maxHp > 0 ? a.getHealth() / maxHp : 1;
+                        if (hpPct < lowestPct) {
+                            lowestPct = hpPct;
+                            target = a;
+                        }
+                    });
+                    if (target) {
+                        const sacrifice = Math.max(1, Math.floor(target.getMaxHealth() * 0.06));
+                        target.takeDamage(sacrifice);
+                        const healTargets = this.unitManager
+                            .getUnitsByTeam(team)
+                            .filter(a => !a.isDead())
+                            .filter(a => Phaser.Math.Distance.Between(pos.x, pos.y, a.getPosition().x, a.getPosition().y) <= 160);
+                        healTargets.forEach(a => {
+                            const healAmount = Math.max(1, Math.floor(a.getMaxHealth() * 0.06));
+                            a.heal?.(healAmount);
+                        });
+                        this.abyssSacrificeTick.set(unit.getId(), now);
+                    }
+                }
+            }
+        });
+    }
+
     private createProjectileAttackAgainstFortress(attackerUnit: any, unitType: UnitType) {
         const attackerPos = attackerUnit.getPosition();
         const targetPos = this.fortressCoreWorld;
@@ -2368,7 +2476,16 @@ export class BattleScene extends Phaser.Scene {
             UnitType.ELF_ETHEREAL_WEAVER,
             UnitType.ELF_GROVE_PETITIONER,
             UnitType.ELF_SOUL_LIGHT_BUTTERFLY,
-            UnitType.ELF_VITALITY_BONDER
+            UnitType.ELF_VITALITY_BONDER,
+            UnitType.ABYSS_BALLISTA_FIEND,
+            UnitType.ABYSS_HELLCANNON_BEHEMOTH,
+            UnitType.ABYSS_SUCCUBUS_TEMPTRESS,
+            UnitType.ABYSS_CRIMSON_ACOLYTE,
+            UnitType.ABYSS_VEILED_ENCHANTRESS,
+            UnitType.ABYSS_CULT_MAGISTER,
+            UnitType.ABYSS_ORACLE_ABYSS,
+            UnitType.ABYSS_SACRIFICE_MASTER,
+            UnitType.ABYSS_ABYSSAL_PROPHET
         ].includes(unitType);
     }
 
@@ -2386,7 +2503,13 @@ export class BattleScene extends Phaser.Scene {
             UnitType.ELF_ETHEREAL_WEAVER,
             UnitType.ELF_GROVE_PETITIONER,
             UnitType.ELF_SOUL_LIGHT_BUTTERFLY,
-            UnitType.ELF_VITALITY_BONDER
+            UnitType.ELF_VITALITY_BONDER,
+            UnitType.ABYSS_SUCCUBUS_TEMPTRESS,
+            UnitType.ABYSS_CRIMSON_ACOLYTE,
+            UnitType.ABYSS_VEILED_ENCHANTRESS,
+            UnitType.ABYSS_ORACLE_ABYSS,
+            UnitType.ABYSS_SACRIFICE_MASTER,
+            UnitType.ABYSS_ABYSSAL_PROPHET
         ].includes(unitType);
     }
 
@@ -2431,7 +2554,12 @@ export class BattleScene extends Phaser.Scene {
             UnitType.ELF_GUARDIAN_WORLD_TREE,
             UnitType.ELF_CHAMPION_GLADE,
             UnitType.ELF_EMERALD_VANGUARD,
-            UnitType.ELF_HALLOW_TREE_PALADIN
+            UnitType.ELF_HALLOW_TREE_PALADIN,
+            UnitType.ABYSS_ABYSSAL_IMP,
+            UnitType.ABYSS_DEMON_BRUTE,
+            UnitType.ABYSS_GOREFIEND_CRUSHER,
+            UnitType.ABYSS_ARCHDEMON,
+            UnitType.ABYSS_BLOOD_SIREN
         ].includes(unitType);
     }
 
@@ -2509,7 +2637,10 @@ export class BattleScene extends Phaser.Scene {
                 // Thunder Cannon: area-of-effect blast at the landing point.
                 const explosionCenter = targetPos;
                 const explosionRadius = 110;
-                const enemies = this.unitManager.getUnitsByTeam(attackerUnit.getTeam() === 1 ? 2 : 1);
+                const enemyTeam = attackerUnit.hasStatusEffect?.(StatusEffect.CHARMED)
+                    ? attackerUnit.getTeam()
+                    : (attackerUnit.getTeam() === 1 ? 2 : 1);
+                const enemies = this.unitManager.getUnitsByTeam(enemyTeam);
                 enemies.forEach(enemy => {
                     if (enemy.isDead()) return;
                     const pos = enemy.getPosition();

@@ -96,6 +96,15 @@ const FORTRESS_TEMPLATES: Record<string, Omit<IFortressConfig, 'cells'>> = {
         gridHeight: 5,
         maxHp: 540,
         abilities: ['verdant_aegis', 'soul_bloom']
+    },
+    fortress_abyss_legion_01: {
+        id: 'fortress_abyss_legion_01',
+        name: 'Abyssal Citadel',
+        factionId: 'abyss_legion',
+        gridWidth: 5,
+        gridHeight: 5,
+        maxHp: 560,
+        abilities: ['chaos_essence', 'blood_rites']
     }
 };
 
@@ -186,7 +195,8 @@ export class FactionRegistry extends Phaser.Events.EventEmitter {
             frost_clan: 0x74b9ff,         // Ice blue
             bloodfang_warborn: 0xc0392b,  // Blood red
             triarch_dominion: 0xd6c58b,   // Gold-white holy brass
-            elf_covenant: 0x4caf50        // Verdant emerald
+            elf_covenant: 0x4caf50,       // Verdant emerald
+            abyss_legion: 0x8b1a1a        // Crimson abyss
         };
         return colors[factionId] ?? 0x888888;
     }
