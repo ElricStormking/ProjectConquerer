@@ -3,6 +3,7 @@ import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { NodeEncounterSystem } from '../systems/NodeEncounterSystem';
 import { FactionRegistry } from '../systems/FactionRegistry';
 import { getFinalSlides, getStageIntroSlides, getStageOutroSlides } from '../data/StorySlides';
+import { RelicInventoryUI } from '../ui/RelicInventoryUI';
 import { IMapNode, IStageConfig } from '../types/ironwars';
 
 const MAP_WIDTH = 2400;
@@ -21,6 +22,7 @@ export class StageMapScene extends Phaser.Scene {
     private fortressToken?: Phaser.GameObjects.Image;
     private hudText?: Phaser.GameObjects.Text;
     private hudBg?: Phaser.GameObjects.Rectangle;
+    private relicInventory?: RelicInventoryUI;
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
     private loadSavedRun = false;
@@ -61,6 +63,7 @@ export class StageMapScene extends Phaser.Scene {
 
         this.createHud();
         this.createHudButtons();
+        this.createRelicInventory();
         this.registerRunEvents();
         this.renderCurrentStage();
         this.maybeShowStorySlides();
@@ -72,6 +75,8 @@ export class StageMapScene extends Phaser.Scene {
             this.events.off(Phaser.Scenes.Events.WAKE, this.onSceneWake, this);
             this.events.off(Phaser.Scenes.Events.RESUME, this.onSceneWake, this);
             this.stopStageBgm();
+            this.relicInventory?.destroy();
+            this.relicInventory = undefined;
         });
     }
 
@@ -103,7 +108,7 @@ export class StageMapScene extends Phaser.Scene {
     private createHudButton(x: number, y: number, label: string, callback: () => void): void {
         const container = this.add.container(x, y);
         container.setScrollFactor(0);
-        container.setDepth(100);
+        container.setDepth(240);
         
         const btnWidth = 120;
         const btnHeight = 40;
@@ -113,6 +118,7 @@ export class StageMapScene extends Phaser.Scene {
         bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
         bg.lineStyle(2, 0xd4a017, 1);
         bg.strokeRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 6);
+        bg.setScrollFactor(0);
         container.add(bg);
         
         const text = this.add.text(0, 0, label, {
@@ -121,6 +127,7 @@ export class StageMapScene extends Phaser.Scene {
             color: '#f0dba5',
             fontStyle: 'bold'
         }).setOrigin(0.5);
+        text.setScrollFactor(0);
         container.add(text);
         
         // Interactive on the button background instead of the container
@@ -148,6 +155,12 @@ export class StageMapScene extends Phaser.Scene {
         });
         
         bg.on('pointerup', callback);
+    }
+
+    private createRelicInventory(): void {
+        const { width } = this.cameras.main;
+        this.relicInventory?.destroy();
+        this.relicInventory = new RelicInventoryUI(this, width - 32, 110);
     }
 
     private openDeckBuilding(): void {
@@ -301,6 +314,7 @@ export class StageMapScene extends Phaser.Scene {
         this.runManager.on('stage-completed', this.onStageCompleted, this);
         this.runManager.on('run-completed', this.onRunCompleted, this);
         this.events.on('battle-failed', this.onBattleFailed, this);
+        this.events.on('node-resolved', this.onNodeResolved, this);
 
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.runManager.off('stage-entered', this.onStageEntered, this);
@@ -313,6 +327,7 @@ export class StageMapScene extends Phaser.Scene {
             this.runManager.off('stage-completed', this.onStageCompleted, this);
             this.runManager.off('run-completed', this.onRunCompleted, this);
             this.events.off('battle-failed', this.onBattleFailed, this);
+            this.events.off('node-resolved', this.onNodeResolved, this);
         });
     }
 
@@ -384,7 +399,12 @@ export class StageMapScene extends Phaser.Scene {
     }
 
     private onSceneWake(): void {
-        this.playStageBgm();
+        const stageIndex = this.runManager.getRunState()?.currentStageIndex ?? 0;
+        if (stageIndex !== this.currentStageIndex) {
+            this.renderCurrentStage();
+        } else {
+            this.playStageBgm();
+        }
         this.maybeShowStorySlides();
     }
 
@@ -483,11 +503,15 @@ export class StageMapScene extends Phaser.Scene {
         }
 
         this.storySlidesActive = true;
+        if (this.scene.isActive('StorySlidesScene') || this.scene.isSleeping('StorySlidesScene')) {
+            this.scene.stop('StorySlidesScene');
+        }
         this.scene.launch('StorySlidesScene', {
             slideKeys: slides,
             returnSceneKey: 'StageMapScene',
             onComplete: finalize
         });
+        this.scene.bringToTop('StorySlidesScene');
         this.scene.pause();
     }
 
@@ -678,6 +702,7 @@ export class StageMapScene extends Phaser.Scene {
         } else {
             this.renderCurrentStage();
         }
+        this.maybeShowStorySlides();
     };
 
     private onNodeSelected = (node?: IMapNode) => {
@@ -689,6 +714,16 @@ export class StageMapScene extends Phaser.Scene {
 
     private onNodeCompleted = () => {
         this.updateAllNodeStates();
+    };
+
+    private onNodeResolved = () => {
+        const stageIndex = this.runManager.getRunState()?.currentStageIndex ?? 0;
+        if (stageIndex !== this.currentStageIndex) {
+            this.renderCurrentStage();
+        } else {
+            this.updateAllNodeStates();
+        }
+        this.maybeShowStorySlides();
     };
 
     private onStageCompleted = (stage?: IStageConfig) => {

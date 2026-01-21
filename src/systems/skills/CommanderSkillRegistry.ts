@@ -9,6 +9,7 @@ import { SkyfallCataclysm, JudgmentOfTheDawn, GrandBombardment } from './Triarch
 import { DragonSpearBarrage, ShikigamiSummoning, ShadowCloneAmbush } from './JadeDynastySkills';
 import { SoulBlasphemy, SacrificialFeast, FleshLink } from './ForbiddenBloodlineSkills';
 import { Overgrowth, JudgmentOfWorldTree, SoulBond } from './ElfCovenantSkills';
+import { AbyssalDevastation, MassEnthrall, RiftOfTheAbyss } from './AbyssLegionSkills';
 
 export class CommanderSkillRegistry {
     private static instance: CommanderSkillRegistry;
@@ -52,16 +53,16 @@ export class CommanderSkillRegistry {
         this.register(new JudgmentOfWorldTree());
         this.register(new SoulBond());
 
+        // Abyss Legion
+        this.register(new AbyssalDevastation());
+        this.register(new MassEnthrall());
+        this.register(new RiftOfTheAbyss());
+
         // Legacy aliases for backward compatibility with older data/save files
         this.registerAlias('orbital_strike', 'grand_bombardment');
         this.registerAlias('dragon_spear_barrage', 'dragon_strike');
         this.registerAlias('shikigami_summoning', 'shikigami_ritual');
         this.registerAlias('shadow_clone_ambush', 'shadowstep_backroll');
-        // Abyss Legion aliases (reuse existing skill implementations for now)
-        this.registerAlias('abyssal_bloodlink', 'flesh_link');
-        this.registerAlias('crimson_veil', 'shadowstep_backroll');
-        this.registerAlias('abyssal_ritual', 'soul_blasphemy');
-        
         console.log('[CommanderSkillRegistry] Initialized with skills:', this.getAllSkillIds());
     }
 

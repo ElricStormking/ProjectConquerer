@@ -13,6 +13,9 @@ export { SoulBlasphemy, SacrificialFeast, FleshLink } from './ForbiddenBloodline
 // Elf Covenant Skills
 export { Overgrowth, JudgmentOfWorldTree, SoulBond } from './ElfCovenantSkills';
 
+// Abyss Legion Skills
+export { AbyssalDevastation, MassEnthrall, RiftOfTheAbyss } from './AbyssLegionSkills';
+
 import { CommanderSkillRegistry } from './CommanderSkillRegistry';
 
 /**

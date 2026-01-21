@@ -102,8 +102,14 @@ export interface UnitTemplate {
     size: 'small' | 'normal' | 'large';
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
     /**
-     * How many copies of this unit a deployment card should spawn during
-     * the preparation phase. If undefined, falls back to the legacy default.
+     * How many copies of this unit to spawn on the initial placement.
+     * If undefined, falls back to spawnAmount or legacy default.
+     */
+    initialSpawn?: number;
+    /**
+     * How many copies of this unit a deployment card should spawn for
+     * non-initial spawns (enhancements, restores). If undefined, falls back
+     * to the legacy default.
      */
     spawnAmount?: number;
     spriteScale?: number;

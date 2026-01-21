@@ -18,6 +18,7 @@ export class RelicInventoryUI {
         this.scene = scene;
         this.container = scene.add.container(x, y);
         this.container.setDepth(8000);
+        this.container.setScrollFactor(0);
 
         this.relicManager.on('relic-added', (config: IRelicConfig) => this.addRelicIcon(config));
         this.relicManager.on('relic-removed', (config: IRelicConfig) => this.removeRelicIcon(config.id));

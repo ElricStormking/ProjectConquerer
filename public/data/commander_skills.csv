@@ -11,6 +11,6 @@ soul_bond,Soul Bond,Links allies to share damage and grant lifesteal,elf_covenan
 skyfall_cataclysm,Skyfall Cataclysm,Lightning storm with vortex pull,triarch_dominion,160,4000,0,12,6,150,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,0.2,0,0,0,0,0,0,0,0
 judgment_of_the_dawn,Judgment of the Dawn,Holy explosion with stun cleanse and shields,triarch_dominion,140,0,45,0,0,0,0,1500,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.15,6000,0.25,5000,0,0,0,0,0,0,0,0,0,0,0
 grand_bombardment,Grand Bombardment Protocol,Artillery strike after telegraph,triarch_dominion,180,0,0,35,5,500,60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,3000,5,500,35,80,0,0,0,0,0
-abyssal_bloodlink,Abyssal Bloodlink,Share damage and shield allies,abyss_legion
-crimson_veil,Crimson Veil,Illusionary strike and taunt burst,abyss_legion
-abyssal_ritual,Abyssal Ritual,Corruptive ritual zone of decay,abyss_legion
+abyssal_bloodlink,Abyssal Devastation,AoE smash that fears enemies and siphons life,abyss_legion,160,,60,,,,,1200,,,,,,,,,,,,,,,,,,,,,,,,,,,0.25,,,,
+crimson_veil,Mass Enthrall,Cone charm with illusory succubi,abyss_legion,220,2200,,,,,,,,,,,,2,8000,90,,,,,,,,,,,,,,,,,,,,,,,,,
+abyssal_ritual,Rift of the Abyss,Chaos rift that damages and spawns imps,abyss_legion,180,8000,,,,,,,,,,,,1,8000,110,,,,,,,,,,,,,,,,,,,,,500,12,,

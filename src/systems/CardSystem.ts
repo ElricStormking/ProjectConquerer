@@ -184,7 +184,8 @@ export class CardSystem {
             }
             
             if (cell.occupantType && cell.occupantType === targetId) {
-                if ((cell.enhancementLevel || 0) < 3) {
+                const currentLevel = cell.enhancementLevel || 0;
+                if (currentLevel < 3) {
                     console.log(`[CardSystem] Merging card for enhancement at (${gridX}, ${gridY})`);
                     if (this.gameState.spendResource(card.cost)) {
                         this.enhanceEntity(cell, card);
@@ -192,6 +193,21 @@ export class CardSystem {
                         return true;
                     } else {
                         console.log('[CardSystem] ❌ Not enough resources for enhancement');
+                        return false;
+                    }
+                } else if (card.type === CardType.UNIT && card.unitId) {
+                    console.log(`[CardSystem] Max enhancement reached, reinforcing unit at (${gridX}, ${gridY})`);
+                    if (this.gameState.spendResource(card.cost)) {
+                        const statMultiplier = Math.pow(1.5, Math.max(1, currentLevel));
+                        const placed = this.spawnUnitCard(card.unitId, gridX, gridY, statMultiplier, currentLevel);
+                        if (placed) {
+                            this.deckSystem.discard(card.id);
+                            return true;
+                        }
+                        this.gameState.gainResource(card.cost);
+                        return false;
+                    } else {
+                        console.log('[CardSystem] ❌ Not enough resources for reinforcement');
                         return false;
                     }
                 } else {
@@ -212,7 +228,7 @@ export class CardSystem {
         let success = false;
         switch (card.type) {
             case CardType.UNIT:
-                success = this.spawnUnitCard(card.unitId, gridX, gridY);
+                success = this.spawnUnitCard(card.unitId, gridX, gridY, 1, 0, true);
                 break;
             case CardType.SPELL:
                 success = this.castSpell(card.spellEffectId, gridX, gridY);
@@ -403,7 +419,8 @@ export class CardSystem {
         gridX: number,
         gridY: number,
         statMultiplier: number = 1,
-        batchIndex: number = 0
+        batchIndex: number = 0,
+        useInitialSpawn: boolean = false
     ): boolean {
         if (!unitId) return false;
 
@@ -423,7 +440,10 @@ export class CardSystem {
 
         // Spawn logic using unit template
         const worldPos = this.fortressSystem.gridToWorld(gridX, gridY);
-        const spawnCount = Math.max(1, unitTemplate.spawnAmount ?? 3);
+        const baseSpawn = useInitialSpawn
+            ? unitTemplate.initialSpawn ?? unitTemplate.spawnAmount
+            : unitTemplate.spawnAmount;
+        const spawnCount = Math.max(1, baseSpawn ?? 3);
         const cellSize = this.fortressSystem.getCellDimensions();
         const offsets = this.getSpawnOffsets(spawnCount, cellSize, batchIndex);
 

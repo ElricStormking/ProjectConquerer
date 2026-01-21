@@ -22,6 +22,8 @@ export class UIScene extends Phaser.Scene {
     private startButtonLabel!: Phaser.GameObjects.Text;
     private commanderCooldown = 0;
     private lastCommanderCast = 0;
+    private startButtonLocked = false;
+    private lastPhase = 'PREPARATION';
 
     constructor() {
         super({ key: 'UIScene' });
@@ -39,6 +41,7 @@ export class UIScene extends Phaser.Scene {
         this.handManager.setCards(state.hand);
         this.updateStateTexts(state);
         this.updateLivesText();
+        this.updateStartButtonVisibility(state.phase);
     }
 
     public update() {
@@ -124,6 +127,15 @@ export class UIScene extends Phaser.Scene {
         this.startButtonLabel = label;
     }
 
+    private updateStartButtonVisibility(phase?: string) {
+        if (phase) {
+            this.lastPhase = phase;
+        }
+        const visible = this.lastPhase === 'PREPARATION' && !this.startButtonLocked;
+        this.startButton.setVisible(visible);
+        this.startButtonLabel.setVisible(visible);
+    }
+
     private registerBattleEvents() {
         this.battleScene.events.on('hand-updated', (payload: { hand: ICard[] }) => {
             this.handManager.setCards(payload.hand);
@@ -135,10 +147,12 @@ export class UIScene extends Phaser.Scene {
 
         this.battleScene.events.on('phase-changed', (phase: string) => {
             this.phaseText.setText(phase);
-            // Only show Start button when in a building/transition phase
-            const visible = phase === 'PREPARATION' || phase === 'WAVE_COMPLETE';
-            this.startButton.setVisible(visible);
-            this.startButtonLabel.setVisible(visible);
+            this.updateStartButtonVisibility(phase);
+        });
+
+        this.battleScene.events.on('wave-intermission-lock', (locked: boolean) => {
+            this.startButtonLocked = locked;
+            this.updateStartButtonVisibility();
         });
 
         this.battleScene.events.on('commander-cast', (payload: { cooldown: number; lastCast: number }) => {

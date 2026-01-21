@@ -120,7 +120,7 @@ export class NodeEncounterSystem {
             this.runManager.healFortress(nodeCompleteContext.fortressHealBonus as number);
         }
 
-        const cardChoices = this.generateCardChoices(node.rewardTier);
+        const cardChoices = this.generateRosterCardChoices(node.rewardTier);
         let goldReward = node.rewardTier * 50;
         goldReward = this.relicManager.applyGoldModifier(goldReward);
 
@@ -328,6 +328,7 @@ export class NodeEncounterSystem {
         if (!latest?.isCompleted) {
             this.runManager.completeNode(node.id);
         }
+        this.runManager.finalizePendingStageCompletion();
         this.resolving = false;
         this.hostScene.events.emit('node-resolved', latest ?? node);
     }
@@ -338,6 +339,23 @@ export class NodeEncounterSystem {
         const filtered = cards.filter(card => card.rarity === rarity);
         const pool = filtered.length > 0 ? filtered : cards;
         return Phaser.Utils.Array.Shuffle([...pool]).slice(0, 3);
+    }
+
+    private generateRosterCardChoices(tier: number, count: number = 3): ICard[] {
+        const rarity = tier <= 1 ? 'common' : tier === 2 ? 'rare' : 'epic';
+        const roster = this.runManager.getCommanderRoster();
+        const rosterCards = this.commanderManager.getCardsForCommanders(roster);
+        if (rosterCards.length === 0) {
+            console.warn('[NodeEncounterSystem] No roster cards available for battle reward.');
+            return [];
+        }
+        const filtered = rosterCards.filter(card => card.rarity === rarity);
+        const pool = filtered.length > 0 ? filtered : rosterCards;
+        const cardOptions = Phaser.Utils.Array.Shuffle([...pool]).slice(0, count);
+        while (cardOptions.length < count) {
+            cardOptions.push(Phaser.Utils.Array.GetRandom(pool));
+        }
+        return cardOptions;
     }
 
     private buildShopInventory(tier: number): {

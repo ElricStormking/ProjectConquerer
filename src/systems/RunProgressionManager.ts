@@ -34,6 +34,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     private nodeGraph: Map<string, IMapNode> = new Map();
     private inboundEdges: Map<string, string[]> = new Map();
     private difficultyLevel = 0;
+    private pendingStageCompletionIndex?: number;
 
     private constructor() {
         super();
@@ -457,10 +458,18 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.emit('node-completed', this.getNodeSnapshot(nodeId));
 
         if (node.type === NodeType.BOSS) {
-            this.handleStageCompletion(node.stageIndex);
+            this.pendingStageCompletionIndex = node.stageIndex;
+            return;
         } else {
             this.updateNodeAccessibility();
         }
+    }
+
+    public finalizePendingStageCompletion(): void {
+        if (this.pendingStageCompletionIndex === undefined) return;
+        const stageIndex = this.pendingStageCompletionIndex;
+        this.pendingStageCompletionIndex = undefined;
+        this.handleStageCompletion(stageIndex);
     }
 
     public addCardToRunDeck(card: ICard): void {

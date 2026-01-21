@@ -105,6 +105,17 @@ export class DataManager {
                 typeof parsedSpawnAmount === 'number' && Number.isFinite(parsedSpawnAmount) && parsedSpawnAmount > 0
                     ? parsedSpawnAmount
                     : undefined;
+            const rawInitialSpawn = row.initial_spawn;
+            const parsedInitialSpawn =
+                typeof rawInitialSpawn === 'number'
+                    ? rawInitialSpawn
+                    : rawInitialSpawn !== undefined && rawInitialSpawn !== null && rawInitialSpawn !== ''
+                    ? Number(rawInitialSpawn)
+                    : undefined;
+            const initialSpawn =
+                typeof parsedInitialSpawn === 'number' && Number.isFinite(parsedInitialSpawn) && parsedInitialSpawn > 0
+                    ? parsedInitialSpawn
+                    : undefined;
 
             const template: UnitTemplate = {
                 type: id as UnitType, // Casting to UnitType, assuming CSV IDs match enum
@@ -113,6 +124,7 @@ export class DataManager {
                 unitClass: row.role, // 'frontline' | 'ranged' | 'support' | 'siege' | 'summoner'
                 size: row.size, // 'small' | 'normal' | 'large'
                 rarity: row.rarity,
+                initialSpawn,
                 spawnAmount,
                 spriteScale: row.sprite_scale ? Number(row.sprite_scale) : undefined,
                 spriteOffsetY: row.sprite_offset_y ? Number(row.sprite_offset_y) : undefined,

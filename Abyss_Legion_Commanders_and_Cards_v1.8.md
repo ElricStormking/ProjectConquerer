@@ -33,8 +33,40 @@ Baelgor – melee sustain commander
 Lilithra – charm & control commander  
 Zha’Korr – ritual & sacrifice commander  
 
-(Commander skills unchanged from v1.6)
+## 👑 Commander 1 – Baelgor the Worldbreaker
+Role: Demon Warlord / Frontline Brute / Regeneration
 
+Passive – Endless Carnage  
+- Kills trigger AoE regeneration and damage stacks
+
+Active – Abyssal Devastation  
+- AoE smash, fear, lifesteal
+
+---
+
+## 💋 Commander 2 – Lilithra the Crimson Temptress
+Role: Succubus Queen / Charm / Control
+
+Passive – Whispers of Corruption  
+- Debuffs enemies near succubi
+
+Active – Mass Enthrall  
+- Cone charm, illusion summons
+
+---
+
+## 🔮 Commander 3 – Zha’Korr the Abyssal Magister
+(formerly Abyssal Archmage)
+
+Role: Cult Leader / Chaos Mage / Summoner
+
+Passive – Chaotic Doctrine  
+- Cultist spells apply Corruption
+
+Active – Rift of the Abyss  
+- Chaos damage, Imp spawning rift
+
+---
 ---
 
 # 4. UNIT CARDS (14)

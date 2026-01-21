@@ -1,6 +1,6 @@
 id,name,resource_type,fortress_id,starting_commander_id,emblem_key,description
 cog_dominion,Cog Dominion,profit,iron_citadel,commander_valen,emblem_cog,Masters of steam and steel. Their mechanized forces excel at sustained warfare.
-jade_dynasty,Jade Dynasty,chi_flow,jade_palace,commander_wei,emblem_jade,Ancient warriors channeling inner chi. Swift strikes and flowing combat.
+jade_dynasty,Jade Dynasty,chi_flow,fortress_jade_dynasty_01,commander_wei,emblem_jade,Ancient warriors channeling inner chi. Swift strikes and flowing combat.
 republic_virel,Republic of Virel,tactical_orders,virel_bastion,commander_marcus,emblem_virel,Disciplined legions using coordinated tactics and strategic positioning.
 verdant_covenant,Verdant Covenant,lifeforce,grove_heart,commander_sylva,emblem_verdant,Nature's guardians commanding beasts and regenerative magic.
 frost_clan,Eternal Frost Clan,soulfrost,fortress_frost_clan_01,commander_bjorn,emblem_frost,Northern warriors drawing power from the cold embrace of death.

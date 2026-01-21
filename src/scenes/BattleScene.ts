@@ -92,6 +92,14 @@ export class BattleScene extends Phaser.Scene {
     /**
      * Simple modal shown between waves. Blocks input until player clicks to continue.
      */
+    private setWaveIntermissionLock(locked: boolean): void {
+        if (this.waveIntermissionCameraLock === locked) {
+            return;
+        }
+        this.waveIntermissionCameraLock = locked;
+        this.events.emit('wave-intermission-lock', locked);
+    }
+
     private showWaveClearedOverlay(onContinue: () => void): void {
         const { width, height } = this.cameras.main;
         const container = this.add.container(width / 2, height / 2);
@@ -100,7 +108,7 @@ export class BattleScene extends Phaser.Scene {
         // Hide and disable the start button while the intermission UI is active.
         this.startButton?.setVisible(false);
         this.startButtonBg?.disableInteractive();
-        this.waveIntermissionCameraLock = true;
+        this.setWaveIntermissionLock(true);
 
         const bg = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0.5);
         bg.setInteractive();
@@ -568,7 +576,7 @@ export class BattleScene extends Phaser.Scene {
                 // Between waves, return to a full building phase so the
                 // player can adjust their fortress and play additional
                 // cards before the next fight.
-                this.waveIntermissionCameraLock = true; // keep camera at center until reward is done
+                this.setWaveIntermissionLock(true); // keep camera at center until reward is done
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
                 this.resetAlliedUnitsToSpawnPositions();
@@ -701,10 +709,10 @@ export class BattleScene extends Phaser.Scene {
 
             this.scene.stop('CardRewardScene');
 
-            this.showStartButton('Start Next Wave');
             // Release camera lock and return to fortress view
-            this.waveIntermissionCameraLock = false;
+            this.setWaveIntermissionLock(false);
             this.updateCameraForPhase('PREPARATION');
+            this.showStartButton('Start Next Wave');
         });
     }
 
