@@ -300,6 +300,9 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_triarch_field_command_post', `${triarchBuildingCardPath}Field_Command_Post.png`);
         this.load.image('card_triarch_healing_beacon', `${triarchBuildingCardPath}Healing_Beacon.png`);
         this.load.image('card_triarch_cannon_turret', `${triarchBuildingCardPath}Cannon_Turret.png`);
+        this.load.image('card_triarch_lightbringer_tower', `${triarchBuildingCardPath}Lightbringer_Tower.png`);
+        this.load.image('card_triarch_machine_gun_nest', `${triarchBuildingCardPath}Machine_Gun_Nest.png`);
+        this.load.image('card_triarch_aether_tower', `${triarchBuildingCardPath}Aether_Tower.png`);
         this.load.image('card_triarch_storm_generator', `${triarchBuildingCardPath}Storm_Generator.png`);
 
         // Elf Covenant card art (units / structures)

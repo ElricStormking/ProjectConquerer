@@ -20,10 +20,82 @@ export class UIScene extends Phaser.Scene {
     private fpsText!: Phaser.GameObjects.Text;
     private startButton!: Phaser.GameObjects.Rectangle;
     private startButtonLabel!: Phaser.GameObjects.Text;
+    private junkTraderZone?: Phaser.GameObjects.Rectangle;
+    private junkTraderLabel?: Phaser.GameObjects.Text;
+    private junkTraderHint?: Phaser.GameObjects.Text;
+    private junkTraderTag?: Phaser.GameObjects.Text;
+    private junkTraderBounds?: Phaser.Geom.Rectangle;
+    private junkTraderEnabled = true;
+    private junkTraderHighlighted = false;
     private commanderCooldown = 0;
     private lastCommanderCast = 0;
     private startButtonLocked = false;
     private lastPhase = 'PREPARATION';
+    private readonly junkTraderValue = 20;
+    private battleEventsBound = false;
+
+    private readonly handleHandUpdated = (payload: { hand: ICard[] }) => {
+        this.handManager.setCards(payload.hand);
+    };
+
+    private readonly handleStateUpdated = (state: IGameState) => {
+        this.updateStateTexts(state);
+    };
+
+    private readonly handlePhaseChanged = (phase: string) => {
+        this.phaseText.setText(phase);
+        this.updateStartButtonVisibility(phase);
+        this.setJunkTraderEnabled(phase === 'PREPARATION');
+    };
+
+    private readonly handleWaveIntermissionLock = (locked: boolean) => {
+        this.startButtonLocked = locked;
+        this.updateStartButtonVisibility();
+    };
+
+    private readonly handleCardDrag = (payload: { screenX: number; screenY: number }) => {
+        if (!this.junkTraderEnabled) {
+            return;
+        }
+        this.setJunkTraderHighlight(this.isPointerOverJunkTrader(payload.screenX, payload.screenY));
+    };
+
+    private readonly handleCardDragEnd = () => {
+        this.setJunkTraderHighlight(false);
+    };
+
+    private readonly handleCardDrop = (payload: { card: ICard; screenX: number; screenY: number }) => {
+        const shouldSell = this.junkTraderEnabled && this.isPointerOverJunkTrader(payload.screenX, payload.screenY);
+        this.setJunkTraderHighlight(false);
+        if (shouldSell) {
+            this.battleScene.events.emit('ui:card-sell', payload);
+            this.flashJunkTrader();
+            return;
+        }
+        this.battleScene.events.emit('ui:card-play', payload);
+    };
+
+    private readonly handleCommanderCast = (payload: { cooldown: number; lastCast: number }) => {
+        this.commanderCooldown = payload.cooldown;
+        this.lastCommanderCast = payload.lastCast;
+        this.tweens.add({
+            targets: this.commanderText,
+            alpha: { from: 1, to: 0.2 },
+            yoyo: true,
+            repeat: 1,
+            duration: 80
+        });
+    };
+
+    private readonly handleBattleVictory = () => {
+        this.phaseText.setText('Victory');
+        this.commanderText.setText('Playtest ready');
+    };
+
+    private readonly handleBattleDefeat = () => {
+        this.phaseText.setText('Defeat');
+        this.commanderText.setText('Fortress destroyed');
+    };
 
     constructor() {
         super({ key: 'UIScene' });
@@ -35,6 +107,7 @@ export class UIScene extends Phaser.Scene {
         this.relicInventoryUI = new RelicInventoryUI(this, 1870, 160);
         this.createTopHud();
         this.createStartButton();
+        this.createJunkTrader();
         this.registerBattleEvents();
         this.registerRunEvents();
         const state = GameStateManager.getInstance().getState();
@@ -42,6 +115,7 @@ export class UIScene extends Phaser.Scene {
         this.updateStateTexts(state);
         this.updateLivesText();
         this.updateStartButtonVisibility(state.phase);
+        this.setJunkTraderEnabled(state.phase === 'PREPARATION');
     }
 
     public update() {
@@ -127,6 +201,46 @@ export class UIScene extends Phaser.Scene {
         this.startButtonLabel = label;
     }
 
+    private createJunkTrader() {
+        const size = 100;
+        const x = 80;
+        const y = 860;
+
+        const zone = this.add.rectangle(x, y, size, size, 0x10141f, 0.85)
+            .setOrigin(0.5)
+            .setStrokeStyle(2, 0x6b7280, 0.9);
+        const tag = this.add.text(x, y - 14, 'JUNK', {
+            fontSize: '18px',
+            color: '#e2e8f0',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        const label = this.add.text(x, y + 6, 'TRADER', {
+            fontSize: '14px',
+            color: '#9aa6b2'
+        }).setOrigin(0.5);
+        const hint = this.add.text(x, y + 28, `+${this.junkTraderValue}g`, {
+            fontSize: '16px',
+            color: '#ffd27d',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        zone.setScrollFactor(0);
+        tag.setScrollFactor(0);
+        label.setScrollFactor(0);
+        hint.setScrollFactor(0);
+
+        zone.setDepth(6500);
+        tag.setDepth(6501);
+        label.setDepth(6501);
+        hint.setDepth(6501);
+
+        this.junkTraderZone = zone;
+        this.junkTraderTag = tag;
+        this.junkTraderLabel = label;
+        this.junkTraderHint = hint;
+        this.junkTraderBounds = new Phaser.Geom.Rectangle(x - size / 2, y - size / 2, size, size);
+    }
+
     private updateStartButtonVisibility(phase?: string) {
         if (phase) {
             this.lastPhase = phase;
@@ -137,44 +251,64 @@ export class UIScene extends Phaser.Scene {
     }
 
     private registerBattleEvents() {
-        this.battleScene.events.on('hand-updated', (payload: { hand: ICard[] }) => {
-            this.handManager.setCards(payload.hand);
-        });
+        if (this.battleEventsBound) {
+            return;
+        }
+        this.battleEventsBound = true;
 
-        this.battleScene.events.on('state-updated', (state: IGameState) => {
-            this.updateStateTexts(state);
-        });
+        this.battleScene.events.on('hand-updated', this.handleHandUpdated);
+        this.battleScene.events.on('state-updated', this.handleStateUpdated);
+        this.battleScene.events.on('phase-changed', this.handlePhaseChanged);
+        this.battleScene.events.on('wave-intermission-lock', this.handleWaveIntermissionLock);
+        this.battleScene.events.on('ui:card-drag', this.handleCardDrag);
+        this.battleScene.events.on('ui:card-drag-end', this.handleCardDragEnd);
+        this.battleScene.events.on('ui:card-drop', this.handleCardDrop);
+        this.battleScene.events.on('commander-cast', this.handleCommanderCast);
+        this.battleScene.events.on('battle-victory', this.handleBattleVictory);
+        this.battleScene.events.on('battle-defeat', this.handleBattleDefeat);
+    }
 
-        this.battleScene.events.on('phase-changed', (phase: string) => {
-            this.phaseText.setText(phase);
-            this.updateStartButtonVisibility(phase);
-        });
+    private isPointerOverJunkTrader(x: number, y: number): boolean {
+        if (!this.junkTraderBounds) {
+            return false;
+        }
+        return this.junkTraderBounds.contains(x, y);
+    }
 
-        this.battleScene.events.on('wave-intermission-lock', (locked: boolean) => {
-            this.startButtonLocked = locked;
-            this.updateStartButtonVisibility();
-        });
+    private setJunkTraderHighlight(active: boolean): void {
+        if (!this.junkTraderZone || this.junkTraderHighlighted === active) {
+            return;
+        }
+        this.junkTraderHighlighted = active;
+        const fill = active ? 0x1f2a3a : 0x10141f;
+        const stroke = active ? 0x4fc3f7 : 0x6b7280;
+        const alpha = active ? 0.95 : 0.85;
+        this.junkTraderZone.setFillStyle(fill, alpha);
+        this.junkTraderZone.setStrokeStyle(2, stroke, active ? 1 : 0.9);
+    }
 
-        this.battleScene.events.on('commander-cast', (payload: { cooldown: number; lastCast: number }) => {
-            this.commanderCooldown = payload.cooldown;
-            this.lastCommanderCast = payload.lastCast;
-            this.tweens.add({
-                targets: this.commanderText,
-                alpha: { from: 1, to: 0.2 },
-                yoyo: true,
-                repeat: 1,
-                duration: 80
-            });
-        });
+    private setJunkTraderEnabled(enabled: boolean): void {
+        this.junkTraderEnabled = enabled;
+        const alpha = enabled ? 1 : 0.4;
+        this.junkTraderZone?.setAlpha(alpha);
+        this.junkTraderLabel?.setAlpha(alpha);
+        this.junkTraderHint?.setAlpha(alpha);
+        this.junkTraderTag?.setAlpha(alpha);
+        if (!enabled) {
+            this.setJunkTraderHighlight(false);
+        }
+    }
 
-        this.battleScene.events.on('battle-victory', () => {
-            this.phaseText.setText('Victory');
-            this.commanderText.setText('Playtest ready');
-        });
-
-        this.battleScene.events.on('battle-defeat', () => {
-            this.phaseText.setText('Defeat');
-            this.commanderText.setText('Fortress destroyed');
+    private flashJunkTrader(): void {
+        if (!this.junkTraderZone) {
+            return;
+        }
+        this.tweens.add({
+            targets: this.junkTraderZone,
+            alpha: { from: 1, to: 0.35 },
+            yoyo: true,
+            repeat: 1,
+            duration: 80
         });
     }
 
@@ -186,6 +320,9 @@ export class UIScene extends Phaser.Scene {
     }
 
     private updateStateTexts(state: IGameState) {
+        if (!this.goldText || !this.goldText.active) {
+            return;
+        }
         this.profitText.setText(`PROFIT ${state.factionResource}`);
         this.goldText.setText(`GOLD ${state.gold}`);
         this.fortressText.setText(`FORTRESS ${state.fortressHp} / ${state.fortressMaxHp}`);
@@ -218,5 +355,26 @@ export class UIScene extends Phaser.Scene {
             this.relicInventoryUI.destroy();
             this.relicInventoryUI = null;
         }
+        if (this.battleEventsBound) {
+            this.battleScene?.events.off('hand-updated', this.handleHandUpdated);
+            this.battleScene?.events.off('state-updated', this.handleStateUpdated);
+            this.battleScene?.events.off('phase-changed', this.handlePhaseChanged);
+            this.battleScene?.events.off('wave-intermission-lock', this.handleWaveIntermissionLock);
+            this.battleScene?.events.off('ui:card-drag', this.handleCardDrag);
+            this.battleScene?.events.off('ui:card-drag-end', this.handleCardDragEnd);
+            this.battleScene?.events.off('ui:card-drop', this.handleCardDrop);
+            this.battleScene?.events.off('commander-cast', this.handleCommanderCast);
+            this.battleScene?.events.off('battle-victory', this.handleBattleVictory);
+            this.battleScene?.events.off('battle-defeat', this.handleBattleDefeat);
+            this.battleEventsBound = false;
+        }
+        this.junkTraderZone?.destroy();
+        this.junkTraderLabel?.destroy();
+        this.junkTraderHint?.destroy();
+        this.junkTraderTag?.destroy();
+        this.junkTraderZone = undefined;
+        this.junkTraderLabel = undefined;
+        this.junkTraderHint = undefined;
+        this.junkTraderTag = undefined;
     }
 }

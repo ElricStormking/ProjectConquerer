@@ -28,6 +28,7 @@ export class CardSystem {
         hpBar: Phaser.GameObjects.Graphics;
         occupantId: string;
         effectId?: string;
+        shotsFired?: number;
     }> = [];
 
     private healingBeacons: Array<{
@@ -629,7 +630,12 @@ export class CardSystem {
             effectId === 'cannon_shoot' ||
             effectId === 'jade_archer_volley' ||
             effectId === 'elf_sun_crystal_spire' ||
-            effectId === 'elf_living_vine_wall'
+            effectId === 'elf_living_vine_wall' ||
+            effectId === 'abyss_corruption_tower' ||
+            effectId === 'triarch_lightbringer_tower' ||
+            effectId === 'triarch_machine_gun_nest' ||
+            effectId === 'triarch_aether_tower' ||
+            effectId === 'torment_spire'
         ) {
             const baseHp = Number(config?.max_hp) || 200;
             const baseDamage =
@@ -641,13 +647,38 @@ export class CardSystem {
                             ? 32
                             : effectId === 'elf_living_vine_wall'
                                 ? 0
+                                : effectId === 'abyss_corruption_tower'
+                                    ? 20
+                                    : effectId === 'triarch_lightbringer_tower'
+                                        ? 34
+                                        : effectId === 'triarch_machine_gun_nest'
+                                            ? 10
+                                            : effectId === 'triarch_aether_tower'
+                                                ? 26
+                                                : effectId === 'torment_spire'
+                                                    ? 14
                                 : 40;
             const cooldownMs =
                 effectId === 'jade_archer_volley'
                     ? 900
                     : effectId === 'elf_sun_crystal_spire'
                         ? 1800
+                        : effectId === 'abyss_corruption_tower'
+                            ? 1400
+                            : effectId === 'triarch_lightbringer_tower'
+                                ? 2500
+                                : effectId === 'triarch_machine_gun_nest'
+                                    ? 350
+                                    : effectId === 'triarch_aether_tower'
+                                        ? 2000
+                                        : effectId === 'torment_spire'
+                                            ? 1600
                         : 2000;
+            const { width: cellWidth } = this.fortressSystem.getCellDimensions();
+            const rangeOverride =
+                effectId === 'abyss_corruption_tower'
+                    ? cellWidth * 6.5
+                    : undefined;
             this.createTurretStructure(
                 worldPos.x,
                 worldPos.y,
@@ -658,6 +689,7 @@ export class CardSystem {
                 baseHp,
                 baseDamage,
                 cooldownMs,
+                rangeOverride,
                 effectId
             );
             return true;
@@ -1489,6 +1521,7 @@ export class CardSystem {
         baseHp: number,
         baseDamage: number,
         cooldownMs: number = 2000,
+        rangeOverride?: number,
         effectId?: string
     ): void {
         const body = this.scene.add.image(x, y, textureKey);
@@ -1520,14 +1553,15 @@ export class CardSystem {
             hp: maxHp,
             maxHp,
             lastShotTime: 0,
-            range: (this.scene.cameras.main.width || 1920) * (2 / 3),
+            range: rangeOverride ?? (this.scene.cameras.main.width || 1920) * (2 / 3),
             damage: baseDamage,
             cooldownMs,
             body,
             hpBg,
             hpBar,
             occupantId,
-            effectId
+            effectId,
+            shotsFired: 0
         });
     }
 
@@ -1844,6 +1878,7 @@ export class CardSystem {
             }
 
             tower.lastShotTime = now;
+            tower.shotsFired = (tower.shotsFired ?? 0) + 1;
 
             const targetPos = closest.getPosition();
 
@@ -1865,15 +1900,194 @@ export class CardSystem {
                 onComplete: () => shot.destroy()
             });
 
-            let damage = tower.damage || 40;
-            if (tower.effectId === 'elf_sun_crystal_spire') {
-                const targetType = (closest as any).getConfig?.().unitType as UnitType | undefined;
-                if (targetType && this.isFlyingUnit(targetType)) {
-                    damage = Math.round(damage * 1.35);
-                }
+            const effectId = tower.effectId ?? 'cannon_shoot';
+            if (effectId === 'cannon_shoot') {
+                const radius = this.getTurretAoeRadius(effectId);
+                const targets = this.getEnemiesInRadius(enemies, targetPos, radius);
+                targets.forEach(target => this.applyTurretDamage(target, tower, effectId));
+                return;
             }
-            (closest as any).takeDamage(damage);
+            if (effectId === 'triarch_cannon_blast') {
+                const radius = this.getTurretAoeRadius(effectId);
+                const targets = this.getEnemiesInRadius(enemies, targetPos, radius);
+                targets.forEach(target => {
+                    this.applyTurretDamage(target, tower, effectId);
+                    const size = (target as any).getConfig?.().size as string | undefined;
+                    if (size !== 'large') {
+                        target.applyStun?.(200);
+                    }
+                });
+                return;
+            }
+            if (effectId === 'jade_archer_volley') {
+                const targets = this.getPiercingTargets(tower, enemies, closest, 2, 36);
+                targets.forEach(target => this.applyTurretDamage(target, tower, effectId));
+                if (tower.shotsFired % 8 === 0) {
+                    const stunTargets = this.getEnemiesInRadius(enemies, targetPos, 120);
+                    stunTargets.forEach(target => target.applyStun?.(1000));
+                }
+                return;
+            }
+            if (effectId === 'triarch_lightbringer_tower') {
+                const targets = this.getPiercingTargets(tower, enemies, closest, 2, 32);
+                targets.forEach(target => {
+                    this.applyTurretDamage(target, tower, effectId);
+                    target.applySlow?.(0.1, 1500);
+                });
+                return;
+            }
+            if (effectId === 'triarch_machine_gun_nest') {
+                this.applyTurretDamage(closest, tower, effectId);
+                closest.applyAttackSpeedModifier?.(0.9, 2000, true);
+                return;
+            }
+            if (effectId === 'triarch_aether_tower') {
+                const chainTargets = this.getChainTargets(closest, enemies, 3, 220);
+                chainTargets.forEach(target => this.applyTurretDamage(target, tower, effectId));
+                return;
+            }
+            if (effectId === 'abyss_corruption_tower') {
+                this.applyTurretDamage(closest, tower, effectId);
+                const combatSystem = (this.scene as any).combatSystem;
+                closest.applyCorruption?.(1, 6000, 1000, 6, 90, 120, combatSystem, undefined);
+                return;
+            }
+            if (effectId === 'torment_spire') {
+                this.applyTurretDamage(closest, tower, effectId);
+                closest.applyArmorModifier?.(0.85, 4000, true);
+                return;
+            }
+
+            this.applyTurretDamage(closest, tower, effectId);
         });
+    }
+
+    private getTurretAoeRadius(effectId: string): number {
+        const { width } = this.fortressSystem.getCellDimensions();
+        if (effectId === 'triarch_cannon_blast') {
+            return width * 2;
+        }
+        if (effectId === 'cannon_shoot') {
+            return Math.max(100, width * 1.6);
+        }
+        return Math.max(90, width * 1.4);
+    }
+
+    private getEnemiesInRadius(enemies: any[], center: { x: number; y: number }, radius: number): any[] {
+        return enemies.filter(enemy => {
+            if (enemy.isDead?.()) return false;
+            const pos = enemy.getPosition?.();
+            if (!pos) return false;
+            return Phaser.Math.Distance.Between(center.x, center.y, pos.x, pos.y) <= radius;
+        });
+    }
+
+    private getPiercingTargets(
+        tower: { x: number; y: number; range: number },
+        enemies: any[],
+        primary: any,
+        pierceCount: number,
+        maxOffset: number
+    ): any[] {
+        const origin = { x: tower.x, y: tower.y };
+        const targetPos = primary.getPosition?.();
+        if (!targetPos) {
+            return [primary];
+        }
+        const dx = targetPos.x - origin.x;
+        const dy = targetPos.y - origin.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = dx / len;
+        const ny = dy / len;
+
+        const candidates = enemies
+            .filter(enemy => !enemy.isDead?.())
+            .map(enemy => {
+                const pos = enemy.getPosition?.();
+                if (!pos) return null;
+                const vx = pos.x - origin.x;
+                const vy = pos.y - origin.y;
+                const proj = vx * nx + vy * ny;
+                if (proj < 0 || proj > tower.range) return null;
+                const perp = Math.abs(vx * -ny + vy * nx);
+                if (perp > maxOffset) return null;
+                return { enemy, proj };
+            })
+            .filter(Boolean) as Array<{ enemy: any; proj: number }>;
+
+        candidates.sort((a, b) => a.proj - b.proj);
+
+        const results: any[] = [];
+        const seen = new Set<string>();
+        for (const candidate of candidates) {
+            if (results.length >= pierceCount) break;
+            const id = candidate.enemy.getId?.() ?? `${candidate.proj}`;
+            if (seen.has(id)) continue;
+            seen.add(id);
+            results.push(candidate.enemy);
+        }
+
+        if (results.length === 0) {
+            return [primary];
+        }
+        return results;
+    }
+
+    private getChainTargets(primary: any, enemies: any[], chainCount: number, chainRadius: number): any[] {
+        const results: any[] = [];
+        const seen = new Set<string>();
+        let current = primary;
+
+        while (current && results.length < chainCount) {
+            const id = current.getId?.() ?? `${results.length}`;
+            if (!seen.has(id)) {
+                results.push(current);
+                seen.add(id);
+            }
+
+            let next: any = null;
+            let bestDist = chainRadius;
+            const currentPos = current.getPosition?.();
+            if (!currentPos) break;
+
+            enemies.forEach(enemy => {
+                if (enemy.isDead?.()) return;
+                const enemyId = enemy.getId?.();
+                if (enemyId && seen.has(enemyId)) return;
+                const pos = enemy.getPosition?.();
+                if (!pos) return;
+                const dist = Phaser.Math.Distance.Between(currentPos.x, currentPos.y, pos.x, pos.y);
+                if (dist <= chainRadius && dist < bestDist) {
+                    bestDist = dist;
+                    next = enemy;
+                }
+            });
+
+            current = next;
+        }
+
+        return results;
+    }
+
+    private applyTurretDamage(target: any, tower: { damage: number; effectId?: string }, effectId: string): void {
+        if (!target || target.isDead?.()) return;
+        let damage = tower.damage || 40;
+
+        if (effectId === 'elf_sun_crystal_spire') {
+            const targetType = target.getConfig?.().unitType as UnitType | undefined;
+            if (targetType && this.isFlyingUnit(targetType)) {
+                damage = Math.round(damage * 1.35);
+            }
+        }
+
+        if (effectId === 'triarch_lightbringer_tower') {
+            const armor = target.getArmor?.();
+            if (Number.isFinite(armor) && armor >= 10) {
+                damage = Math.round(damage * 1.2);
+            }
+        }
+
+        target.takeDamage?.(damage);
     }
 
     private isFlyingUnit(unitType: UnitType): boolean {

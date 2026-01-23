@@ -121,6 +121,7 @@ export class RelicInventoryUI {
 
         this.tooltip = this.scene.add.container(worldX, worldY);
         this.tooltip.setDepth(9500);
+        this.tooltip.setScrollFactor(0);
 
         const nameText = this.scene.add.text(TOOLTIP_PADDING, TOOLTIP_PADDING, relic.name, {
             fontSize: '18px',

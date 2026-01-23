@@ -75,7 +75,7 @@ export class HandManager {
                 ease: 'Sine.easeOut'
             });
             this.battleEvents.emit('ui:card-drag-end');
-            this.battleEvents.emit('ui:card-play', {
+            this.battleEvents.emit('ui:card-drop', {
                 card,
                 screenX: pointer.x,
                 screenY: pointer.y

@@ -94,6 +94,17 @@ export class GameStateManager extends Phaser.Events.EventEmitter {
         this.emitState();
     }
 
+    public setGold(amount: number): void {
+        const next = Math.max(0, Math.floor(amount));
+        this.state.gold = next;
+        this.emitState();
+    }
+
+    public gainGold(amount: number): void {
+        this.state.gold += Math.max(0, Math.floor(amount));
+        this.emitState();
+    }
+
     public takeFortressDamage(amount: number): void {
         this.state.fortressHp = Math.max(0, this.state.fortressHp - amount);
         this.emit('fortress-damaged', {

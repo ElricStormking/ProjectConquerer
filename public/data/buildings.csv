@@ -7,6 +7,9 @@ jade_archer_turret,Jade Archer Turret,200,1,1,jade_archer_volley,building_jade_a
 triarch_field_command_post,Field Command Post,210,1,1,triarch_command_zone,building_triarch_field_command_post
 triarch_healing_beacon,Healing Beacon,180,1,1,triarch_healing_pulse,building_triarch_healing_beacon
 triarch_cannon_turret,Cannon Turret,260,1,1,triarch_cannon_blast,building_triarch_cannon_turret
+triarch_lightbringer_tower,Lightbringer Tower,220,1,1,triarch_lightbringer_tower,
+triarch_machine_gun_nest,Machine Gun Nest,200,1,1,triarch_machine_gun_nest,
+triarch_aether_tower,Aether Tower,230,1,1,triarch_aether_tower,
 triarch_storm_generator,Storm Generator,200,1,1,triarch_storm_zone,building_triarch_storm_generator
 elf_altar_of_heroes,Altar of Heroes,200,1,1,elf_altar_of_heroes,card_elf_altar_of_heroes
 elf_bloom_hatchery,Bloom Hatchery,220,1,1,elf_bloom_hatchery,card_elf_bloom_hatchery
@@ -17,6 +20,7 @@ elf_living_vine_wall,Living Vine Wall,260,1,1,elf_living_vine_wall,card_elf_livi
 elf_soul_stone_monument,Soul-Stone Monument,210,1,1,elf_soul_stone_monument,card_elf_soul_stone_monument
 elf_spore_mist_pillar,Spore-Mist Pillar,180,1,1,elf_spore_mist_pillar,card_elf_spore_mist_pillar
 elf_sun_crystal_spire,Sun-Crystal Spire,240,1,1,elf_sun_crystal_spire,card_elf_sun_crystal_spire
+torment_spire,Torment Spire,220,1,1,torment_spire,card_frost_torment_spire
 abyss_spawning_pit,Abyssal Spawning Pit,900,1,1,abyss_spawning_pit,
 abyss_blood_altar,Blood Altar,850,1,1,abyss_blood_altar,
 abyss_infernal_obelisk,Infernal Obelisk,1100,1,1,abyss_infernal_obelisk,

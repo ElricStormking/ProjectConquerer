@@ -318,11 +318,13 @@ export class BattleScene extends Phaser.Scene {
         // Use generous starting resources in the prototype so all 5 unit types
         // (soldier, railgunner, tank, medic, cannon) can be summoned for testing.
         this.gameState.initialize(this.starterData, 10, 40);
+        const runManager = RunProgressionManager.getInstance();
+        this.gameState.setGold(runManager.getGold());
 
         // Get fortress config from FactionRegistry (uses DataManager CSV grids if available)
         // Use current run faction fortress if available, fallback to Jade Dynasty
         const factionRegistry = FactionRegistry.getInstance();
-        const runState = RunProgressionManager.getInstance().getRunState();
+        const runState = runManager.getRunState();
         const factionIdForFortress = runState?.factionId ?? 'jade_dynasty';
         const fallbackFortressId = `fortress_${factionIdForFortress}_01`;
         const preferredFortressId = factionRegistry.getFaction(factionIdForFortress)?.fortressId;
@@ -353,7 +355,6 @@ export class BattleScene extends Phaser.Scene {
             340, 200,
             cellWidth, cellHeight
         );
-        const runManager = RunProgressionManager.getInstance();
         const runStateForUnlocks = runManager.getRunState();
         const savedUnlocks = runStateForUnlocks?.fortressUnlockedCells?.[fortressConfig.id];
         const initialUnlocked = savedUnlocks ?? this.computeInitialUnlockedCells(fortressConfig);
@@ -625,6 +626,7 @@ export class BattleScene extends Phaser.Scene {
         this.events.off('ui:card-drag-end');
         this.events.off('ui:card-drag');
         this.events.off('ui:card-play');
+        this.events.off('ui:card-sell');
         this.events.off('ui:start-wave');
         this.events.off('ui:commander-cast');
         
@@ -751,6 +753,7 @@ export class BattleScene extends Phaser.Scene {
         this.events.off('ui:card-drag-end');
         this.events.off('ui:card-drag');
         this.events.off('ui:card-play');
+        this.events.off('ui:card-sell');
         this.events.off('ui:start-wave');
         this.events.off('ui:commander-cast');
 
@@ -775,6 +778,10 @@ export class BattleScene extends Phaser.Scene {
 
         this.events.on('ui:card-play', (payload: CardPlayPayload) => {
             this.handleCardPlacement(payload);
+        });
+
+        this.events.on('ui:card-sell', (payload: CardPlayPayload) => {
+            this.handleCardSale(payload);
         });
 
         this.events.on('ui:start-wave', () => this.tryStartWave());
@@ -817,6 +824,26 @@ export class BattleScene extends Phaser.Scene {
             this.fortressSystem.clearHover();
         }
         this.events.emit('card-placement-result', { cardId: payload.card.id, success });
+    }
+
+    private handleCardSale(payload: CardPlayPayload): void {
+        const state = this.gameState.getState();
+        if (state.phase !== 'PREPARATION') {
+            this.events.emit('card-placement-result', { cardId: payload.card.id, success: false });
+            return;
+        }
+
+        const removed = this.deckSystem.removeFromHand(payload.card.id);
+        if (!removed) {
+            this.events.emit('card-placement-result', { cardId: payload.card.id, success: false });
+            return;
+        }
+
+        const runManager = RunProgressionManager.getInstance();
+        runManager.removeCardFromRunDeck(payload.card.id);
+        runManager.gainGold(20);
+        this.gameState.setGold(runManager.getGold());
+        this.events.emit('card-placement-result', { cardId: payload.card.id, success: true });
     }
 
     private fortressImage?: Phaser.GameObjects.Image;

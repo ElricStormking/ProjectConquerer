@@ -55,6 +55,7 @@ card_zhaquille_flesh_crawler,Flesh Crawler,unit,1,soulfrost,flesh_crawler,card_f
 card_zhaquille_flesh_titan,Flesh Titan,unit,6,soulfrost,flesh_titan,card_frost_flesh_titan,Berserk core bruiser that self-bleeds below half HP.,epic
 card_zhaquille_living_altar,Living Altar,structure,3,soulfrost,living_altar,card_frost_living_altar,Sacrifices allies periodically to generate Essence.,common
 card_zhaquille_abominable_hatchery,Abominable Hatchery,structure,5,soulfrost,abominable_hatchery,card_frost_abominable_hatchery,Produces Flesh Weavers faster when allies die nearby.,rare
+card_zhaquille_torment_spire,Torment Spire,structure,3,soulfrost,torment_spire,card_frost_torment_spire,Decay ray turret that weakens armor on hit.,rare
 card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_jade_smoke_bomb,Smoke field reduces enemy accuracy; boosts ninja dodge.,common
 card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_jade_archer_turret,Piercing arrows; periodic AoE stun.,rare
 card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_jade_feng_shui_ward,Healing aura; increased healing received.,common
@@ -74,6 +75,9 @@ card_triarch_aether_archer,Aether Archer,unit,2,gold,triarch_aether_archer,card_
 card_triarch_field_command_post,Field Command Post,structure,3,gold,triarch_field_command_post,card_triarch_field_command_post,Aura boosts ranged accuracy and fire rate.,rare
 card_triarch_healing_beacon,Healing Beacon,structure,2,gold,triarch_healing_beacon,card_triarch_healing_beacon,Pulsing heals; faith generation for holy play.,common
 card_triarch_cannon_turret,Cannon Turret,structure,4,gold,triarch_cannon_turret,card_triarch_cannon_turret,Explosive shells applying stagger.,rare
+card_triarch_lightbringer_tower,Lightbringer Tower,structure,3,gold,triarch_lightbringer_tower,card_triarch_lightbringer_tower,Piercing holy beam with minor slow.,rare
+card_triarch_machine_gun_nest,Machine Gun Nest,structure,3,gold,triarch_machine_gun_nest,card_triarch_machine_gun_nest,Rapid fire turret that suppresses enemies.,rare
+card_triarch_aether_tower,Aether Tower,structure,4,gold,triarch_aether_tower,card_triarch_aether_tower,Chain lightning turret that jumps targets.,rare
 card_triarch_storm_generator,Storm Generator,structure,4,gold,triarch_storm_generator,card_triarch_storm_generator,Storm zone slowing and damaging enemies.,rare
 card_jade_ninja_warp,Ninja Warp Pad,module,3,chi_flow,jade_ninja_warp,card_jade_ninja_warp,Grants brief invisibility and crit bonus to ninjas.,rare
 card_jade_shield_node,Jade Shield Node,module,3,chi_flow,jade_shield_node,card_jade_shield_node,Grants Chi Shield to allies (+HP shield).,common
