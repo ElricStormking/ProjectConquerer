@@ -19,7 +19,7 @@ import { RelicRewardScene } from './scenes/RelicRewardScene';
 import { CommanderUnlockScene } from './scenes/CommanderUnlockScene';
 
 const config: Phaser.Types.Core.GameConfig = {
-    type: Phaser.WEBGL,
+    type: Phaser.AUTO,
     parent: 'game-container',
     backgroundColor: '#2d2d2d',
     scale: {
