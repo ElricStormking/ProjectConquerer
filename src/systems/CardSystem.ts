@@ -8,9 +8,11 @@ import { toUnitConfig } from '../data/ironwars/unitAdapter';
 import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
 import { UnitType } from '../data/UnitTypes';
+import { TurretVFXSystem } from './TurretVFXSystem';
 
 export class CardSystem {
     private isRestoring: boolean = false;
+    private turretVFX: TurretVFXSystem;
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
     private cannonTowers: Array<{
         x: number;
@@ -113,6 +115,8 @@ export class CardSystem {
         private fortressSystem: FortressSystem,
         private unitManager: UnitManager
     ) {
+        this.turretVFX = new TurretVFXSystem(scene);
+        
         // Listen to unit death events to release fortress cells
         this.scene.events.on('unit-death', (unit: any) => {
             if (unit.getTeam && unit.getTeam() === 1) {
@@ -134,6 +138,7 @@ export class CardSystem {
     public update(now: number, _deltaSeconds: number): void {
         this.updateStructureEffects(now, _deltaSeconds);
         this.updateCannonTowers(now);
+        this.turretVFX.update(_deltaSeconds * 1000);
     }
 
     public resolveCardPlacement(payload: ICardPlacementPayload): boolean {
@@ -1835,6 +1840,8 @@ export class CardSystem {
                     this.damageTower(tower, enemyDamage * 0.016); // rough DPS per frame at 60fps
                     if (tower.effectId === 'elf_living_vine_wall' && enemy.getConfig?.().type === 'frontline') {
                         enemy.takeDamage?.(enemyDamage * 0.1);
+                        const enemyPos = enemy.getPosition();
+                        this.turretVFX.createVineThornEffect(enemyPos.x, enemyPos.y);
                     }
                 }
             });
@@ -1881,34 +1888,36 @@ export class CardSystem {
             tower.shotsFired = (tower.shotsFired ?? 0) + 1;
 
             const targetPos = closest.getPosition();
-
-            // Simple cannon shot: draw a bright line toward the target and
-            // apply direct damage (no knockback/armor for now).
-            const shot = this.scene.add.graphics();
-            shot.setDepth(8000);
-            shot.lineStyle(3, 0xfff3b0, 1);
-            shot.beginPath();
-            const muzzleY = tower.y - 40;
-            shot.moveTo(tower.x + 20, muzzleY);
-            shot.lineTo(targetPos.x, targetPos.y);
-            shot.strokePath();
-
-            this.scene.tweens.add({
-                targets: shot,
-                alpha: 0,
-                duration: 180,
-                onComplete: () => shot.destroy()
-            });
-
             const effectId = tower.effectId ?? 'cannon_shoot';
+            const isStunShot = effectId === 'jade_archer_volley' && (tower.shotsFired % 8 === 0);
+
+            // Create VFX for the shot
             if (effectId === 'cannon_shoot') {
                 const radius = this.getTurretAoeRadius(effectId);
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage,
+                    aoeRadius: radius
+                });
                 const targets = this.getEnemiesInRadius(enemies, targetPos, radius);
                 targets.forEach(target => this.applyTurretDamage(target, tower, effectId));
                 return;
             }
             if (effectId === 'triarch_cannon_blast') {
                 const radius = this.getTurretAoeRadius(effectId);
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage,
+                    aoeRadius: radius
+                });
                 const targets = this.getEnemiesInRadius(enemies, targetPos, radius);
                 targets.forEach(target => {
                     this.applyTurretDamage(target, tower, effectId);
@@ -1920,15 +1929,33 @@ export class CardSystem {
                 return;
             }
             if (effectId === 'jade_archer_volley') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage,
+                    isStunShot,
+                    aoeRadius: isStunShot ? 120 : undefined
+                });
                 const targets = this.getPiercingTargets(tower, enemies, closest, 2, 36);
                 targets.forEach(target => this.applyTurretDamage(target, tower, effectId));
-                if (tower.shotsFired % 8 === 0) {
+                if (isStunShot) {
                     const stunTargets = this.getEnemiesInRadius(enemies, targetPos, 120);
                     stunTargets.forEach(target => target.applyStun?.(1000));
                 }
                 return;
             }
             if (effectId === 'triarch_lightbringer_tower') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage
+                });
                 const targets = this.getPiercingTargets(tower, enemies, closest, 2, 32);
                 targets.forEach(target => {
                     this.applyTurretDamage(target, tower, effectId);
@@ -1937,27 +1964,82 @@ export class CardSystem {
                 return;
             }
             if (effectId === 'triarch_machine_gun_nest') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage
+                });
                 this.applyTurretDamage(closest, tower, effectId);
                 closest.applyAttackSpeedModifier?.(0.9, 2000, true);
                 return;
             }
             if (effectId === 'triarch_aether_tower') {
                 const chainTargets = this.getChainTargets(closest, enemies, 3, 220);
+                const chainPositions = chainTargets.map(t => t.getPosition?.()).filter(Boolean);
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage,
+                    chainTargets: chainPositions
+                });
                 chainTargets.forEach(target => this.applyTurretDamage(target, tower, effectId));
                 return;
             }
             if (effectId === 'abyss_corruption_tower') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage
+                });
                 this.applyTurretDamage(closest, tower, effectId);
                 const combatSystem = (this.scene as any).combatSystem;
                 closest.applyCorruption?.(1, 6000, 1000, 6, 90, 120, combatSystem, undefined);
                 return;
             }
             if (effectId === 'torment_spire') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage
+                });
                 this.applyTurretDamage(closest, tower, effectId);
                 closest.applyArmorModifier?.(0.85, 4000, true);
                 return;
             }
+            if (effectId === 'elf_sun_crystal_spire') {
+                this.turretVFX.createTurretShot({
+                    effectId,
+                    startX: tower.x,
+                    startY: tower.y,
+                    targetX: targetPos.x,
+                    targetY: targetPos.y,
+                    damage: tower.damage
+                });
+                this.applyTurretDamage(closest, tower, effectId);
+                return;
+            }
 
+            // Default fallback for unknown effectIds
+            this.turretVFX.createTurretShot({
+                effectId,
+                startX: tower.x,
+                startY: tower.y,
+                targetX: targetPos.x,
+                targetY: targetPos.y,
+                damage: tower.damage
+            });
             this.applyTurretDamage(closest, tower, effectId);
         });
     }
