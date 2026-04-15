@@ -26,10 +26,14 @@ export enum UnitType {
     JADE_SHIKIGAMI_FOX = 'jade_shikigami_fox',
     JADE_CHI_DRAGOON = 'jade_chi_dragoon',
     JADE_SHURIKEN_NINJAS = 'jade_shuriken_ninjas',
+    JADE_SCIMITAR_SOLDIER = 'jade_scimitar_soldier',
+    JADE_ARCHER = 'jade_archer',
     JADE_SHADOWBLADE_ASSASSINS = 'jade_shadowblade_assassins',
     JADE_SPIRIT_LANTERN = 'jade_spirit_lantern',
     JADE_PAPER_DOLL = 'jade_paper_doll',
     JADE_BLUE_ONI = 'jade_blue_oni',
+    FROST_SKELETON_SOLDIERS = 'skeleton_soldiers',
+    FROST_SKELETON_ARCHER = 'skeleton_archer',
     FROST_SHADE_SERVANT = 'shade_servant',
     FROST_PUTRID_ARCHER = 'putrid_archer',
     FROST_ETERNAL_WATCHER = 'eternal_watcher',
@@ -56,6 +60,10 @@ export enum UnitType {
     TRIARCH_AETHER_GOLEM = 'triarch_aether_golem',
     TRIARCH_MANA_SIPHON_ADEPT = 'triarch_mana_siphon_adept',
     TRIARCH_AETHER_ARCHER = 'triarch_aether_archer',
+    TRIARCH_DOMINION_FOOTMEN = 'triarch_dominion_footmen',
+    TRIARCH_DOMINION_GUNNER = 'triarch_dominion_gunner',
+    ELF_ELVEN_SCOUT = 'elf_elven_scout',
+    ELF_ELVEN_BOWMEN = 'elf_elven_bowmen',
     ELF_GLOW_SPROUT_SPIRIT = 'elf_glow_sprout_spirit',
     ELF_VINE_TENDRIL = 'elf_vine_tendril',
     ELF_SPORE_WING_SCOUT = 'elf_spore_wing_scout',
@@ -91,7 +99,9 @@ export enum UnitType {
     ABYSS_CULT_MAGISTER = 'abyss_cult_magister',
     ABYSS_ORACLE_ABYSS = 'abyss_oracle_abyss',
     ABYSS_SACRIFICE_MASTER = 'abyss_sacrifice_master',
-    ABYSS_ABYSSAL_PROPHET = 'abyss_abyssal_prophet'
+    ABYSS_ABYSSAL_PROPHET = 'abyss_abyssal_prophet',
+    ABYSS_FERAL_IMP = 'abyss_feral_imp',
+    ABYSS_ABYSSAL_FIRESPITTER = 'abyss_abyssal_firespitter'
 }
 
 export interface UnitTemplate {

@@ -7,6 +7,8 @@ cog_medic_drone,Medic Druid,support,cog_dominion,rare,90,5,1,40,0.6,120,140,smal
 screaming_coffin,Screaming Coffin,frontline,frost_clan,common,240,8,6,35,0.5,30,180,large,frost_eternal_watcher,Fear aura structure causing misses nearby,skill_basic_melee,,skill_screaming_coffin_fear,2,16,1,3
 bound_spectre,Bound Spectre,frontline,frost_clan,common,140,28,2,85,1.3,45,65,small,frost_shade_servant,Curse aura that weakens nearby enemy damage,skill_basic_melee,,skill_bound_spectre_curse,1.4,6,1,3
 putrid_archer,Putrid Archer,ranged,frost_clan,common,110,15,2,40,1,360,70,normal,frost_putrid_archer,Ranged undead archer that slows enemies with decay gas,skill_putrid_archer_cloud,,,1,8,1,3
+skeleton_soldiers,Skeleton Soldiers,frontline,frost_clan,common,135,18,2,84,1.3,45,60,small,frost_shade_servant,Basic undead rogues that overwhelm enemies with speed,skill_basic_melee,,,1,6,1,3
+skeleton_archer,Skeleton Archer,ranged,frost_clan,common,110,16,2,36,1.05,330,60,small,frost_putrid_archer,Basic undead archer that peppers enemies with decay arrows,skill_basic_archer_shot,,,1,8,1,3
 shade_servant,Shade Servant,frontline,frost_clan,common,160,30,3,75,1.4,45,80,small,frost_shade_servant,Vampire melee with chance to convert kills into Flesh Weavers,skill_basic_melee,,,1,6,1,3
 flesh_weaver,Flesh Weaver,frontline,frost_clan,common,80,31,2,90,1,35,75,small,frost_shade_servant,Fodder abomination that explodes on death,skill_basic_melee,skill_flesh_weaver_explode,,1,6,1,3
 flesh_crawler,Flesh Crawler,frontline,frost_clan,common,130,36,2,85,1.3,40,70,small,frost_shade_servant,Fast abomination with chance to corrupt on hit,skill_flesh_crawler_corrupt,,,1.2,6,1,3
@@ -24,6 +26,8 @@ raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,40,0.9,420,58,norma
 raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,32,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield,skill_basic_melee,,,1,0,1,3
 jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death,skill_basic_melee,skill_jade_paper_doll_death,,1,10,1,3
 jade_azure_spear,Azure Spear Chargers,frontline,jade_dynasty,common,190,22,5,70,1.25,45,85,normal,jade_azure_spear,Long reach melee; opener stun and chi gain on kill,skill_jade_azure_spear,,,1.2,30,1,3
+jade_scimitar_soldier,Scimitar Soldier,frontline,jade_dynasty,common,130,18,2,92,1.45,45,55,small,jade_shuriken_ninjas,Basic rogue skirmisher that darts into melee,skill_basic_melee,,,1,6,1,3
+jade_archer,Jade Archer,ranged,jade_dynasty,common,115,17,2,40,1.15,320,58,small,jade_crossbow_gunners,Basic Jade archer providing steady ranged pressure,skill_basic_archer_shot,,,1,8,1,3
 jade_shuriken_ninjas,Shuriken Ninjas,ranged,jade_dynasty,common,110,18,2,40,1.4,300,55,small,jade_shuriken_ninjas,Throwing daggers with crit bleed and stealth on kill,skill_jade_shuriken_slow,,,1,6,1,3
 jade_crossbow_gunners,Repeating Crossbow Gunners,ranged,jade_dynasty,common,120,16,3,35,1.2,360,70,normal,jade_crossbow_gunners,Ranged support that applies vulnerability and slow,skill_jade_crossbow_slow,,,1,8,1,3
 jade_spirit_lantern,Spirit Lantern Healer,support,jade_dynasty,common,130,10,2,55,1,140,70,normal,jade_spirit_lantern,Healing aura and debuff field spirit,skill_basic_ranged,skill_jade_spirit_lantern_slow,skill_jade_spirit_lantern_heal,1,8,1,3
@@ -41,6 +45,8 @@ chronotemporal,Chronotemporal,support,player,legendary,80,18,3,45,1.2,100,40,nor
 ninja,Ninja,frontline,player,rare,70,28,2,80,2,35,30,small,ninja,Swift assassin with stealth abilities,skill_basic_melee,,,1,0,1,3
 sniper,Sniper,ranged,player,rare,55,25,1,30,0.7,500,48,small,sniper,Elite long-range marksman,skill_basic_ranged,,,1,0,1,3
 triarch_zealot_duelist,Zealot Duelist,frontline,triarch_dominion,common,180,22,4,85,1.4,45,80,small,triarch_zealot_duelist,Fast melee striker with holy cleave,skill_triarch_zealot_cleave,,,1,6,1,3
+triarch_dominion_footmen,Dominion Footmen,frontline,triarch_dominion,common,145,18,3,82,1.25,45,70,normal,triarch_zealot_duelist,Basic Dominion skirmishers with reliable melee attacks,skill_basic_melee,,,1,6,1,3
+triarch_dominion_gunner,Dominion Gunner,ranged,triarch_dominion,common,125,18,3,34,1,320,72,normal,triarch_aether_archer,Basic Dominion gunner with reliable rifle volleys,skill_basic_archer_shot,,,1,8,1,3
 triarch_rifleman_squad,Rifleman Squad,ranged,triarch_dominion,common,140,28,3,35,1,320,80,normal,triarch_rifleman_squad,Core ranged DPS squad,skill_basic_ranged,,skill_triarch_rifleman_mark_focus,1,8,1,3
 triarch_aether_archer,Aether Archer,ranged,triarch_dominion,common,130,18,2,35,1,340,70,normal,triarch_aether_archer,Piercing arcane arrows strong vs shields,skill_triarch_aether_pierce,,,1,8,1,3
 triarch_mana_siphon_adept,Mana Siphon Adept,support,triarch_dominion,common,130,14,3,55,1.1,200,80,normal,triarch_mana_siphon_adept,Support that suppresses enemy attack speed,skill_triarch_siphon_weaken,,skill_basic_ranged,1,8,1,3
@@ -55,6 +61,8 @@ triarch_sniper_elite,Sniper Elite,ranged,triarch_dominion,rare,110,24,2,32,0.7,4
 triarch_priestess_dawn,Priestess of Dawn,support,triarch_dominion,rare,160,8,3,40,1,140,80,normal,triarch_priestess_dawn,Cone healer with cleanse pulses,skill_triarch_priestess_cone_heal,,skill_basic_ranged,1,8,1,3
 elf_glow_sprout_spirit,Glow-Sprout Spirit,frontline,elf_covenant,common,90,10,1,70,1.1,40,50,small,elf_glow_sprout_spirit,Low health spirit that splits on death.,skill_basic_melee,,skill_elf_glow_sprout_split,1,,1,3
 elf_vine_tendril,Vine Tendril,frontline,elf_covenant,common,60,8,0,0,0.8,40,40,small,elf_vine_tendril,Immobile vine summoned by Glow-Sprout Spirit.,skill_basic_melee,,,0.6,,1,3
+elf_elven_scout,Elven Scout,frontline,elf_covenant,common,120,17,2,90,1.4,45,55,small,elf_spore_wing_scout,Quick rogue scout that pressures the line early,skill_basic_melee,,,1,,1,3
+elf_elven_bowmen,Elven Bowmen,ranged,elf_covenant,common,115,17,2,42,1.1,340,58,small,elf_spore_wing_scout,Basic woodland archers with steady long-range fire,skill_basic_archer_shot,,,1,,1,3
 elf_spore_wing_scout,Spore-Wing Scout,ranged,elf_covenant,common,120,18,2,80,1.2,320,60,small,elf_spore_wing_scout,Flying scout that weakens enemy ranged aim.,skill_basic_ranged,skill_elf_spore_wing_haze,skill_elf_spore_wing_swift,1,,1,3
 elf_verdant_legionary,Verdant Legionary,frontline,elf_covenant,common,240,20,4,70,1.1,50,110,large,elf_verdant_legionary,Nearby legionaries boost its attack power.,skill_basic_melee,,skill_elf_verdant_legionary_bond,0.7,,1,3
 elf_root_kin_swarm,Root-Kin Swarm,frontline,elf_covenant,common,160,28,3,90,1.5,45,70,small,elf_root_kin_swarm,Swarm melee fighters for early pressure.,skill_basic_melee,,,1,,1,3
@@ -76,6 +84,8 @@ elf_grove_petitioner,Grove Petitioner,support,elf_covenant,common,140,8,2,50,0.9
 elf_soul_light_butterfly,Soul-Light Butterfly,support,elf_covenant,common,70,0,1,80,1,120,40,small,elf_soul_light_butterfly,Flying support that grants lifesteal aura.,skill_basic_ranged,,skill_elf_soul_light_butterfly_aura,1,,1,3
 elf_vitality_bonder,Vitality Bonder,support,elf_covenant,rare,180,16,3,55,0.85,240,90,normal,elf_vitality_bonder,Ranged healer that links damage to healing.,skill_elf_vitality_bonder_burst,,,1,,1,3
 abyss_abyssal_imp,Abyssal Imp,frontline,abyss_legion,common,160,14,0,78,2,60,65,small,army_abyssal_lmp,Swarm fodder that detonates on death.,skill_basic_melee,,skill_abyss_imp_burst,1,6,1,3
+abyss_feral_imp,Feral Imp,frontline,abyss_legion,common,115,16,0,95,1.55,45,50,small,army_abyssal_lmp,Basic feral rogue that swarms targets with quick strikes,skill_basic_melee,,,1,6,1,3
+abyss_abyssal_firespitter,Abyssal Firespitter,ranged,abyss_legion,common,120,18,1,40,1.1,310,62,small,army_Ballista_Fiend,Basic ranged demon that spits volatile chaos fire,skill_basic_archer_shot,,,1,8,1,3
 abyss_demon_brute,Demon Brute,frontline,abyss_legion,rare,620,68,12,60,0.85,72,120,normal,army_Demon_Brute,Frontline bruiser that sustains while brawling.,skill_basic_melee,,,1.4,10,1,3
 abyss_gorefiend_crusher,Gorefiend Crusher,frontline,abyss_legion,epic,1250,133,28,54,0.6,78,200,large,army_Archdemon,Heavy tank that taunts nearby enemies.,skill_basic_melee,,skill_abyss_gorefiend_taunt,2,18,1,3
 abyss_archdemon,Archdemon,frontline,abyss_legion,epic,1750,185,32,51,0.65,96,220,large,army_Archdemon,Overlord anchor with fear-inducing presence.,skill_basic_melee,,skill_abyss_archdemon_aura,2,18,1,3

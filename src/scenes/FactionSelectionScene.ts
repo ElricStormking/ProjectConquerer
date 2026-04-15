@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FactionRegistry } from '../systems/FactionRegistry';
 import { CommanderManager } from '../systems/CommanderManager';
+import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { IFactionConfig, ICommanderFullConfig } from '../types/ironwars';
 
 const CARD_WIDTH = 1920;
@@ -41,6 +42,7 @@ const ELF_CARD_PORTRAITS: Record<string, string> = {
 export class FactionSelectionScene extends Phaser.Scene {
     private readonly factionRegistry = FactionRegistry.getInstance();
     private readonly commanderManager = CommanderManager.getInstance();
+    private readonly runManager = RunProgressionManager.getInstance();
     
     private factions: IFactionConfig[] = [];
     private currentIndex = 0;
@@ -808,6 +810,7 @@ export class FactionSelectionScene extends Phaser.Scene {
     private selectFaction(): void {
         const selectedFaction = this.factions[this.currentIndex];
         const commanderId = this.selectedCommanderByFaction[selectedFaction.id] ?? null;
+        this.runManager.abandonRun();
         
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.time.delayedCall(400, () => {

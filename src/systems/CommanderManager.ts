@@ -3,6 +3,16 @@ import { DataManager } from './DataManager';
 import { SaveManager } from './SaveManager';
 import { ICommanderFullConfig, ICard } from '../types/ironwars';
 
+export const STARTING_COMMANDER_DECK_SIZE = 5;
+
+const BASIC_STARTER_CARDS_BY_FACTION: Record<string, string[]> = {
+    jade_dynasty: ['card_jade_scimitar_soldier', 'card_jade_archer'],
+    frost_clan: ['card_frost_skeleton_soldiers', 'card_frost_skeleton_archer'],
+    triarch_dominion: ['card_triarch_dominion_footmen', 'card_triarch_dominion_gunner'],
+    elf_covenant: ['card_elf_elven_scout', 'card_elf_elven_bowmen'],
+    abyss_legion: ['card_abyss_feral_imp', 'card_abyss_abyssal_firespitter']
+};
+
 export class CommanderManager extends Phaser.Events.EventEmitter {
     private static instance: CommanderManager;
     private readonly dataManager = DataManager.getInstance();
@@ -64,13 +74,86 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         return allCards;
     }
 
-    public getStarterDeck(factionId: string): ICard[] {
+    public getStartingDeckForCommander(commanderId: string, deckSize = STARTING_COMMANDER_DECK_SIZE): ICard[] {
+        const commander = this.getCommander(commanderId);
+        if (!commander) {
+            console.warn(`[CommanderManager] Unknown commander for starter deck: ${commanderId}`);
+            return [];
+        }
+
+        return this.getStarterDeck(commander.factionId, deckSize);
+    }
+
+    public getStarterDeck(factionId: string, deckSize = STARTING_COMMANDER_DECK_SIZE): ICard[] {
+        const basicStarterCards = this.getBasicStarterCardsForFaction(factionId);
+        if (basicStarterCards.length > 0) {
+            return this.buildStarterCopies(basicStarterCards, deckSize);
+        }
+
         const starterCommander = this.getStarterCommander(factionId);
         if (!starterCommander) {
             console.warn(`[CommanderManager] No starter commander for faction: ${factionId}`);
             return [];
         }
-        return this.getCardsForCommander(starterCommander.id);
+        return this.buildStarterDeck(this.getCardsForCommander(starterCommander.id), deckSize);
+    }
+
+    public getStarterCardPool(factionId: string, deckSize = STARTING_COMMANDER_DECK_SIZE): ICard[] {
+        const basicStarterCards = this.getBasicStarterCardsForFaction(factionId);
+        if (basicStarterCards.length === 0 || deckSize <= 0) {
+            return [];
+        }
+
+        return basicStarterCards.flatMap(card =>
+            Array.from({ length: deckSize }, () => ({ ...card }))
+        );
+    }
+
+    private buildStarterDeck(cardPool: ICard[], deckSize: number): ICard[] {
+        if (cardPool.length === 0 || deckSize <= 0) {
+            return [];
+        }
+
+        const starterDeck: ICard[] = [];
+        for (let i = 0; i < deckSize; i++) {
+            const template = cardPool[i % cardPool.length];
+            starterDeck.push({
+                ...template,
+                id: `${template.id}_${i + 1}`
+            });
+        }
+
+        return starterDeck;
+    }
+
+    private buildStarterCopies(cardPool: ICard[], copiesPerCard: number): ICard[] {
+        if (cardPool.length === 0 || copiesPerCard <= 0) {
+            return [];
+        }
+
+        return cardPool.flatMap(template =>
+            Array.from({ length: copiesPerCard }, (_, index) => ({
+                ...template,
+                id: `${template.id}_${index + 1}`
+            }))
+        );
+    }
+
+    private getBasicStarterCardsForFaction(factionId: string): ICard[] {
+        const cardIds = BASIC_STARTER_CARDS_BY_FACTION[factionId];
+        if (!cardIds || cardIds.length === 0) {
+            return [];
+        }
+
+        return cardIds
+            .map(cardId => {
+                const card = this.dataManager.getCard(cardId);
+                if (!card) {
+                    console.warn(`[CommanderManager] Missing basic starter card '${cardId}' for faction: ${factionId}`);
+                }
+                return card;
+            })
+            .filter((card): card is ICard => card !== undefined);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -135,8 +218,18 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
     public isCardUsableByRoster(cardId: string, commanderRoster: string[]): boolean {
         // For usability checks we work on template ids exactly as stored in
         // commanders.csv (e.g. 'card_soldier_1', 'card_overclock').
-        const key = cardId;
+        const key = this.getTemplateCardId(cardId);
         const allCommanders = this.getAllCommanders();
+        const rosterCommanders = allCommanders.filter(cmd => commanderRoster.includes(cmd.id));
+
+        if (rosterCommanders.some(cmd => cmd.cardIds.includes(key))) {
+            return true;
+        }
+
+        if (rosterCommanders.some(cmd => BASIC_STARTER_CARDS_BY_FACTION[cmd.factionId]?.includes(key))) {
+            return true;
+        }
+
         const owners = allCommanders.filter(cmd => cmd.cardIds.includes(key)).map(cmd => cmd.id);
 
         if (owners.length === 0) {
@@ -149,13 +242,22 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         return owners.some(id => commanderRoster.includes(id));
     }
 
-    private getCardKey(id: string): string {
-        // Normalize runtime copies like `card_railgunner_1_1717358234123` back to the base card id
-        // 1) Strip trailing timestamp / runtime suffix
-        let base = id.replace(/_\d+$/, '');
-        // 2) Strip trailing deck index (e.g. `_1`, `_2`) so all variants of the same type collapse
+    private getTemplateCardId(cardId: string): string {
+        if (this.dataManager.getCard(cardId)) {
+            return cardId;
+        }
+
+        let base = cardId.replace(/_\d+$/, '');
+        if (this.dataManager.getCard(base)) {
+            return base;
+        }
+
         base = base.replace(/_\d+$/, '');
-        return base;
+        if (this.dataManager.getCard(base)) {
+            return base;
+        }
+
+        return cardId;
     }
 
     public validateDeck(deck: ICard[], commanderRoster: string[], maxDeckSize = 40): {
@@ -173,13 +275,9 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
             errors.push('Deck cannot be empty');
         }
         
-        // Check all cards come from commanders in roster
-        const availableCards = this.getAvailableCardsForRoster(commanderRoster);
-        const availableCardKeys = new Set(availableCards.map(c => this.getCardKey(c.id)));
-        
+        // Check all cards come from commanders in roster or the faction starter pool.
         for (const card of deck) {
-            const key = this.getCardKey(card.id);
-            if (!availableCardKeys.has(key)) {
+            if (!this.isCardUsableByRoster(card.id, commanderRoster)) {
                 errors.push(`Card ${card.name} (${card.id}) is not available from current commanders`);
             }
         }

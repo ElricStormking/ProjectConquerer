@@ -267,7 +267,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             ? this.commanderManager.getCommander(commanderIdOverride)
             : this.commanderManager.getStarterCommander(factionId);
         const starterDeck = starterCommander
-            ? this.commanderManager.getCardsForCommander(starterCommander.id).slice(0, 6)
+            ? this.commanderManager.getStartingDeckForCommander(starterCommander.id)
             : this.commanderManager.getStarterDeck(factionId);
         
         // Fallback to COG_DOMINION_STARTER if faction data not found

@@ -1,173 +1,254 @@
 import Phaser from 'phaser';
 
+type Vector2 = { x: number; y: number };
+
+export interface KinematicBody {
+    position: Vector2;
+    velocity: Vector2;
+    radius: number;
+    mass: number;
+    friction: number;
+    frictionAir: number;
+    sleepThreshold: number;
+    isStatic: boolean;
+    isSensor: boolean;
+    speed: number;
+    gameObject?: Phaser.Events.EventEmitter;
+    movementVelocity: Vector2;
+    impulseVelocity: Vector2;
+}
+
+interface BattlefieldBounds {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+}
+
 export class PhysicsManager {
-    private scene: Phaser.Scene;
-    private world: MatterJS.World;
-    private activeBodies: Set<MatterJS.BodyType>;
+    private readonly activeBodies: Set<KinematicBody>;
+    private battlefieldBounds?: BattlefieldBounds;
     private readonly MAX_BODIES = 160;
     private readonly CRITICAL_BODIES = 240;
-    private battlefieldWalls: MatterJS.BodyType[] = [];
-    
-    constructor(scene: Phaser.Scene) {
-        this.scene = scene;
-        this.world = scene.matter.world.localWorld;
+
+    constructor(_scene: Phaser.Scene) {
         this.activeBodies = new Set();
-        
-        this.setupPhysicsSettings();
-    }
-    
-    private setupPhysicsSettings() {
-        this.world.gravity.x = 0;
-        this.world.gravity.y = 0;
-        
-        // Broad world bounds; collision walls are set explicitly via
-        // setBattlefieldBounds to match the visible battlefield rectangle
-        this.scene.matter.world.setBounds(0, 0, 2048, 2048);
-        
-        this.scene.matter.config.constraintIterations = 2;
-        this.scene.matter.config.positionIterations = 6;
-        this.scene.matter.config.velocityIterations = 4;
-        
-        this.scene.matter.world.on('collisionstart', this.handleCollisionStart, this);
     }
 
-    /**
-     * Create solid, static Matter walls around the visible battlefield
-     * so units cannot exit the green rectangle.
-     */
-    public setBattlefieldBounds(x: number, y: number, width: number, height: number, paddingX: number = 0, paddingY: number = 0): void {
-        // Remove previous walls if any
-        if (this.battlefieldWalls.length > 0) {
-            this.battlefieldWalls.forEach(w => this.scene.matter.world.remove(w));
-            this.battlefieldWalls = [];
-        }
-        const thickness = 60; // generous thickness to avoid tunneling
-        const halfT = thickness / 2;
-        const ix = x + paddingX;
-        const iy = y + paddingY;
-        const iw = Math.max(0, width - paddingX * 2);
-        const ih = Math.max(0, height - paddingY * 2);
-        const wallMaterial = { isStatic: true, restitution: 0.95, friction: 0.0001, frictionStatic: 0.0001 } as const;
-        const left   = this.scene.matter.bodies.rectangle(ix - halfT, iy + ih / 2, thickness, ih + thickness, wallMaterial as any);
-        const right  = this.scene.matter.bodies.rectangle(ix + iw + halfT, iy + ih / 2, thickness, ih + thickness, wallMaterial as any);
-        const top    = this.scene.matter.bodies.rectangle(ix + iw / 2, iy - halfT, iw + thickness, thickness, wallMaterial as any);
-        const bottom = this.scene.matter.bodies.rectangle(ix + iw / 2, iy + ih + halfT, iw + thickness, thickness, wallMaterial as any);
-        this.scene.matter.world.add([left, right, top, bottom]);
-        this.battlefieldWalls = [left, right, top, bottom];
+    public setBattlefieldBounds(
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        paddingX: number = 0,
+        paddingY: number = 0
+    ): void {
+        const minX = x + paddingX;
+        const minY = y + paddingY;
+        const maxX = minX + Math.max(0, width - paddingX * 2);
+        const maxY = minY + Math.max(0, height - paddingY * 2);
+        this.battlefieldBounds = { minX, minY, maxX, maxY };
     }
-    
-    public createCircleBody(x: number, y: number, radius: number, options: any = {}): MatterJS.BodyType {
+
+    public createCircleBody(x: number, y: number, radius: number, options: Record<string, unknown> = {}): KinematicBody {
         if (this.activeBodies.size >= this.CRITICAL_BODIES) {
             console.warn('Critical body limit reached!');
             return null as any;
         }
-        
-        const body = this.scene.matter.bodies.circle(x, y, radius, {
-            frictionAir: 0.05,
-            friction: 0.2,
-            restitution: 0.3,
-            sleepThreshold: 60,
-            ...options
-        });
-        
-        // Add body to the world
-        this.scene.matter.world.add(body);
-        
+
+        const mass = Number(options.mass);
+        const friction = Number(options.friction);
+        const frictionAir = Number(options.frictionAir);
+        const sleepThreshold = Number(options.sleepThreshold);
+
+        const body: KinematicBody = {
+            position: { x, y },
+            velocity: { x: 0, y: 0 },
+            radius,
+            mass: Number.isFinite(mass) && mass > 0 ? mass : 1,
+            friction: Number.isFinite(friction) ? friction : 0.2,
+            frictionAir: Number.isFinite(frictionAir) ? frictionAir : 0.05,
+            sleepThreshold: Number.isFinite(sleepThreshold) ? sleepThreshold : 60,
+            isStatic: Boolean(options.isStatic),
+            isSensor: Boolean(options.isSensor),
+            speed: 0,
+            movementVelocity: { x: 0, y: 0 },
+            impulseVelocity: { x: 0, y: 0 }
+        };
+
         this.activeBodies.add(body);
-        
+
         if (this.activeBodies.size > this.MAX_BODIES) {
-            this.optimizePhysics();
+            console.warn(`[PhysicsManager] High body count: ${this.activeBodies.size}`);
         }
-        
+
+        this.clampBodyToBounds(body);
         return body;
     }
-    
-    public removeBody(body: MatterJS.BodyType): void {
-        if (body && this.activeBodies.has(body)) {
-            this.scene.matter.world.remove(body);
+
+    public removeBody(body: KinematicBody): void {
+        if (body) {
             this.activeBodies.delete(body);
         }
     }
-    
-    private handleCollisionStart(event: any): void {
-        const pairs = event.pairs;
-        
-        for (const pair of pairs) {
-            const bodyA = pair.bodyA;
-            const bodyB = pair.bodyB;
-            
-            if (bodyA.gameObject && bodyB.gameObject) {
-                bodyA.gameObject.emit('collision', bodyB.gameObject);
-                bodyB.gameObject.emit('collision', bodyA.gameObject);
-            }
-        }
+
+    public setMoveVelocity(body: KinematicBody, velocity: Vector2): void {
+        if (!body || body.isStatic) return;
+        body.movementVelocity.x = velocity.x;
+        body.movementVelocity.y = velocity.y;
     }
-    
-    private optimizePhysics(): void {
-        const sleepingBodies = Array.from(this.activeBodies).filter(body => 
-            body.isSleeping || body.speed < 0.1
-        );
-        
-        sleepingBodies.forEach(body => {
-            body.sleepThreshold = 20;
-            body.frictionAir = 0.1;
-        });
+
+    public setVelocity(body: KinematicBody, velocity: Vector2): void {
+        if (!body || body.isStatic) return;
+        body.movementVelocity.x = 0;
+        body.movementVelocity.y = 0;
+        body.impulseVelocity.x = velocity.x;
+        body.impulseVelocity.y = velocity.y;
+        body.velocity.x = velocity.x;
+        body.velocity.y = velocity.y;
+        body.speed = Math.hypot(velocity.x, velocity.y);
     }
-    
-    public applyImpulse(body: MatterJS.BodyType, force: { x: number; y: number }): void {
-        if (body && !body.isStatic) {
-            this.scene.matter.body.applyForce(body, body.position, force);
-        }
+
+    public setPosition(body: KinematicBody, position: Vector2): void {
+        if (!body) return;
+        body.position.x = position.x;
+        body.position.y = position.y;
+        this.clampBodyToBounds(body);
     }
-    
-    public applyBlastWave(
-        epicenter: { x: number; y: number }, 
-        maxRadius: number, 
-        maxForce: number
-    ): void {
+
+    public applyImpulse(body: KinematicBody, force: Vector2): void {
+        if (!body || body.isStatic) return;
+
+        const mass = Math.max(1, body.mass);
+        const knockbackScale = 180;
+        body.impulseVelocity.x += (force.x / mass) * knockbackScale;
+        body.impulseVelocity.y += (force.y / mass) * knockbackScale;
+    }
+
+    public applyBlastWave(epicenter: Vector2, maxRadius: number, maxForce: number): void {
         this.activeBodies.forEach(body => {
             if (body.isStatic) return;
-            
+
             const dx = body.position.x - epicenter.x;
             const dy = body.position.y - epicenter.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (distance < maxRadius && distance > 0) {
                 const falloff = 1 / (distance * distance);
                 const force = Math.min(maxForce * falloff, maxForce);
-                
                 const angle = Math.atan2(dy, dx);
-                const impulse = {
+                this.applyImpulse(body, {
                     x: Math.cos(angle) * force,
                     y: Math.sin(angle) * force
-                };
-                
-                this.applyImpulse(body, impulse);
-            }
-        });
-    }
-    
-    public getActiveBodyCount(): number {
-        return this.activeBodies.size;
-    }
-    
-    public update(_deltaTime: number): void {
-        const activeBodiesArray = Array.from(this.activeBodies);
-        
-        activeBodiesArray.forEach(body => {
-            // Keep bodies from jittering when nearly stopped, but don't over-damp
-            if (body.speed < 0.01 && !body.isSleeping) {
-                this.scene.matter.body.setVelocity(body, { x: 0, y: 0 });
-            }
-            
-            // Light damping only; allow energetic reflections on walls
-            if (body.speed > 0.1) {
-                const damping = 0.985;
-                this.scene.matter.body.setVelocity(body, {
-                    x: body.velocity.x * damping,
-                    y: body.velocity.y * damping
                 });
             }
         });
+    }
+
+    public getActiveBodyCount(): number {
+        return this.activeBodies.size;
+    }
+
+    public update(deltaTime: number): void {
+        if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
+            return;
+        }
+
+        const bodies = Array.from(this.activeBodies);
+
+        bodies.forEach(body => {
+            if (body.isStatic) return;
+
+            const totalVelocity = {
+                x: body.movementVelocity.x + body.impulseVelocity.x,
+                y: body.movementVelocity.y + body.impulseVelocity.y
+            };
+
+            body.velocity.x = totalVelocity.x;
+            body.velocity.y = totalVelocity.y;
+            body.speed = Math.hypot(totalVelocity.x, totalVelocity.y);
+
+            body.position.x += totalVelocity.x * deltaTime;
+            body.position.y += totalVelocity.y * deltaTime;
+            this.clampBodyToBounds(body);
+
+            const damping = Phaser.Math.Clamp(
+                1 - (body.frictionAir * 2.5 + body.friction * 0.05) * deltaTime * 60,
+                0.55,
+                0.98
+            );
+            body.impulseVelocity.x *= damping;
+            body.impulseVelocity.y *= damping;
+
+            if (Math.abs(body.impulseVelocity.x) < 1) body.impulseVelocity.x = 0;
+            if (Math.abs(body.impulseVelocity.y) < 1) body.impulseVelocity.y = 0;
+
+            body.movementVelocity.x = 0;
+            body.movementVelocity.y = 0;
+        });
+
+        this.resolveOverlaps();
+    }
+
+    private resolveOverlaps(): void {
+        const bodies = Array.from(this.activeBodies).filter(body => !body.isStatic && !body.isSensor);
+
+        for (let i = 0; i < bodies.length; i++) {
+            const bodyA = bodies[i];
+            for (let j = i + 1; j < bodies.length; j++) {
+                const bodyB = bodies[j];
+                const dx = bodyB.position.x - bodyA.position.x;
+                const dy = bodyB.position.y - bodyA.position.y;
+                const minDistance = bodyA.radius + bodyB.radius;
+                const distance = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+
+                if (distance >= minDistance) {
+                    continue;
+                }
+
+                const overlap = minDistance - distance;
+                const nx = dx / distance;
+                const ny = dy / distance;
+                const inverseMassA = 1 / Math.max(1, bodyA.mass);
+                const inverseMassB = 1 / Math.max(1, bodyB.mass);
+                const totalInverseMass = inverseMassA + inverseMassB;
+
+                const pushA = overlap * (inverseMassA / totalInverseMass);
+                const pushB = overlap * (inverseMassB / totalInverseMass);
+
+                bodyA.position.x -= nx * pushA;
+                bodyA.position.y -= ny * pushA;
+                bodyB.position.x += nx * pushB;
+                bodyB.position.y += ny * pushB;
+
+                this.clampBodyToBounds(bodyA);
+                this.clampBodyToBounds(bodyB);
+
+                bodyA.gameObject?.emit?.('collision', bodyB.gameObject);
+                bodyB.gameObject?.emit?.('collision', bodyA.gameObject);
+            }
+        }
+    }
+
+    private clampBodyToBounds(body: KinematicBody): void {
+        if (!this.battlefieldBounds) return;
+
+        const minX = this.battlefieldBounds.minX + body.radius;
+        const maxX = this.battlefieldBounds.maxX - body.radius;
+        const minY = this.battlefieldBounds.minY + body.radius;
+        const maxY = this.battlefieldBounds.maxY - body.radius;
+
+        const clampedX = Phaser.Math.Clamp(body.position.x, minX, maxX);
+        const clampedY = Phaser.Math.Clamp(body.position.y, minY, maxY);
+
+        if (clampedX !== body.position.x) {
+            body.position.x = clampedX;
+            body.impulseVelocity.x = 0;
+        }
+
+        if (clampedY !== body.position.y) {
+            body.position.y = clampedY;
+            body.impulseVelocity.y = 0;
+        }
     }
 }

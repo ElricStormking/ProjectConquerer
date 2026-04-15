@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SaveManager } from '../systems/SaveManager';
+import { RunProgressionManager } from '../systems/RunProgressionManager';
 import { getPreludeSlides } from '../data/StorySlides';
 
 const MENU_BUTTON_WIDTH = 320;
@@ -8,6 +9,7 @@ const MENU_BUTTON_GAP = 20;
 
 export class TitleMenuScene extends Phaser.Scene {
     private readonly saveManager = SaveManager.getInstance();
+    private readonly runManager = RunProgressionManager.getInstance();
     private menuContainer!: Phaser.GameObjects.Container;
     private titleText!: Phaser.GameObjects.Text;
     private subtitleText!: Phaser.GameObjects.Text;
@@ -184,6 +186,7 @@ export class TitleMenuScene extends Phaser.Scene {
     }
 
     private onNewGame(): void {
+        this.runManager.abandonRun();
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.time.delayedCall(400, () => {
             const slides = getPreludeSlides().filter(key => this.textures.exists(key));
@@ -232,4 +235,3 @@ export class TitleMenuScene extends Phaser.Scene {
         });
     }
 }
-

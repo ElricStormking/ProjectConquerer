@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PhysicsManager } from '../systems/PhysicsManager';
+import { KinematicBody, PhysicsManager } from '../systems/PhysicsManager';
 import { StatusEffect } from '../systems/CombatSystem';
 import type { UnitManager } from '../systems/UnitManager';
 import type { CombatSystem } from '../systems/CombatSystem';
@@ -8,6 +8,8 @@ import { RelicManager } from '../systems/RelicManager';
 import { GameStateManager } from '../systems/GameStateManager';
 import { DataManager } from '../systems/DataManager';
 import { IRelicContext, NodeType, UnitSkillTemplate } from '../types/ironwars';
+
+const GLOBAL_MOVE_SPEED_MULTIPLIER = 2;
 
 export interface UnitConfig {
     x: number;
@@ -38,7 +40,7 @@ export class Unit extends Phaser.Events.EventEmitter {
     private id: string;
     private config: UnitConfig;
     private physicsManager: PhysicsManager;
-    private body!: MatterJS.BodyType;
+    private body!: KinematicBody;
     private sprite!: Phaser.GameObjects.Sprite;
     private healthBar!: Phaser.GameObjects.Graphics;
     private healthBarBg!: Phaser.GameObjects.Graphics;
@@ -975,12 +977,10 @@ export class Unit extends Phaser.Events.EventEmitter {
 
         const moveSpeed = this.getMoveSpeed();
         const speed = moveSpeed * this.moveSpeedMultiplier * this.tempMoveSpeedMultiplier;
-        const force = {
-            x: nx * speed * 0.002, // Reduced to 20% of original speed
-            y: ny * speed * 0.002
-        };
-        
-        this.physicsManager.applyImpulse(this.body, force);
+        this.physicsManager.setMoveVelocity(this.body, {
+            x: nx * speed,
+            y: ny * speed
+        });
     }
 
     public markBuildingBuff(): void {
@@ -1019,17 +1019,19 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (dist < 40 || dist > jumpRange) return false;
         const nx = dx / dist;
         const ny = dy / dist;
-        // Dash by setting a high velocity briefly (mass-independent)
-        const dashSpeed = 18; // tuned for heavy masses
-        (this.scene.matter.body as any).setVelocity(this.body, { x: nx * dashSpeed, y: ny * dashSpeed });
-        const prevFrictionAir = (this.body as any).frictionAir;
+        // Dash by applying a short-lived kinematic burst.
+        const dashDistance = 180;
+        const dashDurationSeconds = 0.22;
+        const dashSpeed = dashDistance / dashDurationSeconds;
+        this.physicsManager.setVelocity(this.body, { x: nx * dashSpeed, y: ny * dashSpeed });
+        const prevFrictionAir = this.body.frictionAir;
         const prevFriction = this.friction;
-        (this.body as any).frictionAir = 0.01;
-        this.friction = 0.05;
+        this.body.frictionAir = 0.01;
+        this.setFriction(0.05);
         this.lastJumpTime = currentTime;
         this.scene.time.delayedCall(220, () => {
-            (this.body as any).frictionAir = prevFrictionAir;
-            this.friction = prevFriction;
+            this.body.frictionAir = prevFrictionAir;
+            this.setFriction(prevFriction);
         });
         return true;
     }
@@ -1196,7 +1198,8 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.trailGraphics.clear(); // Clear trail on death
         this.trailPoints = []; // Clear trail points
         
-        (this.body as any).isSensor = true;
+        this.body.isSensor = true;
+        this.physicsManager.setVelocity(this.body, { x: 0, y: 0 });
         
         this.emit('death');
         
@@ -1211,8 +1214,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     // Instantly move unit to a position (used for out-of-bounds recovery)
     public teleportTo(x: number, y: number): void {
         if (!this.body) return;
-        (this.scene.matter.body as any).setPosition(this.body, { x, y });
-        (this.scene.matter.body as any).setVelocity(this.body, { x: 0, y: 0 });
+        this.physicsManager.setPosition(this.body, { x, y });
+        this.physicsManager.setVelocity(this.body, { x: 0, y: 0 });
         // Immediately sync visuals to avoid one-frame delay
         this.sprite.x = x;
         this.sprite.y = y + this.spriteOffsetY;
@@ -1381,7 +1384,7 @@ export class Unit extends Phaser.Events.EventEmitter {
                 this.moveSpeedMultiplier = 1;
                 break;
             case StatusEffect.GREASED:
-                this.friction = 0.2;
+                this.setFriction(0.2);
                 break;
             case StatusEffect.DAZED:
                 this.accuracy = 1;
@@ -1454,8 +1457,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     public setCollisionEnabled(enabled: boolean): void {
         if (!this.body || this.dead) return;
         const sensor = !enabled;
-        if ((this.body as any).isSensor !== sensor) {
-            (this.body as any).isSensor = sensor;
+        if (this.body.isSensor !== sensor) {
+            this.body.isSensor = sensor;
         }
     }
     
@@ -1486,7 +1489,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     
     public getMoveSpeed(): number {
         const baseSpeed = this.moveSpeed;
-        return RelicManager.getInstance().applyMoveSpeedModifier(baseSpeed, this.getRelicContext());
+        const effectiveSpeed = RelicManager.getInstance().applyMoveSpeedModifier(baseSpeed, this.getRelicContext());
+        return effectiveSpeed * GLOBAL_MOVE_SPEED_MULTIPLIER;
     }
 
     public getAttackSpeed(): number { 
@@ -1620,7 +1624,12 @@ export class Unit extends Phaser.Events.EventEmitter {
             });
         }
     }
-    public setFriction(value: number): void { this.friction = value; }
+    public setFriction(value: number): void {
+        this.friction = value;
+        if (this.body) {
+            this.body.friction = value;
+        }
+    }
     public setAccuracy(value: number): void { this.accuracy = value; }
     public setBuildingAccuracyMultiplier(value: number): void { this.buildingAccuracyMultiplier = value; }
     public getConfig(): UnitConfig { return this.config; }
@@ -1662,10 +1671,14 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.JADE_SHIKIGAMI_FOX: return 'jade_shikigami_fox';
             case UnitType.JADE_CHI_DRAGOON: return 'jade_chi_dragoon'; // placeholder reuse
             case UnitType.JADE_SHURIKEN_NINJAS: return 'jade_shuriken_ninjas'; // placeholder reuse
+            case UnitType.JADE_SCIMITAR_SOLDIER: return 'jade_shuriken_ninjas';
+            case UnitType.JADE_ARCHER: return 'jade_crossbow_gunners';
             case UnitType.JADE_SHADOWBLADE_ASSASSINS: return 'jade_shadowblade_assassins'; // placeholder reuse
             case UnitType.JADE_SPIRIT_LANTERN: return 'jade_spirit_lantern'; // placeholder reuse
             case UnitType.JADE_PAPER_DOLL: return 'jade_paper_doll'; // placeholder reuse
             case UnitType.JADE_BLUE_ONI: return 'jade_blue_oni'; // placeholder reuse
+            case UnitType.FROST_SKELETON_SOLDIERS: return 'frost_shade_servant';
+            case UnitType.FROST_SKELETON_ARCHER: return 'frost_putrid_archer';
             case UnitType.FROST_SHADE_SERVANT: return 'frost_shade_servant';
             case UnitType.FROST_PUTRID_ARCHER: return 'frost_putrid_archer';
             case UnitType.FROST_ETERNAL_WATCHER: return 'frost_eternal_watcher';
@@ -1698,6 +1711,10 @@ export class Unit extends Phaser.Events.EventEmitter {
                 return this.scene.textures.exists('army_Aether_Archer')
                     ? 'army_Aether_Archer'
                     : 'triarch_aether_archer';
+            case UnitType.TRIARCH_DOMINION_FOOTMEN: return 'triarch_zealot_duelist';
+            case UnitType.TRIARCH_DOMINION_GUNNER: return 'triarch_aether_archer';
+            case UnitType.ELF_ELVEN_SCOUT: return 'army_Emerald_Shadow-Guards';
+            case UnitType.ELF_ELVEN_BOWMEN: return 'army_Starlight_Sky-Skimmers';
             case UnitType.ELF_GLOW_SPROUT_SPIRIT: return 'army_Soul-Seer_Disciple';
             case UnitType.ELF_VINE_TENDRIL: return 'army_Verdant_Legionary';
             case UnitType.ELF_SPORE_WING_SCOUT: return 'army_Starlight_Sky-Skimmers';
@@ -1734,6 +1751,8 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.ABYSS_ORACLE_ABYSS: return 'army_Abyssal_Prophet';
             case UnitType.ABYSS_SACRIFICE_MASTER: return 'army_Sacrifice_Master';
             case UnitType.ABYSS_ABYSSAL_PROPHET: return 'army_Abyssal_Prophet';
+            case UnitType.ABYSS_FERAL_IMP: return 'army_abyssal_lmp';
+            case UnitType.ABYSS_ABYSSAL_FIRESPITTER: return 'army_Ballista_Fiend';
             default: return 'warrior';
         }
     }

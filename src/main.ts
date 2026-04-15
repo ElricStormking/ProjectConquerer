@@ -28,17 +28,6 @@ const config: Phaser.Types.Core.GameConfig = {
         width: 1920,
         height: 1080
     },
-    physics: {
-        default: 'matter',
-        matter: {
-            gravity: { x: 0, y: 0 },
-            debug: false,
-            enableSleeping: true,
-            constraintIterations: 2,
-            positionIterations: 6,
-            velocityIterations: 4
-        }
-    },
     fps: {
         target: 30,
         forceSetTimeOut: true

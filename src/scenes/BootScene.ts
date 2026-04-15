@@ -25,7 +25,11 @@ export class BootScene extends Phaser.Scene {
             // Mobile-specific optimizations can be added here
         }
         
-        const matterPhysics = this.matter;
+        const matterPhysics = (this as any).matter;
+        if (!matterPhysics?.world) {
+            return;
+        }
+
         matterPhysics.world.autoUpdate = false;
         
         this.time.addEvent({

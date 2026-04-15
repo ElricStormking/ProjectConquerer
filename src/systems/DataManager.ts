@@ -260,7 +260,8 @@ export class DataManager {
 
     private parseCards(csv: string): void {
         if (!csv) return;
-        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
         result.data.forEach((row: any) => {
             const id = typeof row.id === 'string' ? row.id.trim() : row.id;

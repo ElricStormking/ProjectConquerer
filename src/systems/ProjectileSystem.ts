@@ -108,6 +108,90 @@ export class Projectile extends Phaser.GameObjects.Container {
                 this.projectileGraphics.fillStyle(0x4bb8ff, 0.7);
                 this.projectileGraphics.fillCircle(-12, 0, 2);
                 break;
+
+            case UnitType.JADE_ARCHER:
+                this.projectileGraphics.clear();
+                this.projectileGraphics.fillStyle(0x7de3a1, 1);
+                this.projectileGraphics.lineStyle(1, 0xd8ffea, 0.9);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-7, -1);
+                this.projectileGraphics.lineTo(3, -1);
+                this.projectileGraphics.lineTo(3, 1);
+                this.projectileGraphics.lineTo(-7, 1);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(3, -3);
+                this.projectileGraphics.lineTo(8, 0);
+                this.projectileGraphics.lineTo(3, 3);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                break;
+
+            case UnitType.FROST_SKELETON_ARCHER:
+                this.projectileGraphics.clear();
+                this.projectileGraphics.fillStyle(0xd9e6ef, 1);
+                this.projectileGraphics.lineStyle(1, 0xf7fbff, 0.9);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-7, -1);
+                this.projectileGraphics.lineTo(3, -1);
+                this.projectileGraphics.lineTo(3, 1);
+                this.projectileGraphics.lineTo(-7, 1);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(3, -3);
+                this.projectileGraphics.lineTo(8, 0);
+                this.projectileGraphics.lineTo(3, 3);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                break;
+
+            case UnitType.ELF_ELVEN_BOWMEN:
+                this.projectileGraphics.clear();
+                this.projectileGraphics.fillStyle(0x8cf06c, 1);
+                this.projectileGraphics.lineStyle(1, 0xe6ffd8, 0.9);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-7, -1);
+                this.projectileGraphics.lineTo(3, -1);
+                this.projectileGraphics.lineTo(3, 1);
+                this.projectileGraphics.lineTo(-7, 1);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(3, -3);
+                this.projectileGraphics.lineTo(8, 0);
+                this.projectileGraphics.lineTo(3, 3);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                break;
+
+            case UnitType.TRIARCH_DOMINION_GUNNER:
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0xfff0b3, 0.95);
+                this.projectileGraphics.fillCircle(0, 0, 3);
+                this.projectileGraphics.lineStyle(2, 0xffcf66, 0.9);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-6, 0);
+                this.projectileGraphics.lineTo(5, 0);
+                this.projectileGraphics.strokePath();
+                break;
+
+            case UnitType.ABYSS_ABYSSAL_FIRESPITTER:
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0xff7a33, 0.9);
+                this.projectileGraphics.fillCircle(0, 0, 6);
+                this.projectileGraphics.fillStyle(0xffd166, 0.85);
+                this.projectileGraphics.fillCircle(1, 0, 3);
+                this.projectileGraphics.lineStyle(2, 0x992200, 0.75);
+                this.projectileGraphics.strokeCircle(0, 0, 6);
+                break;
                 
             case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
                 // Mana siphon bolt: vivid violet lance with core spark
@@ -231,6 +315,10 @@ export class Projectile extends Phaser.GameObjects.Container {
         // Orient projectile graphics along travel direction
         if (
             this.unitType === UnitType.SNIPER ||
+            this.unitType === UnitType.JADE_ARCHER ||
+            this.unitType === UnitType.FROST_SKELETON_ARCHER ||
+            this.unitType === UnitType.ELF_ELVEN_BOWMEN ||
+            this.unitType === UnitType.TRIARCH_DOMINION_GUNNER ||
             this.unitType === UnitType.TRIARCH_AETHER_ARCHER ||
             this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT
         ) {

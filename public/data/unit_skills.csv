@@ -1,6 +1,7 @@
 id,name,skill_type,trigger,target,damage,damage_type,range,aoe_radius,projectile_speed,status_effects,status_duration_ms,status_magnitude,dot_tick_ms,dot_amount,hot_tick_ms,hot_amount,stun_duration_ms,slow_amount,slow_duration_ms,cooldown_ms,windup_ms,followup_ms,max_targets,chain_count,chain_radius,aura_radius,aura_tick_ms,resource_cost,damage_buff_multiplier,heal_amount,shield_amount,cleanse,taunt,stat_mod_type,stat_mod_amount,stat_mod_duration_ms,stacking,notes,
 skill_basic_melee,Basic Melee,melee_swing,on_attack,enemy,,,,,,none,,,,,,,,,,,,,,,,,,,,,,,,,Fallback basic melee,,,,
 skill_basic_ranged,Basic Ranged,projectile,on_attack,enemy,,,,,,none,,,,,,,,,,,,,,,,,,,,,,,,,Fallback basic ranged,,,,
+skill_basic_archer_shot,Basic Archer Shot,projectile,on_attack,enemy,,,,,420,none,,,,,,,,,,,,,,,,,,,,,,,,,Fallback basic shooting attack for starter archers,,,,
 skill_jade_azure_spear,Azure Spear Opener,melee_swing,on_attack,enemy,,,,,,stun,3000,,,,,,,,,9000,,,,,,,,,,,,,, ,First hit stun with 1.5s ICD,,,,
 skill_jade_storm_monks,Storm Monk Combo,melee_swing,on_attack,enemy,,,,,,stun,1000,,,,,,,,,,,,,,,,,,,,,,, ,Approx combo stun,,,,
 skill_jade_crossbow_slow,Crossbow Suppress,projectile,on_attack,enemy,,,,,,slow,2000,,,,,,,2000,3000,,,,,,,,,,,,,,, ,Approx every few hits slow,,,,

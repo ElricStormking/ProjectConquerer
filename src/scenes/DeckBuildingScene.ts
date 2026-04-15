@@ -66,7 +66,7 @@ export class DeckBuildingScene extends Phaser.Scene {
 
     init(data: DeckBuildingSceneData): void {
         this.factionId = data.factionId ?? 'cog_dominion';
-        this.isNewRun = data.isNewRun ?? false;
+        this.isNewRun = (data.isNewRun ?? false) || Boolean(data.commanderId);
         this.startingCommanderId = data.commanderId;
     }
 
@@ -165,6 +165,13 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private initializeData(): void {
+        this.commanderRoster = [];
+        this.currentDeck = [];
+        this.availableCards = [];
+        this.selectedCommander = null;
+        this.deckScrollY = 0;
+        this.cardGridScrollY = 0;
+
         if (this.isNewRun) {
             // Starting a new run - get selected starter commander (or faction default)
             const starterCommander = this.startingCommanderId
@@ -172,8 +179,9 @@ export class DeckBuildingScene extends Phaser.Scene {
                 : this.commanderManager.getStarterCommander(this.factionId);
             if (starterCommander) {
                 this.commanderRoster = [starterCommander.id];
-                // Start with an empty deck; player builds up to the per-card limits
-                this.currentDeck = [];
+                // New runs start with the faction's basic melee and archer cards.
+                this.currentDeck = this.commanderManager.getStarterDeck(this.factionId);
+                this.availableCards = this.commanderManager.getStarterCardPool(this.factionId);
                 this.selectedCommander = starterCommander.id;
             }
         } else {
@@ -185,21 +193,21 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.currentDeck = [...runState.deck];
                 this.selectedCommander = this.commanderRoster[0] || null;
             }
-        }
-        
-        // Build available cards from commander roster
-        this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
+            
+            // Build available cards from commander roster.
+            this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
 
-        // Include any additional cards the player has acquired this run,
-        // regardless of commander ownership. These show up in Available Cards
-        // but may be locked if the player lacks the corresponding commander.
-        const collectionIds = this.runManager.getCardCollection();
-        collectionIds.forEach(id => {
-            const card = this.dataManager.getCard(id);
-            if (card) {
-                this.availableCards.push(card);
-            }
-        });
+            // Include any additional cards the player has acquired this run,
+            // regardless of commander ownership. These show up in Available Cards
+            // but may be locked if the player lacks the corresponding commander.
+            const collectionIds = this.runManager.getCardCollection();
+            collectionIds.forEach(id => {
+                const card = this.dataManager.getCard(id);
+                if (card) {
+                    this.availableCards.push(card);
+                }
+            });
+        }
 
         this.rebuildAvailableCardLimits();
     }
@@ -477,8 +485,11 @@ export class DeckBuildingScene extends Phaser.Scene {
             itemContainer.add(nameText);
             
             // Card count
-            const cardCount = commander.cardIds.length;
-            const cardText = this.add.text(75, 42, `${cardCount} cards`, {
+            const cardCount = this.isNewRun
+                ? this.commanderManager.getStarterCardPool(this.factionId).length
+                : commander.cardIds.length;
+            const cardLabel = this.isNewRun ? `${cardCount} starter cards` : `${cardCount} cards`;
+            const cardText = this.add.text(75, 42, cardLabel, {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '12px',
                 color: '#8a9cc5'
@@ -500,6 +511,10 @@ export class DeckBuildingScene extends Phaser.Scene {
             this.commanderPanel.add(itemContainer);
         });
         
+        if (this.isNewRun) {
+            return;
+        }
+
         // "Show All" button
         const showAllY = startY + this.commanderRoster.length * itemHeight + 10;
         const showAllBtn = this.add.container(10, showAllY);
@@ -534,7 +549,9 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private filterCardsByCommander(commanderId: string): void {
-        this.availableCards = this.commanderManager.getCardsForCommander(commanderId);
+        this.availableCards = this.isNewRun
+            ? this.commanderManager.getStarterCardPool(this.factionId)
+            : this.commanderManager.getCardsForCommander(commanderId);
         this.rebuildAvailableCardLimits();
         this.cardGridScrollY = 0;
         this.renderAvailableCards();
@@ -963,6 +980,19 @@ export class DeckBuildingScene extends Phaser.Scene {
                 existing.max += 1;
             } else {
                 this.availableCardLimits.set(key, { card, max: 1 });
+            }
+        });
+
+        const deckCounts = new Map<string, number>();
+        this.currentDeck.forEach(card => {
+            const key = this.getCardKey(card);
+            deckCounts.set(key, (deckCounts.get(key) ?? 0) + 1);
+        });
+
+        deckCounts.forEach((count, key) => {
+            const existing = this.availableCardLimits.get(key);
+            if (existing && existing.max < count) {
+                existing.max = count;
             }
         });
     }

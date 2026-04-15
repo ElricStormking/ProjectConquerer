@@ -11,13 +11,14 @@ import { FortressSystem } from '../systems/FortressSystem';
 import { WaveManager } from '../systems/WaveManager';
 import { CommanderSystem } from '../systems/CommanderSystem';
 import { COG_DOMINION_STARTER } from '../data/ironwars/cog_dominion_starter';
-import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig, ICommanderFullConfig, IFortressConfig } from '../types/ironwars';
+import { BattlePhase, ICard, IDeckState, IHandUpdatePayload, IGameState, IFortressGridConfig, ICommanderFullConfig, IFortressConfig, NodeType } from '../types/ironwars';
 
 type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
 type CommanderCastPayload = { screenX: number; screenY: number };
 import { UnitType } from '../data/UnitTypes';
 
-const STARTING_HAND = 5;
+const STARTING_HAND = 3;
+const NORMAL_ENCOUNTER_WAVE_COUNT = 3;
 
 import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
@@ -84,6 +85,7 @@ export class BattleScene extends Phaser.Scene {
     
     // Scene data passed from NodeEncounterSystem
     private encounterId: string = 'default';
+    private nodeType: NodeType = NodeType.BATTLE;
 
     constructor() {
         super({ key: 'BattleScene' });
@@ -144,6 +146,7 @@ export class BattleScene extends Phaser.Scene {
 
     public init(data: { nodeId?: string; encounterId?: string; nodeType?: string }): void {
         this.encounterId = data.encounterId ?? 'default';
+        this.nodeType = (data.nodeType as NodeType) ?? NodeType.BATTLE;
         
         // Reset battle state for new encounter
         this.battleState = 'preparation';
@@ -403,8 +406,11 @@ export class BattleScene extends Phaser.Scene {
         this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
         
         // Load waves for this specific encounter (battle/elite/boss node)
-        const waves = DataManager.getInstance().getWavesForEncounter(this.encounterId);
-        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, found ${waves.length} waves`);
+        const encounterWaves = DataManager.getInstance().getWavesForEncounter(this.encounterId);
+        const waves = this.nodeType === NodeType.BATTLE
+            ? encounterWaves.slice(0, NORMAL_ENCOUNTER_WAVE_COUNT)
+            : encounterWaves;
+        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
         this.waveManager.loadWaves(waves);
 
         const commanderManager = CommanderManager.getInstance();
@@ -2496,10 +2502,13 @@ export class BattleScene extends Phaser.Scene {
             UnitType.COG_THUNDER_CANNON,
             UnitType.RAIDER_BOMBER,
             UnitType.RAIDER_ARCHER,
+            UnitType.JADE_ARCHER,
             UnitType.JADE_CROSSBOW_GUNNERS,
             UnitType.JADE_SHIKIGAMI_FOX,
+            UnitType.FROST_SKELETON_ARCHER,
             UnitType.FROST_PUTRID_ARCHER,
             UnitType.FROST_AGONY_SCREAMER,
+            UnitType.TRIARCH_DOMINION_GUNNER,
             UnitType.TRIARCH_LIGHTNING_SORCERER,
             UnitType.TRIARCH_AETHER_ARCHER,
             UnitType.TRIARCH_MANA_SIPHON_ADEPT,
@@ -2507,6 +2516,7 @@ export class BattleScene extends Phaser.Scene {
             UnitType.TRIARCH_SNIPER_ELITE,
             UnitType.TRIARCH_FIRETHROWER_UNIT,
             UnitType.TRIARCH_HEAVY_SIEGE_WALKER,
+            UnitType.ELF_ELVEN_BOWMEN,
             UnitType.ELF_SPORE_WING_SCOUT,
             UnitType.ELF_SEED_POD_ARTILLERY,
             UnitType.ELF_BLOOM_THROWER,
@@ -2518,6 +2528,7 @@ export class BattleScene extends Phaser.Scene {
             UnitType.ELF_GROVE_PETITIONER,
             UnitType.ELF_SOUL_LIGHT_BUTTERFLY,
             UnitType.ELF_VITALITY_BONDER,
+            UnitType.ABYSS_ABYSSAL_FIRESPITTER,
             UnitType.ABYSS_BALLISTA_FIEND,
             UnitType.ABYSS_HELLCANNON_BEHEMOTH,
             UnitType.ABYSS_SUCCUBUS_TEMPTRESS,
@@ -2636,6 +2647,11 @@ export class BattleScene extends Phaser.Scene {
         const attackerPos = attackerUnit.getPosition();
         const targetPos = targetUnit.getPosition();
         let speed = 320;
+        const primarySkill = attackerUnit.getPrimarySkill?.();
+        const rawSkillSpeed = Number(primarySkill?.projectileSpeed);
+        if (Number.isFinite(rawSkillSpeed) && rawSkillSpeed > 0) {
+            speed = rawSkillSpeed;
+        }
         switch (unitType) {
             case UnitType.SNIPER:
                 speed = 600;
@@ -2655,6 +2671,9 @@ export class BattleScene extends Phaser.Scene {
             case UnitType.RAIDER_ARCHER:
                 speed = 420;
                 break;
+        }
+        if (Number.isFinite(rawSkillSpeed) && rawSkillSpeed > 0) {
+            speed = rawSkillSpeed;
         }
 
         this.projectileSystem.createProjectile({
