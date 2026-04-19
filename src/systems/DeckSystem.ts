@@ -66,32 +66,23 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
 
     public draw(count = 1): ICard[] {
         console.log(`[DeckSystem] draw(${count}) called, hand size: ${this.hand.length}/${this.maxHandSize}, draw pile: ${this.drawPile.length}`);
-        const drawn: ICard[] = [];
-        for (let i = 0; i < count; i++) {
-            if (this.hand.length >= this.maxHandSize) {
-                console.log(`[DeckSystem] Hand is full, cannot draw more cards`);
-                break;
-            }
-            if (this.drawPile.length === 0) {
-                if (this.discardPile.length === 0) {
-                    console.log(`[DeckSystem] Both draw pile and discard pile are empty`);
-                    break;
-                }
-                this.drawPile = [...this.discardPile];
-                this.discardPile = [];
-                this.shuffle();
-            }
-            const card = this.drawPile.shift();
-            if (!card) break;
-            this.hand.push(card);
-            drawn.push(card);
-            console.log(`[DeckSystem] Drew card: ${card.name}`);
-            this.emit('card-drawn', card);
-        }
+        const drawn = this.drawCardsInternal(count);
         if (drawn.length > 0) {
             this.emitState();
         }
         console.log(`[DeckSystem] draw() complete, drew ${drawn.length} cards, new hand size: ${this.hand.length}`);
+        return drawn;
+    }
+
+    public redrawHand(count = 1): ICard[] {
+        console.log(`[DeckSystem] redrawHand(${count}) called, replacing ${this.hand.length} card(s)`);
+        if (this.hand.length > 0) {
+            this.discardPile.push(...this.hand);
+            this.hand = [];
+        }
+        const drawn = this.drawCardsInternal(count);
+        this.emitState();
+        console.log(`[DeckSystem] redrawHand() complete, drew ${drawn.length} cards, new hand size: ${this.hand.length}`);
         return drawn;
     }
 
@@ -134,5 +125,31 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
     private emitState(): void {
         this.emit('deck-state-changed', this.getState());
         this.emit('hand-updated', { hand: [...this.hand] });
+    }
+
+    private drawCardsInternal(count: number): ICard[] {
+        const drawn: ICard[] = [];
+        for (let i = 0; i < count; i++) {
+            if (this.hand.length >= this.maxHandSize) {
+                console.log('[DeckSystem] Hand is full, cannot draw more cards');
+                break;
+            }
+            if (this.drawPile.length === 0) {
+                if (this.discardPile.length === 0) {
+                    console.log('[DeckSystem] Both draw pile and discard pile are empty');
+                    break;
+                }
+                this.drawPile = [...this.discardPile];
+                this.discardPile = [];
+                this.shuffle();
+            }
+            const card = this.drawPile.shift();
+            if (!card) break;
+            this.hand.push(card);
+            drawn.push(card);
+            console.log(`[DeckSystem] Drew card: ${card.name}`);
+            this.emit('card-drawn', card);
+        }
+        return drawn;
     }
 }

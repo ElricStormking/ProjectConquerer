@@ -49,6 +49,9 @@ export interface IFortressCellState {
     occupantKind: CardType;
     occupantType: string;
     enhancementLevel: number;
+    healthRatio?: number;
+    unitCount?: number;
+    maxUnitCount?: number;
 }
 
 export interface IFortressConfig {
@@ -225,6 +228,7 @@ export interface IDeckSystem {
     getState(): IDeckState;
     shuffle(): void;
     draw(count?: number): ICard[];
+    redrawHand(count?: number): ICard[];
     discard(cardId: string): void;
     reset(deck: ICard[]): void;
 }
@@ -356,10 +360,10 @@ export interface IRunState {
     lives: number;
     deck: ICard[];
     /**
-     * Set of card template ids (e.g. 'card_soldier_1', 'card_overclock') that
-     * the player has acquired during this run from rewards/shops/events.
-     * These cards appear in DeckBuilding \"Available Cards\" but are not
-     * automatically included in the active deck.
+     * Multiset of card template ids (e.g. 'card_soldier_1', 'card_overclock')
+     * representing the copies the player may use in DeckBuilding.
+     * New rewards/shops/events/commander unlocks add entries here without
+     * automatically inserting them into the active deck.
      */
     cardCollection: string[];
     relics: string[];

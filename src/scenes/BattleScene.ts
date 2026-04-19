@@ -387,7 +387,7 @@ export class BattleScene extends Phaser.Scene {
         const cards = DataManager.getInstance().getAllCards();
         this.deckSystem.reset(cards);
         }
-        this.deckSystem.draw(STARTING_HAND);
+        this.redrawPreparationHand();
         
         this.cardSystem = new CardSystem(
             this,
@@ -579,11 +579,11 @@ export class BattleScene extends Phaser.Scene {
         this.waveManager.on('wave-cleared', () => {
             console.log('[BattleScene] Wave cleared, checking for next wave...');
             if (this.waveManager.hasNextWave()) {
-                console.log('[BattleScene] Next wave available, returning to preparation phase and showing card reward');
+                console.log('[BattleScene] Next wave available, returning to preparation phase and refreshing the hand');
                 // Between waves, return to a full building phase so the
                 // player can adjust their fortress and play additional
                 // cards before the next fight.
-                this.setWaveIntermissionLock(true); // keep camera at center until reward is done
+                this.setWaveIntermissionLock(true); // keep camera centered until intermission is dismissed
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
                 this.resetAlliedUnitsToSpawnPositions();
@@ -598,9 +598,12 @@ export class BattleScene extends Phaser.Scene {
                 
                 // Hide start button while the victory UI is up
                 this.hideStartButton();
-                // Between waves: show a Wave Cleared overlay before offering card reward
+                // Between waves: show a Wave Cleared overlay, then redraw a fresh hand.
                 this.showWaveClearedOverlay(() => {
-                this.showCardRewardScreen();
+                    this.redrawPreparationHand();
+                    this.setWaveIntermissionLock(false);
+                    this.updateCameraForPhase('PREPARATION');
+                    this.showStartButton('Start Next Wave');
                 });
             } else {
                 console.log('[BattleScene] No more waves, triggering victory');
@@ -690,38 +693,9 @@ export class BattleScene extends Phaser.Scene {
         this.startButtonBg?.disableInteractive();
     }
 
-    private showCardRewardScreen(): void {
-        if (!this.scene.isActive('CardRewardScene')) {
-            console.log('[BattleScene] Launching CardRewardScene');
-            this.scene.launch('CardRewardScene');
-        }
-
-        this.scene.bringToTop('CardRewardScene');
-
-        const rewardScene = this.scene.get('CardRewardScene') as any;
-        console.log('[BattleScene] Calling CardRewardScene.showCardReward');
-
-        // Build current deck pool from DeckSystem state so reward distribution
-        // matches the actual deck composition (drawPile + discard + hand).
-        const deckState = this.deckSystem.getState();
-        const deckPool: ICard[] = [
-            ...deckState.drawPile,
-            ...deckState.discardPile,
-            ...deckState.hand
-        ];
-
-        rewardScene.showCardReward(deckPool, (selectedCard: ICard) => {
-            console.log(`[BattleScene] Card selected: ${selectedCard.name}`);
-
-            this.deckSystem.addCard(selectedCard);
-
-            this.scene.stop('CardRewardScene');
-
-            // Release camera lock and return to fortress view
-            this.setWaveIntermissionLock(false);
-            this.updateCameraForPhase('PREPARATION');
-            this.showStartButton('Start Next Wave');
-        });
+    private redrawPreparationHand(): void {
+        const redrawnCards = this.deckSystem.redrawHand(STARTING_HAND);
+        console.log(`[BattleScene] Prepared ${redrawnCards.length} card(s) for the upcoming wave`);
     }
 
     private tryStartWave() {
@@ -751,6 +725,10 @@ export class BattleScene extends Phaser.Scene {
         const states = run.fortressCellStates?.[fortressId] ?? [];
         if (states.length === 0) return;
         this.cardSystem.restoreFortressState(states);
+    }
+
+    public capturePersistentFortressState(): void {
+        this.cardSystem.capturePersistentUnitHealthSnapshot();
     }
 
     private setupPointerBridge() {
@@ -957,7 +935,7 @@ export class BattleScene extends Phaser.Scene {
         const duration = 600;
 
         if (this.waveIntermissionCameraLock) {
-            // Keep camera steady during wave-cleared reward flow
+            // Keep camera steady while the wave-cleared intermission overlay is up.
             return;
         }
         if (phase === 'PREPARATION') {
@@ -2581,6 +2559,11 @@ export class BattleScene extends Phaser.Scene {
             UnitType.JADE_CHI_DRAGOON,
             UnitType.JADE_BLUE_ONI,
             UnitType.JADE_PAPER_DOLL,
+            UnitType.JADE_SCIMITAR_SOLDIER,
+            UnitType.FROST_SKELETON_SOLDIERS,
+            UnitType.TRIARCH_DOMINION_FOOTMEN,
+            UnitType.ELF_ELVEN_SCOUT,
+            UnitType.ABYSS_FERAL_IMP,
             UnitType.FROST_SHADE_SERVANT,
             UnitType.FROST_BLOODLINE_NOBLE,
             UnitType.FROST_ETERNAL_WATCHER,

@@ -24,7 +24,7 @@ export class RestScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.add.text(960, 420, `Resting will heal ${this.payload.healAmount} fortress HP.`, {
+        this.add.text(960, 420, `Resting will heal ${this.payload.healAmount} fortress HP and restore deployed units to full.`, {
             fontSize: '28px',
             color: '#ffffff'
         }).setOrigin(0.5);

@@ -13,6 +13,7 @@ import { TurretVFXSystem } from './TurretVFXSystem';
 export class CardSystem {
     private isRestoring: boolean = false;
     private turretVFX: TurretVFXSystem;
+    private unitCellAssignments: Map<string, { x: number; y: number }> = new Map();
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
     private cannonTowers: Array<{
         x: number;
@@ -119,13 +120,32 @@ export class CardSystem {
         
         // Listen to unit death events to release fortress cells
         this.scene.events.on('unit-death', (unit: any) => {
+            const unitId = unit.getId?.() ?? '';
+            const assignment = this.unitCellAssignments.get(unitId);
+            this.unitCellAssignments.delete(unitId);
             if (unit.getTeam && unit.getTeam() === 1) {
-                // Only release cells for player team units
-                const unitId = unit.getId();
+                // Only release the fortress cell when the last troop in that cell is gone.
                 const unitType = unit.getConfig?.()?.unitType || 'unknown';
-                console.log(`[CardSystem] Player unit died: ${unitType} (ID: ${unitId}), releasing fortress cell`);
-                const released = this.fortressSystem.releaseCellByOccupant(unitId);
-                this.clearPersistedCells(released);
+                console.log(`[CardSystem] Player unit died: ${unitType} (ID: ${unitId})`);
+
+                if (assignment) {
+                    const survivors = this.getAssignedUnitsForCell(assignment.x, assignment.y);
+                    const cell = this.fortressSystem.getCell(assignment.x, assignment.y);
+
+                    if (survivors.length === 0) {
+                        console.log(`[CardSystem] Last troop in cell (${assignment.x}, ${assignment.y}) died, releasing fortress cell`);
+                        const released = this.fortressSystem.releaseCellByOccupant(unitId);
+                        this.clearPersistedCells(released);
+                    } else {
+                        if (cell && cell.occupantId === unitId) {
+                            cell.occupantId = survivors[0].getId();
+                        }
+                        this.persistAssignedUnitCount(assignment.x, assignment.y, false);
+                    }
+                } else {
+                    const released = this.fortressSystem.releaseCellByOccupant(unitId);
+                    this.clearPersistedCells(released);
+                }
             }
             this.handleSoulStoneDeath(unit);
         });
@@ -426,7 +446,8 @@ export class CardSystem {
         gridY: number,
         statMultiplier: number = 1,
         batchIndex: number = 0,
-        useInitialSpawn: boolean = false
+        useInitialSpawn: boolean = false,
+        forcedCount?: number
     ): boolean {
         if (!unitId) return false;
 
@@ -449,7 +470,7 @@ export class CardSystem {
         const baseSpawn = useInitialSpawn
             ? unitTemplate.initialSpawn ?? unitTemplate.spawnAmount
             : unitTemplate.spawnAmount;
-        const spawnCount = Math.max(1, baseSpawn ?? 3);
+        const spawnCount = Math.max(1, Math.round(forcedCount ?? baseSpawn ?? 3));
         const cellSize = this.fortressSystem.getCellDimensions();
         const offsets = this.getSpawnOffsets(spawnCount, cellSize, batchIndex);
 
@@ -476,6 +497,7 @@ export class CardSystem {
             const unit = this.unitManager.spawnUnit(config);
             if (unit) {
                 spawned.push(unit);
+                this.unitCellAssignments.set(unit.getId(), { x: gridX, y: gridY });
             }
         });
 
@@ -508,6 +530,7 @@ export class CardSystem {
             const unit = this.unitManager.spawnUnit(config);
             if (unit) {
                 spawned.push(unit);
+                this.unitCellAssignments.set(unit.getId(), { x: gridX, y: gridY });
             }
         });
 
@@ -1308,7 +1331,10 @@ export class CardSystem {
             y: gridY,
             occupantKind,
             occupantType,
-            enhancementLevel: cell.enhancementLevel || 0
+            enhancementLevel: cell.enhancementLevel || 0,
+            healthRatio: occupantKind === CardType.UNIT ? 1 : undefined,
+            unitCount: occupantKind === CardType.UNIT ? this.getAssignedUnitsForCell(gridX, gridY).length : undefined,
+            maxUnitCount: occupantKind === CardType.UNIT ? this.getAssignedUnitsForCell(gridX, gridY).length : undefined
         };
         const fortressId = this.fortressSystem.getFortressId();
         RunProgressionManager.getInstance().upsertFortressCellState(fortressId, entry);
@@ -1342,7 +1368,7 @@ export class CardSystem {
                 let placed = false;
                 switch (occupantKind) {
                     case CardType.UNIT:
-                        placed = this.spawnUnitCard(state.occupantType, state.x, state.y);
+                        placed = this.restoreUnitTroop(state);
                         break;
                     case CardType.STRUCTURE:
                         placed = this.placeStructure(state.occupantType, state.x, state.y, card);
@@ -1359,17 +1385,162 @@ export class CardSystem {
                 }
 
                 if (!placed) return;
+                if (occupantKind === CardType.UNIT) {
+                    this.applyPersistedUnitHealth(state.x, state.y, state.healthRatio);
+                    return;
+                }
+
                 const level = Math.max(0, Math.min(state.enhancementLevel ?? 0, 3));
-                if (level <= 0) return;
-                const targetCell = this.fortressSystem.getCell(state.x, state.y);
-                if (!targetCell) return;
-                for (let i = 0; i < level; i++) {
-                    this.enhanceEntity(targetCell, card);
+                if (level > 0) {
+                    const targetCell = this.fortressSystem.getCell(state.x, state.y);
+                    if (targetCell) {
+                        for (let i = 0; i < level; i++) {
+                            this.enhanceEntity(targetCell, card);
+                        }
+                    }
                 }
             });
         } finally {
             this.isRestoring = false;
         }
+    }
+
+    public capturePersistentUnitHealthSnapshot(): void {
+        const fortressId = this.fortressSystem.getFortressId();
+        const runManager = RunProgressionManager.getInstance();
+        const states = runManager.getFortressCellStates(fortressId);
+        if (states.length === 0) {
+            return;
+        }
+
+        states.forEach(state => {
+            if (state.occupantKind !== CardType.UNIT) {
+                return;
+            }
+
+            const units = this.getAssignedUnitsForCell(state.x, state.y);
+            if (units.length === 0) {
+                return;
+            }
+
+            const ratioTotal = units.reduce((sum, unit) => {
+                const maxHealth = Number(unit.getMaxHealth?.() ?? 0);
+                const currentHealth = Number(unit.getHealth?.() ?? 0);
+                if (maxHealth <= 0) {
+                    return sum;
+                }
+                return sum + Phaser.Math.Clamp(currentHealth / maxHealth, 0, 1);
+            }, 0);
+            const averageRatio = Phaser.Math.Clamp(ratioTotal / units.length, 0, 1);
+            runManager.upsertFortressCellState(fortressId, {
+                ...state,
+                unitCount: units.length,
+                maxUnitCount: Math.max(state.maxUnitCount ?? 0, units.length),
+                healthRatio: averageRatio
+            });
+        });
+    }
+
+    private getAssignedUnitsForCell(gridX: number, gridY: number): any[] {
+        return this.unitManager.getUnitsByTeam(1).filter(unit => {
+            if (unit.isDead?.()) {
+                return false;
+            }
+            const assignment = this.unitCellAssignments.get(unit.getId?.() ?? '');
+            return !!assignment && assignment.x === gridX && assignment.y === gridY;
+        });
+    }
+
+    private persistAssignedUnitCount(gridX: number, gridY: number, syncMaxWithCurrent: boolean): void {
+        const fortressId = this.fortressSystem.getFortressId();
+        const runManager = RunProgressionManager.getInstance();
+        const state = runManager
+            .getFortressCellStates(fortressId)
+            .find(cell => cell.x === gridX && cell.y === gridY);
+
+        if (!state || state.occupantKind !== CardType.UNIT) {
+            return;
+        }
+
+        const currentCount = this.getAssignedUnitsForCell(gridX, gridY).length;
+        runManager.upsertFortressCellState(fortressId, {
+            ...state,
+            unitCount: currentCount,
+            maxUnitCount: syncMaxWithCurrent
+                ? currentCount
+                : Math.max(state.maxUnitCount ?? 0, currentCount)
+        });
+    }
+
+    private restoreUnitTroop(state: IFortressCellState): boolean {
+        const unitId = state.occupantType;
+        const unitTemplate = DataManager.getInstance().getUnitTemplate(unitId);
+        if (!unitTemplate) {
+            return false;
+        }
+
+        const enhancementLevel = Math.max(0, Math.min(state.enhancementLevel ?? 0, 3));
+        const baseBatchCount = Math.max(1, Math.round(unitTemplate.initialSpawn ?? unitTemplate.spawnAmount ?? 3));
+        const extraBatchCount = Math.max(1, Math.round(unitTemplate.spawnAmount ?? baseBatchCount));
+        const fullDefaultCount =
+            baseBatchCount +
+            enhancementLevel * extraBatchCount;
+
+        let remaining = Math.max(
+            0,
+            Math.round(state.unitCount ?? state.maxUnitCount ?? fullDefaultCount)
+        );
+        if (remaining <= 0) {
+            return false;
+        }
+
+        let placed = false;
+        const spawnBatch = (count: number, statMultiplier: number, batchIndex: number) => {
+            if (count <= 0) return;
+            if (this.spawnUnitCard(unitId, state.x, state.y, statMultiplier, batchIndex, false, count)) {
+                placed = true;
+                remaining -= count;
+            }
+        };
+
+        const baseCount = Math.min(remaining, baseBatchCount);
+        spawnBatch(baseCount, 1, 0);
+
+        for (let level = 1; level <= enhancementLevel && remaining > 0; level++) {
+            const count = Math.min(remaining, extraBatchCount);
+            spawnBatch(count, Math.pow(1.5, level), level);
+        }
+
+        while (remaining > 0) {
+            const count = Math.min(remaining, extraBatchCount);
+            spawnBatch(count, Math.pow(1.5, Math.max(1, enhancementLevel)), Math.max(1, enhancementLevel));
+        }
+
+        const cell = this.fortressSystem.getCell(state.x, state.y);
+        if (cell) {
+            cell.enhancementLevel = enhancementLevel;
+        }
+
+        return placed;
+    }
+
+    private applyPersistedUnitHealth(gridX: number, gridY: number, healthRatio?: number): void {
+        if (!Number.isFinite(healthRatio)) {
+            return;
+        }
+
+        const ratio = Phaser.Math.Clamp(Number(healthRatio), 0, 1);
+        if (ratio <= 0 || ratio >= 1) {
+            return;
+        }
+
+        this.getAssignedUnitsForCell(gridX, gridY).forEach(unit => {
+            const maxHealth = Number(unit.getMaxHealth?.() ?? 0);
+            if (maxHealth <= 0) {
+                return;
+            }
+            unit.setHealth?.(Math.max(1, Math.round(maxHealth * ratio)));
+        });
     }
     private createBarrierField(x: number, y: number, gridX: number, gridY: number, spellId: string) {
         const occupantId = `armor_shop_${this.buildingBuffs.length}`;
@@ -1532,6 +1703,9 @@ export class CardSystem {
         const body = this.scene.add.image(x, y, textureKey);
         body.setOrigin(0.5, 0.8);
         this.fitBuildingToFortressCell(body);
+        if (effectId === 'jade_archer_volley') {
+            body.setFlipX(true);
+        }
         const hpBg = this.scene.add.graphics();
         const hpBar = this.scene.add.graphics();
         body.setDepth(y + 3600);

@@ -420,6 +420,11 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.JADE_CHI_DRAGOON:
             case UnitType.JADE_BLUE_ONI:
             case UnitType.JADE_PAPER_DOLL:
+            case UnitType.JADE_SCIMITAR_SOLDIER:
+            case UnitType.FROST_SKELETON_SOLDIERS:
+            case UnitType.TRIARCH_DOMINION_FOOTMEN:
+            case UnitType.ELF_ELVEN_SCOUT:
+            case UnitType.ABYSS_FERAL_IMP:
             case UnitType.FROST_SHADE_SERVANT:
             case UnitType.FROST_BLOODLINE_NOBLE:
             case UnitType.FROST_ETERNAL_WATCHER:
@@ -1454,6 +1459,15 @@ export class Unit extends Phaser.Events.EventEmitter {
     public getDeathTimer(): number { return this.deathTimer; }
     public getHealth(): number { return this.health; }
     public getMaxHealth(): number { return this.maxHealth; }
+    public setHealth(value: number): void {
+        if (this.dead) return;
+        const next = Math.max(0, Math.min(this.maxHealth, Number(value) || 0));
+        this.health = next;
+        this.updateHealthBar();
+        if (this.health <= 0) {
+            this.die();
+        }
+    }
     public setCollisionEnabled(enabled: boolean): void {
         if (!this.body || this.dead) return;
         const sensor = !enabled;

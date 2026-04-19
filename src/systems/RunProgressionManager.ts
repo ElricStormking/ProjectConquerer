@@ -15,7 +15,8 @@ import {
     IFortressConfig,
     IFortressCell,
     IFortressCellState,
-    IStorySlideState
+    IStorySlideState,
+    CardType
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
@@ -96,6 +97,36 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             pendingStageOutroStageIndex: state.pendingStageOutroStageIndex,
             pendingFinal: state.pendingFinal
         };
+    }
+
+    private buildCollectionFromCards(cards: ICard[]): string[] {
+        return cards.map(card => this.normalizeCardId(card.id));
+    }
+
+    private ensureCardCollectionInitialized(): void {
+        if (!this.runState) return;
+        if (!this.runState.cardCollection) {
+            this.runState.cardCollection = [];
+        }
+
+        const collectionCounts = new Map<string, number>();
+        this.runState.cardCollection.forEach(cardId => {
+            const key = this.normalizeCardId(cardId);
+            collectionCounts.set(key, (collectionCounts.get(key) ?? 0) + 1);
+        });
+
+        const deckCounts = new Map<string, number>();
+        this.runState.deck.forEach(card => {
+            const key = this.normalizeCardId(card.id);
+            deckCounts.set(key, (deckCounts.get(key) ?? 0) + 1);
+        });
+
+        deckCounts.forEach((requiredCount, key) => {
+            const currentCount = collectionCounts.get(key) ?? 0;
+            for (let i = currentCount; i < requiredCount; i++) {
+                this.runState?.cardCollection?.push(key);
+            }
+        });
     }
 
     public getRunState(): RunStateSnapshot | null {
@@ -257,7 +288,12 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return { ...node, nextNodeIds: [...node.nextNodeIds] };
     }
 
-    public startNewRun(factionId = 'cog_dominion', difficulty = 0, commanderIdOverride?: string): void {
+    public startNewRun(
+        factionId = 'cog_dominion',
+        difficulty = 0,
+        commanderIdOverride?: string,
+        initialBonusCards: ICard[] = []
+    ): void {
         this.difficultyLevel = difficulty;
         this.buildStageGraph();
         
@@ -275,6 +311,11 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const baseFortressHp = fortress?.maxHp ?? fallbackStarter.fortress.maxHp;
         const commanderId = starterCommander?.id ?? fallbackStarter.commander.id;
         const deck = starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck];
+        const starterCollection = this.commanderManager.getStarterCardPool(factionId);
+        const initialCollection =
+            starterCollection.length > 0 || initialBonusCards.length > 0
+                ? [...starterCollection, ...initialBonusCards]
+                : deck;
         const fortressId = fortress?.id ?? fallbackStarter.fortress.id;
         const fortressConfig = fortress ?? this.factionRegistry.getFortressConfig(fortressId) ?? fallbackStarter.fortress;
         const initialUnlocked = this.getInitialUnlockedCells(fortressConfig);
@@ -312,8 +353,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             gold: startingGold,
             lives: startingLives,
             deck: [...deck],
-            // Start with an empty collection; new rewards will populate this.
-            cardCollection: [],
+            cardCollection: this.buildCollectionFromCards(initialCollection),
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
@@ -351,6 +391,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             this.runState.lives = 3;
         }
         if (this.runState) {
+            this.ensureCardCollectionInitialized();
             const storySlides = this.ensureStorySlidesState(true);
             if (storySlides.stageIntroSeen.length === 0) {
                 storySlides.stageIntroSeen = [this.runState.currentStageIndex];
@@ -421,6 +462,26 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const states = record[fortressId] ? [...record[fortressId]] : [];
         const nextStates = states.filter(cell => cell.x !== x || cell.y !== y);
         record[fortressId] = nextStates;
+        this.runState.fortressCellStates = record;
+        this.saveRun();
+    }
+
+    public restoreFortressUnitsToFull(): void {
+        if (!this.runState?.fortressCellStates) return;
+
+        const record: Record<string, IFortressCellState[]> = {};
+        Object.keys(this.runState.fortressCellStates).forEach(fortressId => {
+            record[fortressId] = this.runState!.fortressCellStates![fortressId].map(cell =>
+                cell.occupantKind === CardType.UNIT
+                    ? {
+                        ...cell,
+                        healthRatio: 1,
+                        unitCount: cell.maxUnitCount ?? cell.unitCount ?? 1
+                    }
+                    : { ...cell }
+            );
+        });
+
         this.runState.fortressCellStates = record;
         this.saveRun();
     }
@@ -503,11 +564,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
      */
     public addCardToCollection(card: ICard): void {
         if (!this.runState) return;
-        const baseId = this.normalizeCardId(card.id);
-        if (!this.runState.cardCollection) {
-            this.runState.cardCollection = [];
-        }
-        this.runState.cardCollection.push(baseId);
+        this.ensureCardCollectionInitialized();
+        this.runState.cardCollection!.push(this.normalizeCardId(card.id));
         this.saveRun();
     }
 
@@ -526,7 +584,16 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     public addCommanderToRoster(commanderId: string): boolean {
         if (!this.runState) return false;
         if (this.runState.commanderRoster.includes(commanderId)) return false;
+        this.ensureCardCollectionInitialized();
         this.runState.commanderRoster.push(commanderId);
+        const unlockCards = this.commanderManager.getUnlockCardsForCommander(
+            commanderId,
+            this.runState.cardCollection ?? [],
+            3
+        );
+        unlockCards.forEach(card => {
+            this.runState?.cardCollection?.push(this.normalizeCardId(card.id));
+        });
         this.saveRun();
         this.emit('roster-updated', [...this.runState.commanderRoster]);
         return true;
@@ -648,6 +715,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     }
 
     public getCardCollection(): string[] {
+        this.ensureCardCollectionInitialized();
         return this.runState ? [...(this.runState.cardCollection ?? [])] : [];
     }
 

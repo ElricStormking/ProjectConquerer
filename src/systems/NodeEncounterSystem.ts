@@ -20,6 +20,12 @@ export class NodeEncounterSystem {
     private readonly dataManager = DataManager.getInstance();
     private readonly relicManager = RelicManager.getInstance();
     private readonly commanderManager = CommanderManager.getInstance();
+    private readonly collectibleCardTypes = new Set<CardType>([
+        CardType.UNIT,
+        CardType.STRUCTURE,
+        CardType.SPELL,
+        CardType.MODULE
+    ]);
     private resolving = false;
 
     constructor(private readonly hostScene: Phaser.Scene) {}
@@ -90,6 +96,10 @@ export class NodeEncounterSystem {
 
     private onBattleComplete(node: IMapNode, victory: boolean): void {
         const scenePlugin = this.hostScene.scene;
+        const battleScene = scenePlugin.get('BattleScene') as any;
+        if (victory) {
+            battleScene?.capturePersistentFortressState?.();
+        }
         scenePlugin.stop('BattleScene');
         scenePlugin.stop('UIScene');
         const hostKey = this.hostScene.scene.key;
@@ -120,7 +130,7 @@ export class NodeEncounterSystem {
             this.runManager.healFortress(nodeCompleteContext.fortressHealBonus as number);
         }
 
-        const cardChoices = this.generateRosterCardChoices(node.rewardTier);
+        const cardChoices = this.generateBattleRewardCardChoices(node.rewardTier);
         let goldReward = node.rewardTier * 50;
         goldReward = this.relicManager.applyGoldModifier(goldReward);
 
@@ -279,6 +289,7 @@ export class NodeEncounterSystem {
                 scenePlugin.stop(restSceneKey);
                 if (action === 'rest') {
                     this.runManager.healFortress(healAmount);
+                    this.runManager.restoreFortressUnitsToFull();
                 }
                 this.finishEncounter(node);
             }
@@ -287,9 +298,7 @@ export class NodeEncounterSystem {
     }
 
     private startRecruitmentEncounter(node: IMapNode): void {
-        const commanderRoster = this.runManager.getCommanderRoster();
-        const rosterCards = this.commanderManager.getCardsForCommanders(commanderRoster);
-        const unitCards = rosterCards.filter(card => card.type === CardType.UNIT);
+        const unitCards = this.getCollectibleRewardCardPool([CardType.UNIT]);
         if (unitCards.length === 0) {
             this.finishEncounter(node);
             return;
@@ -333,24 +342,68 @@ export class NodeEncounterSystem {
         this.hostScene.events.emit('node-resolved', latest ?? node);
     }
 
-    private generateCardChoices(tier: number): ICard[] {
-        const rarity = tier <= 1 ? 'common' : tier === 2 ? 'rare' : 'epic';
-        const cards = this.dataManager.getAllCards();
-        const filtered = cards.filter(card => card.rarity === rarity);
-        const pool = filtered.length > 0 ? filtered : cards;
-        return Phaser.Utils.Array.Shuffle([...pool]).slice(0, 3);
+    private getBattleRewardCardPool(types?: CardType[]): ICard[] {
+        const roster = this.runManager.getCommanderRoster();
+        if (roster.length === 0) {
+            return this.getCollectibleRewardCardPool(types);
+        }
+
+        const allowedTypes = new Set(types ?? Array.from(this.collectibleCardTypes));
+        const seenTemplateIds = new Set<string>();
+
+        return this.dataManager.getAllCards().filter(card => {
+            if (!allowedTypes.has(card.type)) {
+                return false;
+            }
+            if (!this.commanderManager.isCardUsableByRoster(card.id, roster)) {
+                return false;
+            }
+
+            const templateId = this.getRewardCardKey(card.id);
+            if (seenTemplateIds.has(templateId)) {
+                return false;
+            }
+
+            seenTemplateIds.add(templateId);
+            return true;
+        });
     }
 
-    private generateRosterCardChoices(tier: number, count: number = 3): ICard[] {
-        const rarity = tier <= 1 ? 'common' : tier === 2 ? 'rare' : 'epic';
+    private getCollectibleRewardCardPool(types?: CardType[]): ICard[] {
+        const runState = this.runManager.getRunState();
         const roster = this.runManager.getCommanderRoster();
-        const rosterCards = this.commanderManager.getCardsForCommanders(roster);
-        if (rosterCards.length === 0) {
-            console.warn('[NodeEncounterSystem] No roster cards available for battle reward.');
+        const allowedTypes = new Set(types ?? Array.from(this.collectibleCardTypes));
+        const factionId = runState?.factionId;
+        const commanderIds = factionId
+            ? roster.filter(commanderId => this.commanderManager.getCommander(commanderId)?.factionId === factionId)
+            : roster;
+        const seenCardIds = new Set<string>();
+
+        return this.commanderManager.getCardsForCommanders(commanderIds).filter(card => {
+            if (!allowedTypes.has(card.type)) {
+                return false;
+            }
+            if (seenCardIds.has(card.id)) {
+                return false;
+            }
+            seenCardIds.add(card.id);
+            return true;
+        });
+    }
+
+    private generateCollectibleCardChoices(
+        tier: number,
+        count: number = 3,
+        types?: CardType[]
+    ): ICard[] {
+        const rarity = tier <= 1 ? 'common' : tier === 2 ? 'rare' : 'epic';
+        const rewardCards = this.getCollectibleRewardCardPool(types);
+        if (rewardCards.length === 0) {
+            console.warn('[NodeEncounterSystem] No collectible reward cards available for current run.');
             return [];
         }
-        const filtered = rosterCards.filter(card => card.rarity === rarity);
-        const pool = filtered.length > 0 ? filtered : rosterCards;
+        const filtered = rewardCards.filter(card => card.rarity === rarity);
+        const pool = filtered.length > 0 ? filtered : rewardCards;
         const cardOptions = Phaser.Utils.Array.Shuffle([...pool]).slice(0, count);
         while (cardOptions.length < count) {
             cardOptions.push(Phaser.Utils.Array.GetRandom(pool));
@@ -358,11 +411,38 @@ export class NodeEncounterSystem {
         return cardOptions;
     }
 
+    private generateBattleRewardCardChoices(
+        tier: number,
+        count: number = 3,
+        types?: CardType[]
+    ): ICard[] {
+        const rarity = tier <= 1 ? 'common' : tier === 2 ? 'rare' : 'epic';
+        const rewardCards = this.getBattleRewardCardPool(types);
+        if (rewardCards.length === 0) {
+            console.warn('[NodeEncounterSystem] No commander reward cards available for current run.');
+            return [];
+        }
+
+        const filtered = rewardCards.filter(card => card.rarity === rarity);
+        const pool = filtered.length > 0 ? filtered : rewardCards;
+        const cardOptions = Phaser.Utils.Array.Shuffle([...pool]).slice(0, count);
+        while (cardOptions.length < count) {
+            cardOptions.push(Phaser.Utils.Array.GetRandom(pool));
+        }
+        return cardOptions;
+    }
+
+    private getRewardCardKey(cardId: string): string {
+        let base = cardId.replace(/_\d+$/, '');
+        base = base.replace(/_\d+$/, '');
+        return base;
+    }
+
     private buildShopInventory(tier: number): {
         cards: Array<{ card: ICard; cost: number }>;
         relic?: { relic: IRelicConfig; cost: number };
     } {
-        const cards = this.generateCardChoices(tier).map(card => ({
+        const cards = this.generateCollectibleCardChoices(tier).map(card => ({
             card,
             cost: 60 + tier * 20
         }));
@@ -431,19 +511,19 @@ export class NodeEncounterSystem {
         }
 
         if (lower.includes('add_card_epic') || lower.includes('gain_card_epic')) {
-            const cards = this.generateCardChoices(3);
+            const cards = this.generateCollectibleCardChoices(3, 1);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
         if (lower.includes('add_card_rare') || lower.includes('gain_card_rare')) {
-            const cards = this.generateCardChoices(2);
+            const cards = this.generateCollectibleCardChoices(2, 1);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }
 
         if (lower.includes('gain_random_card') || lower.includes('gain_card_common') || lower.includes('add_card_common')) {
-            const cards = this.generateCardChoices(1);
+            const cards = this.generateCollectibleCardChoices(1, 1);
             if (cards[0]) this.runManager.addCardToCollection(cards[0]);
             return;
         }

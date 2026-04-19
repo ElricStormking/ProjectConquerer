@@ -93,6 +93,7 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...runState.relics],
             curses: [...runState.curses],
             commanderRoster: [...runState.commanderRoster],
+            cardCollection: [...(runState.cardCollection ?? [])],
             fortressUnlockedCells: runState.fortressUnlockedCells,
             fortressCellStates: this.cloneFortressCellStates(runState.fortressCellStates)
         };
@@ -113,6 +114,7 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...run.relics],
             curses: [...run.curses],
             commanderRoster: [...run.commanderRoster],
+            cardCollection: [...(run.cardCollection ?? [])],
             fortressUnlockedCells: run.fortressUnlockedCells ? { ...run.fortressUnlockedCells } : undefined,
             fortressCellStates: this.cloneFortressCellStates(run.fortressCellStates)
         };

@@ -9,7 +9,6 @@ const MAX_DECK_SIZE = 40;
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 200;
 const CARD_GAP = 14;
-const CARDS_PER_ROW = 4;
 // Enlarged hover panel for card details (roughly 2x previous height)
 const HOVER_PANEL_HEIGHT = 420;
 
@@ -31,6 +30,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     private commanderRoster: string[] = [];
     private currentDeck: ICard[] = [];
     private availableCards: ICard[] = [];
+    private newRunBonusCards: ICard[] = [];
     private selectedCommander: string | null = null;
 
     // Per-card limits for how many copies can be added to the deck from the available pool
@@ -43,6 +43,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     private deckPanel!: Phaser.GameObjects.Container;
     private cardGridContainer!: Phaser.GameObjects.Container;
     private deckListContainer!: Phaser.GameObjects.Container;
+    private availableCardCountText!: Phaser.GameObjects.Text;
     private deckCountText!: Phaser.GameObjects.Text;
     // Layout bounds
     private commanderBounds = { x: 0, y: 90, width: 280, height: 0 };
@@ -168,6 +169,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.commanderRoster = [];
         this.currentDeck = [];
         this.availableCards = [];
+        this.newRunBonusCards = [];
         this.selectedCommander = null;
         this.deckScrollY = 0;
         this.cardGridScrollY = 0;
@@ -181,8 +183,12 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.commanderRoster = [starterCommander.id];
                 // New runs start with the faction's basic melee and archer cards.
                 this.currentDeck = this.commanderManager.getStarterDeck(this.factionId);
-                this.availableCards = this.commanderManager.getStarterCardPool(this.factionId);
                 this.selectedCommander = starterCommander.id;
+                this.newRunBonusCards = this.commanderManager.getRandomUnlockCardsForCommander(
+                    starterCommander.id,
+                    this.currentDeck.map(card => card.id),
+                    3
+                );
             }
         } else {
             // Existing run - load from run state
@@ -193,23 +199,48 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.currentDeck = [...runState.deck];
                 this.selectedCommander = this.commanderRoster[0] || null;
             }
-            
-            // Build available cards from commander roster.
-            this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
-
-            // Include any additional cards the player has acquired this run,
-            // regardless of commander ownership. These show up in Available Cards
-            // but may be locked if the player lacks the corresponding commander.
-            const collectionIds = this.runManager.getCardCollection();
-            collectionIds.forEach(id => {
-                const card = this.dataManager.getCard(id);
-                if (card) {
-                    this.availableCards.push(card);
-                }
-            });
         }
 
+        this.refreshAvailableCards();
+    }
+
+    private getBaseAvailableCards(): ICard[] {
+        if (this.isNewRun) {
+            return [
+                ...this.commanderManager.getStarterCardPool(this.factionId),
+                ...this.newRunBonusCards
+            ];
+        }
+
+        return this.runManager
+            .getCardCollection()
+            .map(id => this.dataManager.getCard(id))
+            .filter((card): card is ICard => card !== undefined);
+    }
+
+    private getAvailableCardsForSelection(): ICard[] {
+        const baseCards = this.getBaseAvailableCards();
+        if (!this.selectedCommander) {
+            return baseCards;
+        }
+
+        return baseCards.filter(card =>
+            this.commanderManager.isCardUsableByRoster(card.id, [this.selectedCommander!])
+        );
+    }
+
+    private refreshAvailableCards(resetScroll = false): void {
+        this.availableCards = this.getAvailableCardsForSelection();
         this.rebuildAvailableCardLimits();
+        if (resetScroll) {
+            this.cardGridScrollY = 0;
+        }
+    }
+
+    private getCommanderAvailableCardCount(commanderId: string): number {
+        return this.getBaseAvailableCards().filter(card =>
+            this.commanderManager.isCardUsableByRoster(card.id, [commanderId])
+        ).length;
     }
 
     private createBackground(width: number, height: number): void {
@@ -297,12 +328,12 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.cardGridPanel.add(title);
         
         // Card count
-        const countText = this.add.text(panelWidth - 30, 25, `${this.availableCards.length} cards`, {
+        this.availableCardCountText = this.add.text(panelWidth - 30, 25, `${this.availableCards.length} cards`, {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
         }).setOrigin(1, 0.5);
-        this.cardGridPanel.add(countText);
+        this.cardGridPanel.add(this.availableCardCountText);
         
         // Divider
         const divider = this.add.graphics();
@@ -485,10 +516,8 @@ export class DeckBuildingScene extends Phaser.Scene {
             itemContainer.add(nameText);
             
             // Card count
-            const cardCount = this.isNewRun
-                ? this.commanderManager.getStarterCardPool(this.factionId).length
-                : commander.cardIds.length;
-            const cardLabel = this.isNewRun ? `${cardCount} starter cards` : `${cardCount} cards`;
+            const cardCount = this.getCommanderAvailableCardCount(commanderId);
+            const cardLabel = this.isNewRun ? `${cardCount} starting cards` : `${cardCount} cards`;
             const cardText = this.add.text(75, 42, cardLabel, {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '12px',
@@ -539,8 +568,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         showAllBg.on('pointerup', () => {
             this.selectedCommander = null;
-            this.availableCards = this.commanderManager.getAvailableCardsForRoster(this.commanderRoster);
-            this.rebuildAvailableCardLimits();
+            this.refreshAvailableCards(true);
             this.renderCommanders();
             this.renderAvailableCards();
         });
@@ -549,17 +577,15 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private filterCardsByCommander(commanderId: string): void {
-        this.availableCards = this.isNewRun
-            ? this.commanderManager.getStarterCardPool(this.factionId)
-            : this.commanderManager.getCardsForCommander(commanderId);
-        this.rebuildAvailableCardLimits();
-        this.cardGridScrollY = 0;
+        this.selectedCommander = commanderId;
+        this.refreshAvailableCards(true);
         this.renderAvailableCards();
     }
 
     private renderAvailableCards(): void {
         // Clear existing
         this.cardGridContainer.removeAll(true);
+        this.availableCardCountText.setText(`${this.availableCards.length} cards`);
 
         const startX = 10;
         const startY = 10;
@@ -955,7 +981,9 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private scrollCardGrid(deltaY: number): void {
-        const maxScroll = Math.max(0, Math.ceil(this.availableCards.length / CARDS_PER_ROW) * (CARD_HEIGHT + CARD_GAP) - 600);
+        const availableWidth = this.cardPanelBounds.width - 20;
+        const cardsPerRow = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
+        const maxScroll = Math.max(0, Math.ceil(this.availableCardLimits.size / cardsPerRow) * (CARD_HEIGHT + CARD_GAP) - 600);
         this.cardGridScrollY = Phaser.Math.Clamp(this.cardGridScrollY - deltaY * 0.5, -maxScroll, 0);
         this.renderAvailableCards();
     }
@@ -1032,7 +1060,12 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         if (this.isNewRun) {
             // Start new run with selected faction and deck
-            this.runManager.startNewRun(this.factionId, 0, this.selectedCommander ?? undefined);
+            this.runManager.startNewRun(
+                this.factionId,
+                0,
+                this.selectedCommander ?? undefined,
+                this.newRunBonusCards
+            );
             // Override deck with player's customized deck
             this.runManager.setRunDeck(this.currentDeck);
         } else {

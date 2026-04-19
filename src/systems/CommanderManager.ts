@@ -210,6 +210,31 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         return this.getCardsForCommanders(commanderRoster);
     }
 
+    public getUnlockCardsForCommander(
+        commanderId: string,
+        existingCardIds: string[],
+        count = 3
+    ): ICard[] {
+        if (count <= 0) {
+            return [];
+        }
+
+        return this.getUnlockCandidateCardsForCommander(commanderId, existingCardIds).slice(0, count);
+    }
+
+    public getRandomUnlockCardsForCommander(
+        commanderId: string,
+        existingCardIds: string[],
+        count = 3
+    ): ICard[] {
+        if (count <= 0) {
+            return [];
+        }
+
+        const candidates = this.getUnlockCandidateCardsForCommander(commanderId, existingCardIds);
+        return Phaser.Utils.Array.Shuffle([...candidates]).slice(0, count);
+    }
+
     /**
      * Check whether a given card template id is usable with the current
      * commander roster (i.e., at least one owned commander has this card
@@ -258,6 +283,23 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         }
 
         return cardId;
+    }
+
+    private getUnlockCandidateCardsForCommander(commanderId: string, existingCardIds: string[]): ICard[] {
+        const ownedTemplates = new Set(existingCardIds.map(id => this.getTemplateCardId(id)));
+        const grantedTemplates = new Set<string>();
+        const unlocks: ICard[] = [];
+
+        for (const card of this.getCardsForCommander(commanderId)) {
+            const templateId = this.getTemplateCardId(card.id);
+            if (ownedTemplates.has(templateId) || grantedTemplates.has(templateId)) {
+                continue;
+            }
+            grantedTemplates.add(templateId);
+            unlocks.push(card);
+        }
+
+        return unlocks;
     }
 
     public validateDeck(deck: ICard[], commanderRoster: string[], maxDeckSize = 40): {
