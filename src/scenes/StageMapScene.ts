@@ -13,6 +13,14 @@ interface StageMapSceneData {
     loadSavedRun?: boolean;
 }
 
+interface PathRenderStyle {
+    color: number;
+    alpha: number;
+    thickness: number;
+    dashLength: number;
+    gapLength: number;
+}
+
 export class StageMapScene extends Phaser.Scene {
     private readonly runManager = RunProgressionManager.getInstance();
     private readonly factionRegistry = FactionRegistry.getInstance();
@@ -412,16 +420,8 @@ export class StageMapScene extends Phaser.Scene {
         this.cameras.main.fadeIn(300, 0, 0, 0);
         this.stageDecor = this.add.container(0, 0);
         this.stageDecor.setDepth(0);
-        const bgKey = stage.backgroundKey || 'stage_default';
-        if (this.textures.exists(bgKey)) {
-            const bgImage = this.add.image(MAP_WIDTH / 2, MAP_HEIGHT / 2, bgKey);
-            bgImage.setDisplaySize(MAP_WIDTH, MAP_HEIGHT);
-            bgImage.setDepth(0);
-            this.stageDecor.add(bgImage);
-        } else {
         const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
         this.stageDecor.add(bg);
-        }
         const title = this.add.text(MAP_WIDTH / 2, 80, stage.name, {
             fontSize: '48px',
             color: '#f0dba5',
@@ -528,26 +528,113 @@ export class StageMapScene extends Phaser.Scene {
                 const liveTarget = this.runManager.getNodeSnapshot(nextId) ?? targetSnapshot;
 
                 // Default: dimmed paths
-                let color = 0x353c4f;
-                let alpha = 0.3;
-                let thickness = 3;
+                let style: PathRenderStyle = {
+                    color: 0x8a8f98,
+                    alpha: 0.38,
+                    thickness: 3,
+                    dashLength: 24,
+                    gapLength: 18
+                };
 
                 // Highlight only the paths leading out of the current fortress node.
                 // Use completion to avoid highlighting already-cleared nodes.
                 const isFromCurrent = currentNodeId && liveSource.id === currentNodeId;
                 const isNextReachable = isFromCurrent && !liveTarget.isCompleted;
                 if (isNextReachable) {
-                    color = 0xfbbf24;
-                    alpha = 0.95;
-                    thickness = 6;
+                    style = {
+                        color: 0xfbbf24,
+                        alpha: 0.95,
+                        thickness: 6,
+                        dashLength: 34,
+                        gapLength: 14
+                    };
                 }
 
-                this.pathGraphics.lineStyle(thickness, color, alpha);
                 const start = this.normalizeToPixels(liveSource);
                 const end = this.normalizeToPixels(liveTarget);
-                this.pathGraphics.lineBetween(start.x, start.y, end.x, end.y);
+                this.drawDashedCurve(start, end, `${liveSource.id}->${liveTarget.id}`, style);
             });
         });
+    }
+
+    private drawDashedCurve(
+        start: { x: number; y: number },
+        end: { x: number; y: number },
+        edgeKey: string,
+        style: PathRenderStyle
+    ): void {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 1) return;
+
+        const hash = this.hashString(edgeKey);
+        const firstNoise = ((hash & 0xffff) / 0xffff) * 2 - 1;
+        const secondNoise = (((hash >>> 16) & 0xffff) / 0xffff) * 2 - 1;
+        const directionX = dx / distance;
+        const directionY = dy / distance;
+        const normalX = -directionY;
+        const normalY = directionX;
+        const curveSide = firstNoise >= 0 ? 1 : -1;
+        const curveAmount = Phaser.Math.Clamp(distance * (0.16 + Math.abs(firstNoise) * 0.12), 48, 170) * curveSide;
+        const alongDrift = Phaser.Math.Clamp(distance * 0.08, 20, 90) * secondNoise;
+
+        const curve = new Phaser.Curves.CubicBezier(
+            new Phaser.Math.Vector2(start.x, start.y),
+            new Phaser.Math.Vector2(
+                start.x + dx * 0.32 + normalX * curveAmount + directionX * alongDrift,
+                start.y + dy * 0.32 + normalY * curveAmount + directionY * alongDrift
+            ),
+            new Phaser.Math.Vector2(
+                start.x + dx * 0.68 + normalX * curveAmount * 0.72 - directionX * alongDrift,
+                start.y + dy * 0.68 + normalY * curveAmount * 0.72 - directionY * alongDrift
+            ),
+            new Phaser.Math.Vector2(end.x, end.y)
+        );
+
+        const points = curve.getSpacedPoints(Math.max(16, Math.ceil(distance / 18)));
+        this.pathGraphics.lineStyle(style.thickness, style.color, style.alpha);
+
+        let remainingDash = style.dashLength;
+        let drawing = true;
+
+        for (let i = 1; i < points.length; i++) {
+            const segmentStart = points[i - 1];
+            const segmentEnd = points[i];
+            const segmentLength = Phaser.Math.Distance.Between(segmentStart.x, segmentStart.y, segmentEnd.x, segmentEnd.y);
+            if (segmentLength <= 0) continue;
+
+            let consumed = 0;
+            while (consumed < segmentLength) {
+                const step = Math.min(remainingDash, segmentLength - consumed);
+                const fromT = consumed / segmentLength;
+                const toT = (consumed + step) / segmentLength;
+                const fromX = Phaser.Math.Linear(segmentStart.x, segmentEnd.x, fromT);
+                const fromY = Phaser.Math.Linear(segmentStart.y, segmentEnd.y, fromT);
+                const toX = Phaser.Math.Linear(segmentStart.x, segmentEnd.x, toT);
+                const toY = Phaser.Math.Linear(segmentStart.y, segmentEnd.y, toT);
+
+                if (drawing) {
+                    this.pathGraphics.lineBetween(fromX, fromY, toX, toY);
+                }
+
+                consumed += step;
+                remainingDash -= step;
+                if (remainingDash <= 0) {
+                    drawing = !drawing;
+                    remainingDash = drawing ? style.dashLength : style.gapLength;
+                }
+            }
+        }
+    }
+
+    private hashString(value: string): number {
+        let hash = 2166136261;
+        for (let i = 0; i < value.length; i++) {
+            hash ^= value.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
     }
 
     private createNodeContainer(node: IMapNode): void {

@@ -125,13 +125,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_jade_shield_node', 'assets/cards/Jade_dynasty/Modules/Jade_Shield.png.png');
         this.load.image('card_jade_chi_reactor', 'assets/cards/Jade_dynasty/Modules/Chi_Reactor.png.png');
 
-        // Stage maps (world map backgrounds)
-        this.load.image('stage_1_map', 'assets/stage_map/map_stage_jade.png'); // legacy key
-        this.load.image('stage_jade_map', 'assets/stage_map/map_stage_jade.png'); // current stage 1 key
-        this.load.image('stage_frost_map', 'assets/stage_map/map_stage_eternal.png');
-        this.load.image('stage_triarch_map', 'assets/stage_map/map_stage_triarch.png');
-        this.load.image('stage_elf_map', 'assets/stage_map/map_stage_elf.png');
-        this.load.image('stage_abyss_map', 'assets/stage_map/map_stage_abyss.png');
+        // Stage maps use node icons only for now; stage_map PNG backgrounds are intentionally not loaded.
         // Story slides
         this.load.image('story_begining_01_prelude', 'assets/StorySlides/begining_01_prelude.png');
         this.load.image('story_begining_01_stage1', 'assets/StorySlides/begining_01_stage1.png');
