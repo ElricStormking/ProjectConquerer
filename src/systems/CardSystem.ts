@@ -10,6 +10,8 @@ import { RunProgressionManager } from './RunProgressionManager';
 import { UnitType } from '../data/UnitTypes';
 import { TurretVFXSystem } from './TurretVFXSystem';
 
+const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
+
 export class CardSystem {
     private isRestoring: boolean = false;
     private turretVFX: TurretVFXSystem;
@@ -175,6 +177,9 @@ export class CardSystem {
         if (!cell) {
             console.log(`[CardSystem] ❌ No cell at (${gridX}, ${gridY})`);
             return false;
+        }
+        if (this.isBaseExpansionCard(card)) {
+            return this.resolveBaseExpansion(card, gridX, gridY);
         }
         if (!this.fortressSystem.isUnlocked(gridX, gridY)) {
             console.log(`[CardSystem] ❌ Cell is locked; expand fortress to use more slots`);
@@ -618,8 +623,8 @@ export class CardSystem {
             case 'cannon_tower':
                 this.createCannonTower(worldPos.x, worldPos.y, gridX, gridY, effectId);
                 return true;
-            case 'jade_expansion':
-                return this.unlockAdjacentCells(gridX, gridY, 4);
+            case BASE_EXPANSION_EFFECT_ID:
+                return this.unlockSelectedCell(gridX, gridY);
             case 'jade_resource_gathering':
                 return this.unlockFortressCells(5);
             default:
@@ -1209,17 +1214,49 @@ export class CardSystem {
         return true;
     }
 
-    private unlockAdjacentCells(gridX: number, gridY: number, max: number): boolean {
-        const offsets = [
-            { x: 1, y: 0 },
-            { x: -1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: -1 }
-        ];
-        const targets = offsets.map(o => ({ x: gridX + o.x, y: gridY + o.y }));
-        const newlyUnlocked = this.fortressSystem.unlockSpecificCells(targets, max);
+    private isBaseExpansionCard(card: ICard): boolean {
+        return card.type === CardType.SPELL && card.spellEffectId === BASE_EXPANSION_EFFECT_ID;
+    }
+
+    private resolveBaseExpansion(card: ICard, gridX: number, gridY: number): boolean {
+        const cell = this.fortressSystem.getCell(gridX, gridY);
+        if (!cell) return false;
+
+        if (cell.type === 'blocked') {
+            console.log(`[CardSystem] Cannot expand blocked cell at (${gridX}, ${gridY})`);
+            return false;
+        }
+        if (cell.type === 'core') {
+            console.log(`[CardSystem] Cannot expand core cell at (${gridX}, ${gridY})`);
+            return false;
+        }
+        if (this.fortressSystem.isUnlocked(gridX, gridY)) {
+            console.log(`[CardSystem] Cell (${gridX}, ${gridY}) is already available`);
+            return false;
+        }
+        if (cell.occupantId) {
+            console.log(`[CardSystem] Cell (${gridX}, ${gridY}) is occupied`);
+            return false;
+        }
+        if (!this.gameState.spendResource(card.cost)) {
+            console.log('[CardSystem] ??Not enough resources');
+            return false;
+        }
+
+        const success = this.unlockSelectedCell(gridX, gridY);
+        if (!success) {
+            this.gameState.gainResource(card.cost);
+            return false;
+        }
+
+        this.deckSystem.discard(card.id);
+        return true;
+    }
+
+    private unlockSelectedCell(gridX: number, gridY: number): boolean {
+        const newlyUnlocked = this.fortressSystem.unlockSpecificCells([{ x: gridX, y: gridY }], 1);
         if (newlyUnlocked.length === 0) {
-            console.log('[CardSystem] No adjacent fortress cells available to unlock');
+            console.log('[CardSystem] Selected fortress cell is not available to unlock');
             return false;
         }
         this.persistUnlocks(newlyUnlocked);

@@ -1685,7 +1685,7 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.JADE_SHIKIGAMI_FOX: return 'jade_shikigami_fox';
             case UnitType.JADE_CHI_DRAGOON: return 'jade_chi_dragoon'; // placeholder reuse
             case UnitType.JADE_SHURIKEN_NINJAS: return 'jade_shuriken_ninjas'; // placeholder reuse
-            case UnitType.JADE_SCIMITAR_SOLDIER: return 'jade_shuriken_ninjas';
+            case UnitType.JADE_SCIMITAR_SOLDIER: return 'jade_storm_monks';
             case UnitType.JADE_ARCHER: return 'jade_crossbow_gunners';
             case UnitType.JADE_SHADOWBLADE_ASSASSINS: return 'jade_shadowblade_assassins'; // placeholder reuse
             case UnitType.JADE_SPIRIT_LANTERN: return 'jade_spirit_lantern'; // placeholder reuse

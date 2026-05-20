@@ -27,7 +27,7 @@ export class StageMapScene extends Phaser.Scene {
     private encounterSystem!: NodeEncounterSystem;
     private nodeContainers: Map<string, Phaser.GameObjects.Container> = new Map();
     private pathGraphics!: Phaser.GameObjects.Graphics;
-    private fortressToken?: Phaser.GameObjects.Image;
+    private fortressToken?: Phaser.GameObjects.Container;
     private hudText?: Phaser.GameObjects.Text;
     private hudBg?: Phaser.GameObjects.Rectangle;
     private relicInventory?: RelicInventoryUI;
@@ -37,6 +37,7 @@ export class StageMapScene extends Phaser.Scene {
     private stageBgm?: Phaser.Sound.BaseSound;
     private stageBgmKey: string = '';
     private storySlidesActive = false;
+    private fortressMoveTween?: Phaser.Tweens.Tween;
 
     constructor() {
         super({ key: 'StageMapScene' });
@@ -83,6 +84,9 @@ export class StageMapScene extends Phaser.Scene {
             this.events.off(Phaser.Scenes.Events.WAKE, this.onSceneWake, this);
             this.events.off(Phaser.Scenes.Events.RESUME, this.onSceneWake, this);
             this.stopStageBgm();
+            this.fortressMoveTween?.stop();
+            this.fortressMoveTween = undefined;
+            this.fortressToken = undefined;
             this.relicInventory?.destroy();
             this.relicInventory = undefined;
         });
@@ -412,6 +416,7 @@ export class StageMapScene extends Phaser.Scene {
             this.renderCurrentStage();
         } else {
             this.playStageBgm();
+            this.moveFortressToken(this.runManager.getCurrentNode());
         }
         this.maybeShowStorySlides();
     }
@@ -669,8 +674,14 @@ export class StageMapScene extends Phaser.Scene {
             return;
         }
 
-        this.runManager.moveToNode(nodeId);
-        this.moveFortressToken(node);
+        const moved = this.runManager.moveToNode(nodeId);
+        if (!moved) {
+            return;
+        }
+        const liveNode = this.runManager.getNodeSnapshot(nodeId);
+        if (!liveNode) {
+            return;
+        }
         
         // Update node visuals to reflect that other paths are now locked
         this.updateAllNodeStates();
@@ -679,7 +690,7 @@ export class StageMapScene extends Phaser.Scene {
             this.drawPaths(stage);
         }
         
-        this.encounterSystem.resolveNode(node);
+        this.encounterSystem.resolveNode(liveNode);
     }
 
     private updateAllNodeStates(): void {
@@ -716,30 +727,15 @@ export class StageMapScene extends Phaser.Scene {
         if (!node) return;
         const position = this.normalizeToPixels(node);
         // Lift the fortress token above the node so it doesn't block the node visuals.
-        const tokenY = position.y - 100;
-        if (!this.fortressToken) {
-            // Get the player's current fortress image key
-            const runState = this.runManager.getRunState();
-            const factionId = runState?.factionId ?? 'jade_dynasty';
-            const faction = this.factionRegistry.getFaction(factionId);
-            const fortressId = faction?.fortressId ?? `fortress_${factionId}_01`;
-            const gridConfig = this.factionRegistry.getFortressGridConfig(fortressId);
-            const imageKey = gridConfig?.imageKey ?? fortressId;
-            
-            // Create fortress image as the map token
-            if (this.textures.exists(imageKey)) {
-                this.fortressToken = this.add.image(position.x, tokenY, imageKey);
-                this.fortressToken.setScale(0.12); // Scale down for map display
-            this.fortressToken.setDepth(10);
-            } else {
-                // Fallback to a simple circle if image not found
-                const fallback = this.add.ellipse(position.x, tokenY, 28, 28, 0xf0f4ff, 1);
-                fallback.setStrokeStyle(4, 0x1d9bf0);
-                fallback.setDepth(10);
-                this.fortressToken = fallback as unknown as Phaser.GameObjects.Image;
-            }
+        const tokenY = position.y - 92;
+        if (!this.isFortressTokenAlive()) {
+            this.fortressToken = this.createFortressToken(position.x, tokenY);
         }
-        this.tweens.add({
+        this.fortressToken?.setVisible(true);
+        this.fortressToken?.setAlpha(1);
+        this.fortressToken?.setDepth(4);
+        this.fortressMoveTween?.stop();
+        this.fortressMoveTween = this.tweens.add({
             targets: this.fortressToken,
             x: position.x,
             y: tokenY,
@@ -747,6 +743,63 @@ export class StageMapScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
         this.cameras.main.pan(position.x, position.y, 450, 'Sine.easeInOut');
+    }
+
+    private isFortressTokenAlive(): boolean {
+        return !!this.fortressToken && this.fortressToken.active && this.fortressToken.scene === this;
+    }
+
+    private createFortressToken(x: number, y: number): Phaser.GameObjects.Container {
+        const token = this.add.container(x, y);
+        token.setDepth(4);
+
+        const shadow = this.add.ellipse(0, 18, 86, 24, 0x000000, 0.35);
+        token.add(shadow);
+
+        const glow = this.add.graphics();
+        glow.fillStyle(0xfbbf24, 0.18);
+        glow.fillCircle(0, 0, 54);
+        glow.lineStyle(4, 0xfbbf24, 0.95);
+        glow.strokeCircle(0, 0, 43);
+        glow.lineStyle(2, 0xffffff, 0.9);
+        glow.strokeCircle(0, 0, 36);
+        token.add(glow);
+
+        const imageKey = this.getCurrentFortressImageKey();
+        if (imageKey && this.textures.exists(imageKey)) {
+            const image = this.add.image(0, 0, imageKey);
+            image.setDisplaySize(68, 68);
+            token.add(image);
+        } else {
+            const fallback = this.add.graphics();
+            fallback.fillStyle(0x1d9bf0, 1);
+            fallback.fillCircle(0, 0, 25);
+            fallback.lineStyle(4, 0xf0f4ff, 1);
+            fallback.strokeCircle(0, 0, 25);
+            fallback.fillStyle(0xf0f4ff, 1);
+            fallback.fillTriangle(0, -18, 18, 14, -18, 14);
+            token.add(fallback);
+        }
+
+        this.tweens.add({
+            targets: token,
+            scale: { from: 0.96, to: 1.05 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        return token;
+    }
+
+    private getCurrentFortressImageKey(): string | undefined {
+        const runState = this.runManager.getRunState();
+        const factionId = runState?.factionId ?? 'jade_dynasty';
+        const faction = this.factionRegistry.getFaction(factionId);
+        const fortressId = faction?.fortressId ?? `fortress_${factionId}_01`;
+        const gridConfig = this.factionRegistry.getFortressGridConfig(fortressId);
+        return gridConfig?.imageKey ?? fortressId;
     }
 
     private normalizeToPixels(node: IMapNode): { x: number; y: number } {
@@ -808,6 +861,7 @@ export class StageMapScene extends Phaser.Scene {
         if (stageIndex !== this.currentStageIndex) {
             this.renderCurrentStage();
         } else {
+            this.moveFortressToken(this.runManager.getCurrentNode());
             this.updateAllNodeStates();
         }
         this.maybeShowStorySlides();

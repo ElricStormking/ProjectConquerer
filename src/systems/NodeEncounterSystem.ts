@@ -117,8 +117,9 @@ export class NodeEncounterSystem {
             return;
         }
 
-        this.runManager.completeNode(node.id);
-        this.presentBattleRewards(node);
+        const liveNode = this.runManager.getNodeSnapshot(node.id) ?? node;
+        this.runManager.completeNode(liveNode.id);
+        this.presentBattleRewards(liveNode);
     }
 
     private presentBattleRewards(node: IMapNode): void {
@@ -333,9 +334,10 @@ export class NodeEncounterSystem {
     }
 
     private finishEncounter(node: IMapNode): void {
-        const latest = this.runManager.getNodeSnapshot(node.id);
+        let latest = this.runManager.getNodeSnapshot(node.id);
         if (!latest?.isCompleted) {
             this.runManager.completeNode(node.id);
+            latest = this.runManager.getNodeSnapshot(node.id);
         }
         this.runManager.finalizePendingStageCompletion();
         this.resolving = false;

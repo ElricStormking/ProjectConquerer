@@ -4,13 +4,16 @@ import { DataManager } from './DataManager';
 
 export class DeckSystem extends Phaser.Events.EventEmitter {
     private drawPile: ICard[] = [];
+    // Played cards stay here until the battle node ends unless legacy reshuffle is enabled.
     private discardPile: ICard[] = [];
     private hand: ICard[] = [];
     private readonly maxHandSize: number;
+    private readonly reshuffleDiscardIntoDrawPile: boolean;
 
-    constructor(maxHandSize = 7) {
+    constructor(maxHandSize = 7, reshuffleDiscardIntoDrawPile = false) {
         super();
         this.maxHandSize = maxHandSize;
+        this.reshuffleDiscardIntoDrawPile = reshuffleDiscardIntoDrawPile;
     }
 
     public reset(deck: ICard[]): void {
@@ -77,8 +80,9 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
     public redrawHand(count = 1): ICard[] {
         console.log(`[DeckSystem] redrawHand(${count}) called, replacing ${this.hand.length} card(s)`);
         if (this.hand.length > 0) {
-            this.discardPile.push(...this.hand);
+            this.drawPile.push(...this.hand);
             this.hand = [];
+            this.shuffle();
         }
         const drawn = this.drawCardsInternal(count);
         this.emitState();
@@ -104,7 +108,8 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
 
     public returnToHand(card: ICard): void {
         if (this.hand.length >= this.maxHandSize) {
-            this.discardPile.push(card);
+            this.drawPile.push(card);
+            this.shuffle();
         } else {
             this.hand.push(card);
         }
@@ -135,8 +140,8 @@ export class DeckSystem extends Phaser.Events.EventEmitter {
                 break;
             }
             if (this.drawPile.length === 0) {
-                if (this.discardPile.length === 0) {
-                    console.log('[DeckSystem] Both draw pile and discard pile are empty');
+                if (!this.reshuffleDiscardIntoDrawPile || this.discardPile.length === 0) {
+                    console.log('[DeckSystem] No cards left to draw for this battle node');
                     break;
                 }
                 this.drawPile = [...this.discardPile];

@@ -17,8 +17,10 @@ type CardPlayPayload = { card: ICard; screenX: number; screenY: number };
 type CommanderCastPayload = { screenX: number; screenY: number };
 import { UnitType } from '../data/UnitTypes';
 
-const STARTING_HAND = 3;
+const INITIAL_WAVE_HAND_SIZE = 3;
+const NEXT_WAVE_HAND_SIZE = 2;
 const NORMAL_ENCOUNTER_WAVE_COUNT = 3;
+const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
 
 import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
@@ -387,7 +389,7 @@ export class BattleScene extends Phaser.Scene {
         const cards = DataManager.getInstance().getAllCards();
         this.deckSystem.reset(cards);
         }
-        this.redrawPreparationHand();
+        this.redrawPreparationHand(INITIAL_WAVE_HAND_SIZE);
         
         this.cardSystem = new CardSystem(
             this,
@@ -600,7 +602,7 @@ export class BattleScene extends Phaser.Scene {
                 this.hideStartButton();
                 // Between waves: show a Wave Cleared overlay, then redraw a fresh hand.
                 this.showWaveClearedOverlay(() => {
-                    this.redrawPreparationHand();
+                    this.redrawPreparationHand(NEXT_WAVE_HAND_SIZE);
                     this.setWaveIntermissionLock(false);
                     this.updateCameraForPhase('PREPARATION');
                     this.showStartButton('Start Next Wave');
@@ -693,8 +695,8 @@ export class BattleScene extends Phaser.Scene {
         this.startButtonBg?.disableInteractive();
     }
 
-    private redrawPreparationHand(): void {
-        const redrawnCards = this.deckSystem.redrawHand(STARTING_HAND);
+    private redrawPreparationHand(cardCount: number): void {
+        const redrawnCards = this.deckSystem.redrawHand(cardCount);
         console.log(`[BattleScene] Prepared ${redrawnCards.length} card(s) for the upcoming wave`);
     }
 
@@ -787,8 +789,17 @@ export class BattleScene extends Phaser.Scene {
         }
         const worldPoint = this.cameras.main.getWorldPoint(screenX, screenY);
         const grid = this.fortressSystem.worldToGrid(worldPoint.x, worldPoint.y);
-        const isValid = this.gameState.getState().phase === 'PREPARATION' && this.fortressSystem.isValidCell(grid.x, grid.y);
+        const isValid = this.gameState.getState().phase === 'PREPARATION' && this.isValidCardTarget(this.currentDraggedCard, grid.x, grid.y);
         this.fortressSystem.setHoverCell(grid.x, grid.y, isValid);
+    }
+
+    private isValidCardTarget(card: ICard, gridX: number, gridY: number): boolean {
+        if (card.spellEffectId === BASE_EXPANSION_EFFECT_ID) {
+            const cell = this.fortressSystem.getCell(gridX, gridY);
+            return !!cell && cell.type === 'buildable' && !this.fortressSystem.isUnlocked(gridX, gridY) && !cell.occupantId;
+        }
+
+        return this.fortressSystem.isValidCell(gridX, gridY);
     }
 
     private handleCardPlacement(payload: CardPlayPayload) {

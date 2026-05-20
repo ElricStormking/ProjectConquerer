@@ -160,7 +160,7 @@ export class PreloadScene extends Phaser.Scene {
         
         // Fortress images
         // Default testing fortress art now uses Jade Dynasty
-        this.load.image('fortress_jade_dynasty_01', 'assets/fortress/fortress_jade_dynasty_01.png');
+        this.load.image('fortress_jade_dynasty_01', 'assets/fortress/Fortress_jade_Dynasty_01.png');
         this.load.image('fortress_frost_clan_01', 'assets/fortress/Fortress_eternal_frost_clan_01.png');
         this.load.image('fortress_triarch_dominion_01', 'assets/fortress/Fortress_Triarch_Dominion_01.png');
         this.load.image('fortress_elf_covenant_02', 'assets/fortress/Fortress_Elf_Covenant_02.png');

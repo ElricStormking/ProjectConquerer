@@ -26,7 +26,7 @@ raider_archer,Raider Archer,ranged,iron_raiders,rare,95,24,2,40,0.9,420,58,norma
 raider_rogue,Raider Cutthroat,frontline,iron_raiders,rare,90,32,2,80,1.6,45,60,small,ninja,Fast melee assassin that darts around the battlefield,skill_basic_melee,,,1,0,1,3
 jade_paper_doll,Paper Doll Guardian,frontline,jade_dynasty,common,210,18,5,60,0.95,45,95,normal,jade_paper_doll,Evasive guardian with dodge and root on death,skill_basic_melee,skill_jade_paper_doll_death,,1,10,1,3
 jade_azure_spear,Azure Spear Chargers,frontline,jade_dynasty,common,190,22,5,70,1.25,45,85,normal,jade_azure_spear,Long reach melee; opener stun and chi gain on kill,skill_jade_azure_spear,,,1.2,30,1,3
-jade_scimitar_soldier,Scimitar Soldier,frontline,jade_dynasty,common,130,18,2,92,1.45,45,55,small,jade_shuriken_ninjas,Basic rogue skirmisher that darts into melee,skill_basic_melee,,,1,6,1,3
+jade_scimitar_soldier,Scimitar Soldier,frontline,jade_dynasty,common,130,18,2,92,1.45,45,55,small,jade_storm_monks,Basic rogue skirmisher that darts into melee,skill_basic_melee,,,1,6,1,3
 jade_archer,Jade Archer,ranged,jade_dynasty,common,115,17,2,40,1.15,320,58,small,jade_crossbow_gunners,Basic Jade archer providing steady ranged pressure,skill_basic_archer_shot,,,1,8,1,3
 jade_shuriken_ninjas,Shuriken Ninjas,ranged,jade_dynasty,common,110,18,2,40,1.4,300,55,small,jade_shuriken_ninjas,Throwing daggers with crit bleed and stealth on kill,skill_jade_shuriken_slow,,,1,6,1,3
 jade_crossbow_gunners,Repeating Crossbow Gunners,ranged,jade_dynasty,common,120,16,3,35,1.2,360,70,normal,jade_crossbow_gunners,Ranged support that applies vulnerability and slow,skill_jade_crossbow_slow,,,1,8,1,3

@@ -127,6 +127,13 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
                 this.runState?.cardCollection?.push(key);
             }
         });
+
+        this.commanderManager.getBaseExpansionCards().forEach(card => {
+            const key = this.normalizeCardId(card.id);
+            if (!this.runState?.cardCollection?.includes(key)) {
+                this.runState?.cardCollection?.push(key);
+            }
+        });
     }
 
     public getRunState(): RunStateSnapshot | null {
@@ -310,7 +317,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const fallbackStarter = COG_DOMINION_STARTER;
         const baseFortressHp = fortress?.maxHp ?? fallbackStarter.fortress.maxHp;
         const commanderId = starterCommander?.id ?? fallbackStarter.commander.id;
-        const deck = starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck];
+        const deck = this.commanderManager.withBaseExpansionCards(
+            starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck]
+        );
         const starterCollection = this.commanderManager.getStarterCardPool(factionId);
         const initialCollection =
             starterCollection.length > 0 || initialBonusCards.length > 0
@@ -508,7 +517,15 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     public completeNode(nodeId: string): void {
         if (!this.runState) return;
         const node = this.nodeGraph.get(nodeId);
-        if (!node || node.isCompleted) return;
+        if (!node) return;
+        if (node.isCompleted) {
+            if (this.runState.currentNodeId === nodeId) {
+                node.isAccessible = false;
+                this.updateNodeAccessibility();
+                this.saveRun();
+            }
+            return;
+        }
 
         node.isCompleted = true;
         node.isAccessible = false;
