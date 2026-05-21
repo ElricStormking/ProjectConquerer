@@ -822,6 +822,18 @@ export class DeckBuildingScene extends Phaser.Scene {
             color: '#8a9cc5'
         }).setOrigin(0.5, 0);
         container.add(rarityLabel);
+
+        if (card.type === 'unit' && card.unitLevel) {
+            const levelLabel = this.add.text(CARD_WIDTH - 38, 34, `Lv ${card.unitLevel}`, {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '11px',
+                color: '#f0dba5',
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 3
+            }).setOrigin(0.5);
+            container.add(levelLabel);
+        }
         
         // Attach input to the card background graphics instead of the container.
         // This avoids any Container-origin quirks and uses a clear 0,0 -> CARD_WIDTH,CARD_HEIGHT rect.
@@ -871,7 +883,8 @@ export class DeckBuildingScene extends Phaser.Scene {
 
         const typeLabel = card.type ? String(card.type).toUpperCase() : '';
         const rarityLabel = card.rarity ? card.rarity.charAt(0).toUpperCase() + card.rarity.slice(1) : 'Common';
-        this.hoverCardTypeText.setText(`${typeLabel}  •  ${rarityLabel}`);
+        const levelLabel = card.type === 'unit' && card.unitLevel ? `  -  Lv ${card.unitLevel}` : '';
+        this.hoverCardTypeText.setText(`${typeLabel}  -  ${rarityLabel}${levelLabel}`);
 
         const resourceRaw = card.resourceType ? String(card.resourceType) : '';
         const resourcePretty = resourceRaw

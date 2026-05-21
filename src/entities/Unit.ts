@@ -33,6 +33,8 @@ export interface UnitConfig {
     skillPrimaryId?: string;
     skillSecondaryId?: string;
     passiveSkillId?: string;
+    unitLevel?: number;
+    enemyLevel?: number;
 }
 
 export class Unit extends Phaser.Events.EventEmitter {
@@ -44,6 +46,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     private sprite!: Phaser.GameObjects.Sprite;
     private healthBar!: Phaser.GameObjects.Graphics;
     private healthBarBg!: Phaser.GameObjects.Graphics;
+    private levelLabel?: Phaser.GameObjects.Text;
+    private unitNameLabel?: Phaser.GameObjects.Text;
     private teamFlag!: Phaser.GameObjects.Graphics;
     private statusIcon?: Phaser.GameObjects.Text;
     private classLabel!: Phaser.GameObjects.Text;
@@ -290,6 +294,8 @@ export class Unit extends Phaser.Events.EventEmitter {
             strokeThickness: 3
         }).setOrigin(0.5, 0.5);
         this.attackSwingGraphics = this.scene.add.graphics();
+        this.createLevelLabel();
+        this.createUnitNameLabel();
         this.updateHealthBar();
         this.createTeamFlag();
     }
@@ -318,15 +324,83 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.healthBar = this.scene.add.graphics();
         this.teamFlag = this.scene.add.graphics();
         this.attackSwingGraphics = this.scene.add.graphics();
+        this.createLevelLabel();
+        this.createUnitNameLabel();
         this.updateHealthBar();
         this.createTeamFlag();
     }
-    
-    private updateHealthBar(): void {
+
+    private getHealthHudLayout(): { barWidth: number; barHeight: number; barY: number; levelX: number; levelY: number; nameX: number; nameY: number } {
         const spriteHeight = this.sprite ? this.sprite.displayHeight : 96;
-        const barWidth = 50; // Width to match sprite size
+        const barWidth = 50;
         const barHeight = 4;
-        const barY = -spriteHeight - 10; // Position above sprite with margin
+        const barY = -spriteHeight - 10;
+        return {
+            barWidth,
+            barHeight,
+            barY,
+            levelX: -barWidth / 2 - 5,
+            levelY: barY + barHeight / 2,
+            nameX: 0,
+            nameY: barY + barHeight + 10
+        };
+    }
+
+    private getDisplayLevel(): number {
+        const rawLevel = this.config.unitLevel ?? this.config.enemyLevel ?? 1;
+        return Math.max(1, Math.min(999, Math.round(Number(rawLevel) || 1)));
+    }
+
+    private createLevelLabel(): void {
+        const { levelX, levelY } = this.getHealthHudLayout();
+        const level = this.getDisplayLevel();
+        this.levelLabel = this.scene.add.text(
+            this.config.x + levelX,
+            this.config.y + this.spriteOffsetY + levelY,
+            `Lv ${level}`,
+            {
+                fontFamily: 'Georgia, serif',
+                fontSize: '12px',
+                color: this.team === 1 ? '#d9ecff' : '#ffd6d0',
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 3
+            }
+        ).setOrigin(1, 0.5);
+    }
+
+    private getDisplayName(): string {
+        const rawName = this.config.unitTemplate?.name || this.config.unitType || 'Unit';
+        return rawName
+            .toString()
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    private createUnitNameLabel(): void {
+        const { nameX, nameY } = this.getHealthHudLayout();
+        this.unitNameLabel = this.scene.add.text(
+            this.config.x + nameX,
+            this.config.y + this.spriteOffsetY + nameY,
+            this.getDisplayName(),
+            {
+                fontFamily: 'Georgia, serif',
+                fontSize: '11px',
+                color: '#fff3cf',
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 3,
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5);
+
+        if (this.unitNameLabel.displayWidth > 92) {
+            this.unitNameLabel.setScale(Math.max(0.72, 92 / this.unitNameLabel.displayWidth), 1);
+        }
+    }
+
+    private updateHealthBar(): void {
+        const { barWidth, barHeight, barY } = this.getHealthHudLayout();
         
         // Background
         this.healthBarBg.clear();
@@ -342,9 +416,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     }
     
     private createTeamFlag(): void {
-        const spriteHeight = this.sprite ? this.sprite.displayHeight : 96;
+        const { barY } = this.getHealthHudLayout();
         const flagSize = 8;
-        const barY = -spriteHeight - 10;
         const flagX = 30; // Position flag to the right of health bar
         const flagY = barY - 2; // Slightly above health bar
         
@@ -510,7 +583,7 @@ export class Unit extends Phaser.Events.EventEmitter {
                                 if (target.isDead?.()) return;
                                 if (combatSystem?.getUnitsInRadius && radius > 0) {
                                     const nearby = combatSystem.getUnitsInRadius(target.getPosition(), radius, target.getTeam());
-                                    nearby.forEach(u => (u as any).applyFear?.(fearDurationMs, this.scene.time.now));
+                                    nearby.forEach((u: Unit) => (u as any).applyFear?.(fearDurationMs, this.scene.time.now));
                                 } else {
                                     (target as any).applyFear?.(fearDurationMs, this.scene.time.now);
                                 }
@@ -864,10 +937,25 @@ export class Unit extends Phaser.Events.EventEmitter {
         // Update health bar and team flag positions
         this.healthBarBg.x = visualX;
         this.healthBarBg.y = visualY;
+        this.healthBarBg.setDepth(visualY + 3000);
         this.healthBar.x = visualX;
         this.healthBar.y = visualY;
+        this.healthBar.setDepth(visualY + 3001);
         this.teamFlag.x = visualX;
         this.teamFlag.y = visualY;
+        this.teamFlag.setDepth(visualY + 3002);
+        if (this.levelLabel) {
+            const { levelX, levelY } = this.getHealthHudLayout();
+            this.levelLabel.x = visualX + levelX;
+            this.levelLabel.y = visualY + levelY;
+            this.levelLabel.setDepth(visualY + 3003);
+        }
+        if (this.unitNameLabel) {
+            const { nameX, nameY } = this.getHealthHudLayout();
+            this.unitNameLabel.x = visualX + nameX;
+            this.unitNameLabel.y = visualY + nameY;
+            this.unitNameLabel.setDepth(visualY + 3004);
+        }
         if (this.statusIcon) {
             this.statusIcon.x = visualX;
             this.statusIcon.y = visualY - 130;
@@ -1194,6 +1282,8 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         this.healthBar.setVisible(false);
         this.healthBarBg.setVisible(false);
+        this.levelLabel?.setVisible(false);
+        this.unitNameLabel?.setVisible(false);
         this.teamFlag.setVisible(false);
         if (this.statusIcon) {
             this.statusIcon.setVisible(false);
@@ -1227,6 +1317,16 @@ export class Unit extends Phaser.Events.EventEmitter {
         if (this.healthBarBg) { this.healthBarBg.x = x; this.healthBarBg.y = y + this.spriteOffsetY; }
         if (this.healthBar) { this.healthBar.x = x; this.healthBar.y = y + this.spriteOffsetY; }
         if (this.teamFlag) { this.teamFlag.x = x; this.teamFlag.y = y + this.spriteOffsetY; }
+        if (this.levelLabel) {
+            const { levelX, levelY } = this.getHealthHudLayout();
+            this.levelLabel.x = x + levelX;
+            this.levelLabel.y = y + this.spriteOffsetY + levelY;
+        }
+        if (this.unitNameLabel) {
+            const { nameX, nameY } = this.getHealthHudLayout();
+            this.unitNameLabel.x = x + nameX;
+            this.unitNameLabel.y = y + this.spriteOffsetY + nameY;
+        }
         if (this.classLabel) { this.classLabel.x = x; this.classLabel.y = y + this.spriteOffsetY - 110; }
     }
     
@@ -1427,6 +1527,12 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         if (this.healthBarBg) {
             this.healthBarBg.destroy();
+        }
+        if (this.levelLabel) {
+            this.levelLabel.destroy();
+        }
+        if (this.unitNameLabel) {
+            this.unitNameLabel.destroy();
         }
         if (this.teamFlag) {
             this.teamFlag.destroy();

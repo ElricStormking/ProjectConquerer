@@ -38,6 +38,7 @@ export class StageMapScene extends Phaser.Scene {
     private stageBgmKey: string = '';
     private storySlidesActive = false;
     private fortressMoveTween?: Phaser.Tweens.Tween;
+    private gameOverOverlay?: Phaser.GameObjects.Container;
 
     constructor() {
         super({ key: 'StageMapScene' });
@@ -86,6 +87,8 @@ export class StageMapScene extends Phaser.Scene {
             this.stopStageBgm();
             this.fortressMoveTween?.stop();
             this.fortressMoveTween = undefined;
+            this.gameOverOverlay?.destroy();
+            this.gameOverOverlay = undefined;
             this.fortressToken = undefined;
             this.relicInventory?.destroy();
             this.relicInventory = undefined;
@@ -375,9 +378,9 @@ export class StageMapScene extends Phaser.Scene {
         const stageIndex = state?.currentStageIndex ?? 0;
         const key =
             stageIndex === 0
-                ? 'bgm_stage_jade'
-                : stageIndex === 2
                 ? 'bgm_stage_triarch'
+                : stageIndex === 2
+                ? 'bgm_stage_jade'
                 : stageIndex === 3
                 ? 'bgm_stage_elf'
                 : stageIndex === 4
@@ -425,15 +428,319 @@ export class StageMapScene extends Phaser.Scene {
         this.cameras.main.fadeIn(300, 0, 0, 0);
         this.stageDecor = this.add.container(0, 0);
         this.stageDecor.setDepth(0);
-        const bg = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0x1c1f2b, 1).setDepth(0);
-        this.stageDecor.add(bg);
-        const title = this.add.text(MAP_WIDTH / 2, 80, stage.name, {
-            fontSize: '48px',
-            color: '#f0dba5',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(2);
+
+        this.drawParchmentBase(this.stageDecor);
+        this.drawCartographyGrid(this.stageDecor);
+        this.drawMapLandmarks(this.stageDecor, stage);
+        this.drawCompassRose(this.stageDecor, MAP_WIDTH - 225, MAP_HEIGHT - 205);
+        this.drawMapBorder(this.stageDecor);
+
+        const titlePlate = this.add.graphics();
+        titlePlate.fillStyle(0x4b321d, 0.26);
+        titlePlate.fillRoundedRect(MAP_WIDTH / 2 - 340, 92, 680, 72, 10);
+        titlePlate.lineStyle(3, 0xe4c179, 0.42);
+        titlePlate.strokeRoundedRect(MAP_WIDTH / 2 - 340, 92, 680, 72, 10);
+        titlePlate.lineStyle(1, 0x2a1a0f, 0.35);
+        titlePlate.strokeRoundedRect(MAP_WIDTH / 2 - 318, 103, 636, 50, 7);
+        this.stageDecor.add(titlePlate);
+
+        const title = this.add.text(MAP_WIDTH / 2, 126, stage.name, {
+            fontFamily: 'Georgia, serif',
+            fontSize: '44px',
+            color: '#2a190d',
+            fontStyle: 'bold',
+            stroke: '#e5c884',
+            strokeThickness: 4
+        }).setOrigin(0.5);
         this.stageDecor.add(title);
-        this.time.delayedCall(4000, () => title.destroy());
+        this.time.delayedCall(4000, () => {
+            titlePlate.destroy();
+            title.destroy();
+        });
+    }
+
+    private drawParchmentBase(container: Phaser.GameObjects.Container): void {
+        const base = this.add.rectangle(MAP_WIDTH / 2, MAP_HEIGHT / 2, MAP_WIDTH, MAP_HEIGHT, 0xa98042, 1);
+        container.add(base);
+
+        const wash = this.add.graphics();
+        wash.fillStyle(0xe4c27d, 0.96);
+        wash.fillRect(64, 52, MAP_WIDTH - 128, MAP_HEIGHT - 104);
+        wash.fillStyle(0xf4dea6, 0.32);
+        wash.fillRect(120, 116, MAP_WIDTH - 240, MAP_HEIGHT - 238);
+        wash.fillStyle(0x76562b, 0.18);
+        wash.fillRect(64, 52, 26, MAP_HEIGHT - 104);
+        wash.fillRect(MAP_WIDTH - 90, 52, 26, MAP_HEIGHT - 104);
+        wash.fillRect(64, 52, MAP_WIDTH - 128, 24);
+        wash.fillRect(64, MAP_HEIGHT - 76, MAP_WIDTH - 128, 24);
+        container.add(wash);
+
+        const texture = this.add.graphics();
+        for (let i = 0; i < 240; i++) {
+            const x = this.seededRange('map-speck-x', i, 30, MAP_WIDTH - 30);
+            const y = this.seededRange('map-speck-y', i, 70, MAP_HEIGHT - 35);
+            const radius = this.seededRange('map-speck-r', i, 1.2, 7.5);
+            const alpha = this.seededRange('map-speck-a', i, 0.035, 0.13);
+            texture.fillStyle(i % 5 === 0 ? 0x50331d : 0xf6e4b6, alpha);
+            texture.fillCircle(x, y, radius);
+        }
+
+        for (let i = 0; i < 46; i++) {
+            const x = this.seededRange('map-stain-x', i, 110, MAP_WIDTH - 110);
+            const y = this.seededRange('map-stain-y', i, 115, MAP_HEIGHT - 105);
+            const radius = this.seededRange('map-stain-r', i, 22, 84);
+            texture.fillStyle(i % 3 === 0 ? 0x295c61 : 0x7a3d21, i % 3 === 0 ? 0.045 : 0.05);
+            texture.fillCircle(x, y, radius);
+        }
+
+        texture.lineStyle(1, 0x6e4f29, 0.12);
+        for (let i = 0; i < 70; i++) {
+            const x = this.seededRange('paper-fiber-x', i, 90, MAP_WIDTH - 90);
+            const y = this.seededRange('paper-fiber-y', i, 82, MAP_HEIGHT - 82);
+            const length = this.seededRange('paper-fiber-l', i, 36, 160);
+            const bend = this.seededRange('paper-fiber-b', i, -20, 20);
+            texture.lineBetween(x, y, x + length, y + bend);
+        }
+        container.add(texture);
+
+        const shadow = this.add.graphics();
+        shadow.fillStyle(0x201208, 0.22);
+        shadow.fillRect(0, 0, MAP_WIDTH, 72);
+        shadow.fillRect(0, MAP_HEIGHT - 82, MAP_WIDTH, 82);
+        shadow.fillRect(0, 0, 86, MAP_HEIGHT);
+        shadow.fillRect(MAP_WIDTH - 90, 0, 90, MAP_HEIGHT);
+        shadow.fillStyle(0x0f0b09, 0.12);
+        shadow.fillRect(0, 0, MAP_WIDTH, 20);
+        shadow.fillRect(0, MAP_HEIGHT - 20, MAP_WIDTH, 20);
+        container.add(shadow);
+    }
+
+    private drawCartographyGrid(container: Phaser.GameObjects.Container): void {
+        const grid = this.add.graphics();
+        grid.lineStyle(1, 0x5a412a, 0.1);
+        for (let x = 176; x < MAP_WIDTH - 90; x += 196) {
+            grid.lineBetween(x, 82, x + this.seededRange('grid-x-drift', x, -22, 22), MAP_HEIGHT - 82);
+        }
+        for (let y = 150; y < MAP_HEIGHT - 80; y += 148) {
+            grid.lineBetween(82, y, MAP_WIDTH - 82, y + this.seededRange('grid-y-drift', y, -16, 16));
+        }
+
+        grid.lineStyle(2, 0x315e60, 0.17);
+        for (let x = 315; x < MAP_WIDTH; x += 560) {
+            grid.strokeCircle(x, MAP_HEIGHT / 2 + this.seededRange('circle-lat', x, -95, 95), 270);
+        }
+
+        grid.lineStyle(1, 0x7a2f20, 0.16);
+        for (let i = 0; i < 13; i++) {
+            const x = this.seededRange('red-hatch-x', i, 140, MAP_WIDTH - 140);
+            const y = this.seededRange('red-hatch-y', i, 210, MAP_HEIGHT - 160);
+            for (let j = 0; j < 4; j++) {
+                grid.lineBetween(x + j * 18, y + j * 4, x + 78 + j * 18, y + 8 + j * 4);
+            }
+        }
+
+        container.add(grid);
+    }
+
+    private drawMapLandmarks(container: Phaser.GameObjects.Container, stage: IStageConfig): void {
+        const landmarks = this.add.graphics();
+        const stageSeed = `${stage.id}-${stage.index}`;
+
+        for (let i = 0; i < 6; i++) {
+            const centerX = this.seededRange(`${stageSeed}-land-x`, i, 210, MAP_WIDTH - 210);
+            const centerY = this.seededRange(`${stageSeed}-land-y`, i, 180, MAP_HEIGHT - 160);
+            const radiusX = this.seededRange(`${stageSeed}-land-rx`, i, 190, 390);
+            const radiusY = this.seededRange(`${stageSeed}-land-ry`, i, 92, 210);
+            const points: Phaser.Math.Vector2[] = [];
+            const pointCount = 22;
+
+            for (let j = 0; j < pointCount; j++) {
+                const angle = (Math.PI * 2 * j) / pointCount;
+                const wobble = this.seededRange(`${stageSeed}-land-wobble-${i}`, j, 0.66, 1.28);
+                points.push(new Phaser.Math.Vector2(
+                    centerX + Math.cos(angle) * radiusX * wobble,
+                    centerY + Math.sin(angle) * radiusY * wobble
+                ));
+            }
+
+            landmarks.fillStyle(i % 2 === 0 ? 0x6f8a66 : 0x9e814e, i % 2 === 0 ? 0.18 : 0.16);
+            landmarks.beginPath();
+            landmarks.moveTo(points[0].x, points[0].y);
+            for (let j = 1; j < points.length; j++) {
+                const previous = points[j - 1];
+                const current = points[j];
+                landmarks.lineTo((previous.x + current.x) / 2, (previous.y + current.y) / 2);
+                landmarks.lineTo(current.x, current.y);
+            }
+            landmarks.closePath();
+            landmarks.fillPath();
+            landmarks.lineStyle(4, 0x3f2b1a, 0.24);
+            landmarks.strokePath();
+
+            landmarks.lineStyle(2, 0x3f2b1a, 0.16);
+            for (let j = 0; j < points.length; j += 2) {
+                const point = points[j];
+                const next = points[(j + 1) % points.length];
+                const midX = (point.x + next.x) / 2;
+                const midY = (point.y + next.y) / 2;
+                landmarks.lineBetween(midX, midY, midX + (midX - centerX) * 0.08, midY + (midY - centerY) * 0.08);
+            }
+        }
+
+        this.drawFantasyRivers(landmarks, stageSeed);
+        this.drawTerrainSymbols(landmarks, stageSeed);
+
+        landmarks.lineStyle(2, 0x7d2e24, 0.28);
+        stage.nodes.slice(0, 9).forEach((node, index) => {
+            const pos = this.normalizeToPixels(node);
+            const offset = index % 2 === 0 ? -1 : 1;
+            landmarks.lineBetween(pos.x - 34, pos.y + 94, pos.x + 34, pos.y + 94 + offset * 8);
+            landmarks.lineBetween(pos.x - 22, pos.y + 108, pos.x + 22, pos.y + 108 + offset * 7);
+        });
+
+        container.add(landmarks);
+        this.drawMapRegionNames(container, stageSeed);
+    }
+
+    private drawFantasyRivers(graphics: Phaser.GameObjects.Graphics, seed: string): void {
+        graphics.lineStyle(4, 0x2a6870, 0.22);
+        for (let i = 0; i < 5; i++) {
+            const startX = this.seededRange(`${seed}-river-x`, i, 180, MAP_WIDTH - 180);
+            const startY = this.seededRange(`${seed}-river-y`, i, 135, 360);
+            const length = this.seededRange(`${seed}-river-l`, i, 320, 620);
+            const bend = this.seededRange(`${seed}-river-b`, i, -170, 170);
+            const curve = new Phaser.Curves.CubicBezier(
+                new Phaser.Math.Vector2(startX, startY),
+                new Phaser.Math.Vector2(startX - 110, startY + length * 0.32),
+                new Phaser.Math.Vector2(startX + bend, startY + length * 0.62),
+                new Phaser.Math.Vector2(startX + bend * 0.55, startY + length)
+            );
+            const points = curve.getSpacedPoints(28);
+            for (let j = 1; j < points.length; j++) {
+                graphics.lineBetween(points[j - 1].x, points[j - 1].y, points[j].x, points[j].y);
+            }
+            graphics.lineStyle(1, 0xf1e0af, 0.18);
+            for (let j = 1; j < points.length; j += 4) {
+                graphics.lineBetween(points[j - 1].x + 4, points[j - 1].y, points[j].x + 4, points[j].y);
+            }
+            graphics.lineStyle(4, 0x2a6870, 0.22);
+        }
+    }
+
+    private drawTerrainSymbols(graphics: Phaser.GameObjects.Graphics, seed: string): void {
+        graphics.lineStyle(3, 0x3b2817, 0.42);
+        graphics.fillStyle(0x6d4f2b, 0.18);
+        for (let i = 0; i < 22; i++) {
+            const x = this.seededRange(`${seed}-mountain-x`, i, 160, MAP_WIDTH - 160);
+            const y = this.seededRange(`${seed}-mountain-y`, i, 170, MAP_HEIGHT - 155);
+            const size = this.seededRange(`${seed}-mountain-s`, i, 22, 38);
+            graphics.fillTriangle(x, y - size, x - size * 0.8, y + size * 0.65, x + size * 0.85, y + size * 0.65);
+            graphics.strokeTriangle(x, y - size, x - size * 0.8, y + size * 0.65, x + size * 0.85, y + size * 0.65);
+            graphics.lineBetween(x - size * 0.1, y - size * 0.54, x + size * 0.22, y + size * 0.2);
+        }
+
+        graphics.lineStyle(2, 0x234026, 0.38);
+        graphics.fillStyle(0x476b38, 0.22);
+        for (let i = 0; i < 34; i++) {
+            const x = this.seededRange(`${seed}-wood-x`, i, 125, MAP_WIDTH - 125);
+            const y = this.seededRange(`${seed}-wood-y`, i, 150, MAP_HEIGHT - 135);
+            const size = this.seededRange(`${seed}-wood-s`, i, 12, 24);
+            graphics.fillTriangle(x, y - size, x - size, y + size * 0.6, x + size, y + size * 0.6);
+            graphics.strokeTriangle(x, y - size, x - size, y + size * 0.6, x + size, y + size * 0.6);
+            graphics.lineBetween(x, y + size * 0.55, x, y + size * 1.1);
+        }
+
+        graphics.lineStyle(3, 0x4a2b18, 0.42);
+        graphics.fillStyle(0x8a5d2d, 0.22);
+        for (let i = 0; i < 11; i++) {
+            const x = this.seededRange(`${seed}-ruin-x`, i, 170, MAP_WIDTH - 170);
+            const y = this.seededRange(`${seed}-ruin-y`, i, 190, MAP_HEIGHT - 160);
+            graphics.fillRect(x - 16, y - 26, 32, 36);
+            graphics.strokeRect(x - 16, y - 26, 32, 36);
+            graphics.lineBetween(x - 24, y + 10, x + 24, y + 10);
+            graphics.lineBetween(x - 9, y - 26, x - 9, y + 10);
+            graphics.lineBetween(x + 9, y - 26, x + 9, y + 10);
+        }
+    }
+
+    private drawMapRegionNames(container: Phaser.GameObjects.Container, seed: string): void {
+        const labels = [
+            { text: 'Ebon Reach', x: 330, y: 205, angle: -4 },
+            { text: 'High Marches', x: 780, y: 850, angle: 3 },
+            { text: 'Glasswater Expanse', x: 1355, y: 325, angle: -7 },
+            { text: 'Old Crown Road', x: 1820, y: 885, angle: 5 }
+        ];
+
+        labels.forEach((label, index) => {
+            const x = label.x + this.seededRange(`${seed}-label-x`, index, -48, 48);
+            const y = label.y + this.seededRange(`${seed}-label-y`, index, -30, 30);
+            const text = this.add.text(x, y, label.text.toUpperCase(), {
+                fontFamily: 'Georgia, serif',
+                fontSize: '24px',
+                color: '#5c3c1f',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setAlpha(0.32).setAngle(label.angle);
+            container.add(text);
+        });
+    }
+
+    private drawCompassRose(container: Phaser.GameObjects.Container, x: number, y: number): void {
+        const compass = this.add.graphics();
+        compass.fillStyle(0xe7c77a, 0.12);
+        compass.fillCircle(x, y, 92);
+        compass.lineStyle(3, 0x3d2a1c, 0.48);
+        compass.strokeCircle(x, y, 82);
+        compass.lineStyle(1, 0x3d2a1c, 0.34);
+        compass.strokeCircle(x, y, 54);
+
+        const points = 16;
+        for (let i = 0; i < points; i++) {
+            const angle = (Math.PI * 2 * i) / points - Math.PI / 2;
+            const longPoint = i % 2 === 0;
+            const outer = longPoint ? 78 : 46;
+            const inner = longPoint ? 12 : 20;
+            compass.lineStyle(longPoint ? 3 : 1, longPoint ? 0x7d2e24 : 0x3d2a1c, longPoint ? 0.44 : 0.28);
+            compass.lineBetween(
+                x + Math.cos(angle) * inner,
+                y + Math.sin(angle) * inner,
+                x + Math.cos(angle) * outer,
+                y + Math.sin(angle) * outer
+            );
+        }
+
+        compass.fillStyle(0x3d2a1c, 0.28);
+        compass.fillTriangle(x, y - 82, x - 13, y - 35, x + 13, y - 35);
+        container.add(compass);
+
+        const label = this.add.text(x, y - 108, 'N', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '26px',
+            color: '#3d2a1c',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(label);
+    }
+
+    private drawMapBorder(container: Phaser.GameObjects.Container): void {
+        const border = this.add.graphics();
+        border.lineStyle(18, 0x2b1a0d, 0.34);
+        border.strokeRect(30, 26, MAP_WIDTH - 60, MAP_HEIGHT - 52);
+        border.lineStyle(7, 0x7c592c, 0.44);
+        border.strokeRect(52, 50, MAP_WIDTH - 104, MAP_HEIGHT - 100);
+        border.lineStyle(2, 0xe7c77a, 0.38);
+        border.strokeRect(76, 74, MAP_WIDTH - 152, MAP_HEIGHT - 148);
+        border.lineStyle(1, 0x2b1a0d, 0.34);
+        border.strokeRect(92, 90, MAP_WIDTH - 184, MAP_HEIGHT - 180);
+
+        border.lineStyle(3, 0x3d2a1c, 0.26);
+        for (let i = 0; i < 22; i++) {
+            const x = this.seededRange('edge-tear-x', i, 40, MAP_WIDTH - 40);
+            const topY = this.seededRange('edge-tear-top', i, 24, 58);
+            const bottomY = MAP_HEIGHT - this.seededRange('edge-tear-bottom', i, 24, 62);
+            border.lineBetween(x - 18, topY, x + 18, topY + this.seededRange('edge-tear-top-slant', i, -9, 9));
+            border.lineBetween(x - 18, bottomY, x + 18, bottomY + this.seededRange('edge-tear-bottom-slant', i, -9, 9));
+        }
+        container.add(border);
     }
 
     private maybeShowStorySlides(): void {
@@ -534,8 +841,8 @@ export class StageMapScene extends Phaser.Scene {
 
                 // Default: dimmed paths
                 let style: PathRenderStyle = {
-                    color: 0x8a8f98,
-                    alpha: 0.38,
+                    color: 0x5b432c,
+                    alpha: 0.48,
                     thickness: 3,
                     dashLength: 24,
                     gapLength: 18
@@ -547,7 +854,7 @@ export class StageMapScene extends Phaser.Scene {
                 const isNextReachable = isFromCurrent && !liveTarget.isCompleted;
                 if (isNextReachable) {
                     style = {
-                        color: 0xfbbf24,
+                        color: 0x31d15b,
                         alpha: 0.95,
                         thickness: 6,
                         dashLength: 34,
@@ -642,6 +949,12 @@ export class StageMapScene extends Phaser.Scene {
         return hash >>> 0;
     }
 
+    private seededRange(seed: string, index: number, min: number, max: number): number {
+        const hash = this.hashString(`${seed}:${index}`);
+        const ratio = (hash % 10000) / 10000;
+        return min + (max - min) * ratio;
+    }
+
     private createNodeContainer(node: IMapNode): void {
         const position = this.normalizeToPixels(node);
         const container = this.add.container(position.x, position.y);
@@ -655,7 +968,11 @@ export class StageMapScene extends Phaser.Scene {
 
         const label = this.add.text(0, 58, node.type.toUpperCase(), {
             fontSize: '16px',
-            color: '#d7e0ff'
+            color: '#352315',
+            fontFamily: 'Georgia, serif',
+            fontStyle: 'bold',
+            stroke: '#e7c77a',
+            strokeThickness: 3
         }).setOrigin(0.5);
         container.add(label);
 
@@ -757,9 +1074,9 @@ export class StageMapScene extends Phaser.Scene {
         token.add(shadow);
 
         const glow = this.add.graphics();
-        glow.fillStyle(0xfbbf24, 0.18);
+        glow.fillStyle(0x31d15b, 0.18);
         glow.fillCircle(0, 0, 54);
-        glow.lineStyle(4, 0xfbbf24, 0.95);
+        glow.lineStyle(4, 0x31d15b, 0.95);
         glow.strokeCircle(0, 0, 43);
         glow.lineStyle(2, 0xffffff, 0.9);
         glow.strokeCircle(0, 0, 36);
@@ -877,17 +1194,112 @@ export class StageMapScene extends Phaser.Scene {
 
     private onBattleFailed = (_node?: IMapNode, livesLeft?: number) => {
         this.refreshHud();
+        if (livesLeft !== undefined && livesLeft <= 0) {
+            return;
+        }
         const message = livesLeft !== undefined ? `Life lost! Lives left: ${livesLeft}` : 'Life lost!';
         this.showBanner(message);
     };
 
     private onRunFailed = () => {
-        this.showBanner('Run Failed - Out of Lives');
-        this.cameras.main.fadeOut(400, 0, 0, 0);
-        this.time.delayedCall(450, () => {
-            this.scene.start('TitleMenuScene');
-        });
+        this.showGameOverOverlay();
     };
+
+    private showGameOverOverlay(): void {
+        if (this.gameOverOverlay) {
+            return;
+        }
+
+        const { width, height } = this.cameras.main;
+        this.stopStageBgm();
+
+        const overlay = this.add.container(width / 2, height / 2);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(10000);
+        overlay.setAlpha(0);
+
+        const dim = this.add.rectangle(0, 0, width, height, 0x050307, 0.86);
+        dim.setInteractive({ useHandCursor: true });
+        overlay.add(dim);
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x1a0f0a, 0.96);
+        panel.fillRoundedRect(-360, -165, 720, 330, 8);
+        panel.lineStyle(4, 0x8b1e1e, 0.95);
+        panel.strokeRoundedRect(-360, -165, 720, 330, 8);
+        panel.lineStyle(1, 0xf0dba5, 0.55);
+        panel.strokeRoundedRect(-330, -135, 660, 270, 6);
+        overlay.add(panel);
+
+        const title = this.add.text(0, -70, 'GAME OVER', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '76px',
+            color: '#d02222',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 8
+        }).setOrigin(0.5);
+        overlay.add(title);
+
+        const subtitle = this.add.text(0, 15, 'Your command has fallen.', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '28px',
+            color: '#f0dba5',
+            fontStyle: 'italic'
+        }).setOrigin(0.5);
+        overlay.add(subtitle);
+
+        const prompt = this.add.text(0, 93, 'Click to return to menu', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '24px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        overlay.add(prompt);
+
+        this.tweens.add({
+            targets: prompt,
+            alpha: { from: 0.35, to: 1 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        let returningToMenu = false;
+        const returnToMenu = () => {
+            if (returningToMenu) {
+                return;
+            }
+            returningToMenu = true;
+            dim.disableInteractive();
+            panel.disableInteractive();
+            title.disableInteractive();
+            subtitle.disableInteractive();
+            prompt.disableInteractive();
+            this.cameras.main.fadeOut(450, 0, 0, 0);
+            this.time.delayedCall(460, () => {
+                this.scene.start('TitleMenuScene');
+            });
+        };
+
+        dim.on('pointerup', returnToMenu);
+        panel.setInteractive(
+            new Phaser.Geom.Rectangle(-360, -165, 720, 330),
+            Phaser.Geom.Rectangle.Contains
+        );
+        panel.on('pointerup', returnToMenu);
+        title.setInteractive({ useHandCursor: true }).on('pointerup', returnToMenu);
+        subtitle.setInteractive({ useHandCursor: true }).on('pointerup', returnToMenu);
+        prompt.setInteractive({ useHandCursor: true }).on('pointerup', returnToMenu);
+
+        this.gameOverOverlay = overlay;
+        this.tweens.add({
+            targets: overlay,
+            alpha: 1,
+            duration: 260,
+            ease: 'Sine.easeOut'
+        });
+    }
 
     private showBanner(message: string): void {
         const banner = this.add.text(960, 120, message, {

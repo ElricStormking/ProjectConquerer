@@ -51,6 +51,16 @@ export class CardSprite extends Phaser.GameObjects.Container {
         costBadge.setStrokeStyle(2, 0xffffff, 0.8);
         this.costText.setDepth(2);
 
+        const levelBadge = card.type === 'unit' && card.unitLevel
+            ? scene.add.text(72, -130, `Lv ${card.unitLevel}`, {
+                fontSize: '18px',
+                color: '#f0dba5',
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 3
+            }).setOrigin(0.5)
+            : undefined;
+
         this.dragHighlight = scene.add.rectangle(0, 0, 228, 328)
             .setOrigin(0.5)
             .setStrokeStyle(3, 0x4fc3f7, 1.0);
@@ -62,6 +72,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
             this.portrait,
             costBadge,
             this.costText,
+            ...(levelBadge ? [levelBadge] : []),
             this.nameText,
             this.descText,
             this.dragHighlight

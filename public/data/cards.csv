@@ -1,161 +1,161 @@
-id,name,type,cost,resource_type,target_id,portrait_key,description,rarity
-card_soldier_1,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
-card_soldier_2,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
-card_soldier_3,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common
-card_railgunner_1,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
-card_railgunner_2,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
-card_railgunner_3,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare
-card_aegis_tank_1,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare
-card_aegis_tank_2,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare
-card_medic_drone_1,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
-card_medic_drone_2,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
-card_medic_drone_3,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare
-card_thunder_cannon_1,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic
-card_thunder_cannon_2,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic
-card_cannon_tower_1,Cannon Tower,spell,4,profit,cannon_tower,card_cannon_tower,Build a stationary cannon tower on the fortress grid.,common
-card_barrier_field,Armor Shop,spell,3,profit,barrier_field,card_spell_barrier,Construct an armor shop that grants shields to units on this tile.,common
-card_overclock,Overclock,spell,2,profit,overclock,card_spell_overclock,Increase attack speed briefly.,common
-card_jade_scimitar_soldier,Scimitar Soldier,unit,2,chi_flow,jade_scimitar_soldier,card_jade_shuriken_ninjas,Fast basic rogue for early melee pressure.,common
-card_jade_archer,Jade Archer,unit,2,chi_flow,jade_archer,card_jade_crossbow_gunners,Basic Jade archer for steady ranged support.,common
-card_jade_azure_spear,Azure Spear Chargers,unit,2,chi_flow,jade_azure_spear,card_jade_azure_spear,Long reach melee; first hit stuns; gains Chi on kill.,common
-card_jade_chi_dragoon,Chi Dragoon,unit,3,chi_flow,jade_chi_dragoon,card_jade_chi_dragoon,Bruiser that scales damage with Chi Flow.,rare
-card_jade_storm_monks,Storm Monks,unit,3,chi_flow,jade_storm_monks,card_jade_storm_monks,Fast melee combo; dual hits can stun.,rare
-card_jade_shuriken_ninjas,Shuriken Ninjas,unit,2,chi_flow,jade_shuriken_ninjas,card_jade_shuriken_ninjas,Ranged daggers; crits apply Bleeding Chi and stealth on kill.,common
-card_jade_shadowblade_assassins,Shadowblade Assassins,unit,3,chi_flow,jade_shadowblade_assassins,card_jade_shadowblade_assassins,Stealth assassin; opening crit with brief stun; re-stealth on kill.,rare
-card_jade_halberd_guardian,Jade Halberd Guardian,unit,4,chi_flow,jade_halberd_guardian,card_jade_halberd_guardian,Tank with wide cleave; periodic shock slam.,rare
-card_jade_crossbow_gunners,Repeating Crossbow Gunners,unit,3,chi_flow,jade_crossbow_gunners,card_jade_crossbow_gunners,Ranged support; applies vulnerability and AoE slow.,common
-card_jade_war_drum,War Drum of the South Wind,structure,3,chi_flow,jade_war_drum,card_jade_war_drum,Aura: +10% AS; +20% MS on spawn.,common
-card_jade_resonance_tower,Chi Resonance Tower,structure,4,chi_flow,jade_resonance_tower,card_jade_resonance_tower,Pulses stun every few seconds.,rare
-card_jade_amplifier,Chi Amplifier Node,module,3,chi_flow,jade_amplifier,card_jade_amplifier,+20% stun duration; +Chi damage to melee.,rare
-card_jade_expansion_slots,Expansion Slots,spell,2,chi_flow,jade_expansion,card_placeholder,Choose any locked base slot to unlock it.,common
-card_jade_move_units,Move the Units or Building,spell,3,chi_flow,jade_move_units,card_placeholder,Relocate a unit or building to an adjacent empty slot.,common
-card_jade_shrine_oni,Shrine Oni Guardian,unit,4,chi_flow,jade_shrine_oni,card_jade_shrine_oni,Tank spirit that taunts and gains Chi Shield.,rare
-card_jade_spirit_lantern,Spirit Lantern Healer,unit,2,chi_flow,jade_spirit_lantern,card_jade_spirit_lantern,Heals allies; debuffs enemies in aura.,common
-card_jade_healing_shrine,Jade Healing Shrine,structure,2,chi_flow,jade_healing_shrine,card_jade_healing_shrine,Heals allies and generates Chi Flow.,common
-card_jade_spirit_bell,Spirit Bell Shrine,structure,2,chi_flow,jade_spirit_bell,card_jade_spirit_bell,Healing pulses; slows and lowers stun resistance.,rare
-card_jade_spirit_gate,Spirit Gate Node,module,3,chi_flow,jade_spirit_gate,card_jade_spirit_gate,Spawns random Shikigami periodically.,rare
-card_jade_resource_gathering,Resource Gathering,spell,3,chi_flow,jade_resource_gathering,card_placeholder,Expand a slot and gain gold; leaves a taunting clone.,common
-card_jade_destroy_improve,Destroy To Improve Surrounding,spell,4,chi_flow,jade_destroy_improve,card_placeholder,Destroy a unit/building to reinforce adjacent allies.,rare
-card_jade_paper_doll,Paper Doll Guardian,unit,2,chi_flow,jade_paper_doll,card_jade_paper_doll,Evasive tank; dodge chance; roots on death.,common
-card_jade_blue_oni,Blue Oni Bruiser,unit,3,chi_flow,jade_blue_oni,card_jade_blue_oni,Bruiser applying Frost Chi slow; scales with Chi Flow.,rare
-card_jade_shikigami_fox,Golden Shikigami Fox,unit,3,chi_flow,jade_shikigami_fox,card_jade_shikigami_fox,Agile ranged spirit with homing flames and mini-stun.,rare
-card_azariel_screaming_coffin,Screaming Coffin,structure,2,soulfrost,screaming_coffin,card_frost_screaming_coffin,Structure that adds fear aura causing misses.,common
-card_azariel_putrid_archer,Putrid Archer,unit,3,soulfrost,putrid_archer,card_frost_putrid_archer,Ranged undead archer that slows enemies with decay gas.,common
-card_azariel_cursed_walker,Cursed Walker,unit,4,soulfrost,cursed_walker,card_frost_cursed_walker,Support lich granting debuff immunity to nearby undead.,rare
-card_azariel_agony_screamer,Agony Screamer,unit,3,soulfrost,agony_screamer,card_frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage.,rare
-card_azariel_living_sacrifice,Living Sacrifice,spell,4,soulfrost,living_sacrifice,card_frost_spell_living_sacrifice,Auto-sacrifice low-cost unit to grant global damage buff.,rare
-card_azariel_soul_shackles,Soul Shackles,spell,3,soulfrost,soul_shackles,card_frost_spell_soul_shackles,Chains a random enemy reducing armor over time.,common
-card_bellucci_bound_spectre,Bound Spectre,unit,2,soulfrost,bound_spectre,card_frost_bound_spectre,Flying curse aura reducing enemy damage output.,common
-card_bellucci_bloodline_noble,Bloodline Noble,unit,3,soulfrost,bloodline_noble,card_frost_bloodline_noble,Vampire melee applying bleed on hit.,rare
-card_bellucci_forbidden_scientist,Forbidden Scientist,unit,4,soulfrost,forbidden_scientist,card_frost_forbidden_scientist,Sacrifices ally HP cap to boost their damage.,rare
-card_bellucci_shade_servant,Shade Servant,unit,2,soulfrost,shade_servant,card_frost_shade_servant,Chance to convert killed enemy into Flesh Weaver.,common
-card_bellucci_eternal_watcher,Eternal Watcher,unit,5,soulfrost,eternal_watcher,card_frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths.,epic
-card_frost_skeleton_soldiers,Skeleton Soldiers,unit,2,soulfrost,skeleton_soldiers,card_frost_shade_servant,Basic undead rogue skirmishers for early pressure.,common
-card_frost_skeleton_archer,Skeleton Archer,unit,2,soulfrost,skeleton_archer,card_frost_putrid_archer,Basic undead archer for simple ranged pressure.,common
-card_bellucci_pact_of_blood,Pact of Blood,spell,2,soulfrost,pact_of_blood,card_frost_spell_pact_of_blood,Blood pool heals allies when high-cost unit dies.,common
-card_zhaquille_flesh_weaver,Flesh Weaver,unit,1,soulfrost,flesh_weaver,card_frost_flesh_weaver,Low-cost abomination with self-sacrifice AoE on death.,common
-card_zhaquille_abomination,Abomination,unit,5,soulfrost,abomination,card_frost_abomination,Heavy tank distributing max HP to nearby allies.,rare
-card_zhaquille_flesh_crawler,Flesh Crawler,unit,1,soulfrost,flesh_crawler,card_frost_flesh_crawler,Fast abomination with chance to inflict Corrupt.,common
-card_zhaquille_flesh_titan,Flesh Titan,unit,6,soulfrost,flesh_titan,card_frost_flesh_titan,Berserk core bruiser that self-bleeds below half HP.,epic
-card_zhaquille_living_altar,Living Altar,structure,3,soulfrost,living_altar,card_frost_living_altar,Sacrifices allies periodically to generate Essence.,common
-card_zhaquille_abominable_hatchery,Abominable Hatchery,structure,5,soulfrost,abominable_hatchery,card_frost_abominable_hatchery,Produces Flesh Weavers faster when allies die nearby.,rare
-card_zhaquille_torment_spire,Torment Spire,structure,3,soulfrost,torment_spire,card_frost_torment_spire,Decay ray turret that weakens armor on hit.,rare
-card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_jade_smoke_bomb,Smoke field reduces enemy accuracy; boosts ninja dodge.,common
-card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_jade_archer_turret,Piercing arrows; periodic AoE stun.,rare
-card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_jade_feng_shui_ward,Healing aura; increased healing received.,common
-card_triarch_dominion_footmen,Dominion Footmen,unit,2,gold,triarch_dominion_footmen,card_triarch_zealot_duelist,Basic Dominion melee skirmishers.,common
-card_triarch_dominion_gunner,Dominion Gunner,unit,2,gold,triarch_dominion_gunner,card_triarch_rifleman_squad,Basic Dominion gunner with reliable ranged fire.,common
-card_triarch_zealot_duelist,Zealot Duelist,unit,2,gold,triarch_zealot_duelist,card_triarch_zealot_duelist,Fast melee striker with holy cleave.,common
-card_triarch_acolyte_healer,Acolyte Healer,unit,2,gold,triarch_acolyte_healer,card_triarch_acolyte_healer,Single-target healer that generates faith.,common
-card_triarch_priestess_dawn,Priestess of Dawn,unit,3,gold,triarch_priestess_dawn,card_triarch_priestess_dawn,Cone healer with periodic cleanse.,rare
-card_triarch_crusader_shieldbearer,Crusader Shieldbearer,unit,3,gold,triarch_crusader_shieldbearer,card_triarch_crusader_shieldbearer,Frontline tank projecting shield cone.,rare
-card_triarch_seraph_guardian,Seraph Guardian,unit,4,gold,triarch_seraph_guardian,card_triarch_seraph_guardian,Elite melee controller with stun swings.,epic
-card_triarch_rifleman_squad,Rifleman Squad,unit,2,gold,triarch_rifleman_squad,card_triarch_rifleman_squad,Core ranged DPS squad.,common
-card_triarch_sniper_elite,Sniper Elite,unit,3,gold,triarch_sniper_elite,card_triarch_sniper_elite,Long-range execution with armor crack.,rare
-card_triarch_firethrower_unit,Firethrower Unit,unit,3,gold,triarch_firethrower_unit,card_triarch_firethrower_unit,Short-range flame cone DoT and scorch.,rare
-card_triarch_heavy_siege_walker,Heavy Siege Walker,unit,6,gold,triarch_heavy_siege_walker,card_triarch_heavy_siege_walker,Heavy walker with cannon and stomp.,epic
-card_triarch_lightning_sorcerer,Lightning Sorcerer,unit,3,gold,triarch_lightning_sorcerer,card_triarch_lightning_sorcerer,Chain lightning caster with slows.,rare
-card_triarch_aether_golem,Aether Golem,unit,4,gold,triarch_aether_golem,card_triarch_aether_golem,Floating construct bruiser with burst.,rare
-card_triarch_mana_siphon_adept,Mana Siphon Adept,unit,2,gold,triarch_mana_siphon_adept,card_triarch_mana_siphon_adept,Suppresses enemy attack speed with a siphon bolt.,common
-card_triarch_aether_archer,Aether Archer,unit,2,gold,triarch_aether_archer,card_triarch_aether_archer,Piercing arcane arrows strong vs shields.,common
-card_triarch_field_command_post,Field Command Post,structure,3,gold,triarch_field_command_post,card_triarch_field_command_post,Aura boosts ranged accuracy and fire rate.,rare
-card_triarch_healing_beacon,Healing Beacon,structure,2,gold,triarch_healing_beacon,card_triarch_healing_beacon,Pulsing heals; faith generation for holy play.,common
-card_triarch_cannon_turret,Cannon Turret,structure,4,gold,triarch_cannon_turret,card_triarch_cannon_turret,Explosive shells applying stagger.,rare
-card_triarch_lightbringer_tower,Lightbringer Tower,structure,3,gold,triarch_lightbringer_tower,card_triarch_lightbringer_tower,Piercing holy beam with minor slow.,rare
-card_triarch_machine_gun_nest,Machine Gun Nest,structure,3,gold,triarch_machine_gun_nest,card_triarch_machine_gun_nest,Rapid fire turret that suppresses enemies.,rare
-card_triarch_aether_tower,Aether Tower,structure,4,gold,triarch_aether_tower,card_triarch_aether_tower,Chain lightning turret that jumps targets.,rare
-card_triarch_storm_generator,Storm Generator,structure,4,gold,triarch_storm_generator,card_triarch_storm_generator,Storm zone slowing and damaging enemies.,rare
-card_jade_ninja_warp,Ninja Warp Pad,module,3,chi_flow,jade_ninja_warp,card_jade_ninja_warp,Grants brief invisibility and crit bonus to ninjas.,rare
-card_jade_shield_node,Jade Shield Node,module,3,chi_flow,jade_shield_node,card_jade_shield_node,Grants Chi Shield to allies (+HP shield).,common
-card_jade_chi_reactor,Chi Reactor Node,module,3,chi_flow,jade_chi_reactor,card_jade_chi_reactor,Generates Chi Flow over time; boosts damage at high Chi.,rare
-card_elf_elven_scout,Elven Scout,unit,2,lifeforce,elf_elven_scout,card_elf_emerald_shadow_guards,Quick basic rogue that flanks enemy lines.,common
-card_elf_elven_bowmen,Elven Bowmen,unit,2,lifeforce,elf_elven_bowmen,card_elf_spirit_bound_hunter,Basic Elven archers with steady ranged volleys.,common
-card_elf_glow_sprout_spirit,Glow-Sprout Spirit,unit,1,lifeforce,elf_glow_sprout_spirit,card_elf_glow_sprout_spirit,Low health spirit that splits on death.,common
-card_elf_spore_wing_scout,Spore-Wing Scout,unit,2,lifeforce,elf_spore_wing_scout,card_elf_starlight_sky_skimmers,Flying scout that weakens enemy ranged aim.,common
-card_elf_verdant_legionary,Verdant Legionary,unit,2,lifeforce,elf_verdant_legionary,card_elf_verdant_legionary,Nearby legionaries boost its attack power.,common
-card_elf_root_kin_swarm,Root-Kin Swarm,unit,3,lifeforce,elf_root_kin_swarm,card_elf_emerald_shadow_guards,Swarm melee fighters for early pressure.,common
-card_elf_seed_pod_artillery,Seed-Pod Artillery,unit,4,lifeforce,elf_seed_pod_artillery,card_elf_seed_pod_artillery,Ranged splash attacks that seed poison flowers.,rare
-card_elf_pollen_burster,Pollen Burster,unit,3,lifeforce,elf_pollen_burster,card_elf_pollen_burster,Melee bruiser that slows nearby attackers.,rare
-card_elf_bloom_thrower,Bloom Thrower,unit,2,lifeforce,elf_bloom_thrower,card_elf_bloom_thrower,Ranged attacker that spawns poison blooms.,common
-card_elf_emerald_justiciar,Emerald Justiciar,unit,5,lifeforce,elf_emerald_justiciar,card_elf_emerald_justiciar,Elite guardian empowered by allied buffs.,epic
-card_elf_kaelas_squire,Kaelas's Squire,unit,2,lifeforce,elf_kaelas_squire,card_elf_kaelas_squire,Guardian that protects the highest cost ally.,common
-card_elf_guardian_world_tree,Guardian of the World Tree,unit,6,lifeforce,elf_guardian_world_tree,card_elf_guardian_world_tree,Massive tank with extreme armor.,epic
-card_elf_emerald_dragonling,Emerald Dragonling,unit,4,lifeforce,elf_emerald_dragonling,card_elf_emerald_dragonling,Flying attacker that punishes wounded foes.,rare
-card_elf_champion_glade,Champion of the Glade,unit,4,lifeforce,elf_champion_glade,card_elf_champion_glade,Duelist that excels against elite enemies.,rare
-card_elf_emerald_vanguard,Emerald Vanguard,unit,4,lifeforce,elf_emerald_vanguard,card_elf_emerald_vanguard,Charging elite that stuns on impact.,rare
-card_elf_hallow_tree_paladin,Hallow-Tree Paladin,unit,5,lifeforce,elf_hallow_tree_paladin,card_elf_hallow_tree_paladin,Elite guardian that cleanses nearby allies.,epic
-card_elf_soul_seer_disciple,Soul-Seer Disciple,unit,2,lifeforce,elf_soul_seer_disciple,card_elf_soul_seer_disciple,Healed allies trigger pulsing damage.,common
-card_elf_spirit_bound_deer,Spirit-Bound Deer,unit,3,lifeforce,elf_spirit_bound_deer,card_elf_spirit_bound_hunter,Lifesteal fighter that heals allies on death.,rare
-card_elf_oracle,Oracle,unit,4,lifeforce,elf_oracle,card_elf_oracle,Amplifies all healing effects in range.,rare
-card_elf_ethereal_weaver,Ethereal Weaver,unit,3,lifeforce,elf_ethereal_weaver,card_elf_turmaline_weaver,Support caster that stacks slows.,common
-card_elf_grove_petitioner,Grove Petitioner,unit,3,lifeforce,elf_grove_petitioner,card_elf_grove_petitioner,Support healer that tends injured allies.,common
-card_elf_soul_light_butterfly,Soul-Light Butterfly,unit,1,lifeforce,elf_soul_light_butterfly,card_elf_soul_light_butterfly,Flying support that grants lifesteal aura.,common
-card_elf_vitality_bonder,Vitality Bonder,unit,3,lifeforce,elf_vitality_bonder,card_elf_vitality_bonder,Ranged healer that links damage to healing.,rare
-card_elf_bloom_hatchery,Bloom Hatchery,structure,4,lifeforce,elf_bloom_hatchery,card_elf_bloom_hatchery,Produces Glow-Sprout Spirits on a timer.,rare
-card_elf_altar_of_heroes,Altar of Heroes,structure,3,lifeforce,elf_altar_of_heroes,card_elf_altar_of_heroes,Reduces damage for the weakest ally in range.,rare
-card_elf_emerald_shield_battery,Emerald Shield Battery,structure,4,lifeforce,elf_emerald_shield_battery,card_elf_emerald_shield_battery,Grants shielding to allies at wave start.,rare
-card_elf_soul_stone_monument,Soul-Stone Monument,structure,3,lifeforce,elf_soul_stone_monument,card_elf_soul_stone_monument,Stores souls then emits a healing pulse.,rare
-card_elf_spore_mist_pillar,Spore-Mist Pillar,structure,2,lifeforce,elf_spore_mist_pillar,card_elf_spore_mist_pillar,Conceals allies and boosts ranged evasion.,common
-card_elf_healing_grove,Healing Grove,structure,5,lifeforce,elf_healing_grove,card_elf_healing_grove,Large healing zone for allied units.,epic
-card_elf_sun_crystal_spire,Sun-Crystal Spire,structure,5,lifeforce,elf_sun_crystal_spire,card_elf_sun_crystal_spire,Accurate beam turret strong vs flying.,epic
-card_elf_living_vine_wall,Living Vine Wall,structure,1,lifeforce,elf_living_vine_wall,card_elf_living_vine_wall,High health wall that deals thorn damage.,common
-card_elf_fountain_of_life,Fountain of Life,structure,3,lifeforce,elf_fountain_of_life,card_elf_fountain_of_life,Restores health to nearby units and structures.,common
-card_abyss_feral_imp,Feral Imp,unit,1,chaos_essence,abyss_feral_imp,card_abyss_abyssal_imp,Cheap feral rogue that swarms targets quickly.,common
-card_abyss_abyssal_firespitter,Abyssal Firespitter,unit,2,chaos_essence,abyss_abyssal_firespitter,card_abyss_ballista_fiend,Basic ranged demon that spits volatile chaos fire.,common
-card_abyss_abyssal_imp,Abyssal Imp,unit,1,chaos_essence,abyss_abyssal_imp,card_abyss_abyssal_imp,Swarm fodder that explodes on death.,common
-card_abyss_demon_brute,Demon Brute,unit,3,chaos_essence,abyss_demon_brute,card_abyss_demon_brute,Regenerating frontline bruiser.,rare
-card_abyss_gorefiend_crusher,Gorefiend Crusher,unit,5,chaos_essence,abyss_gorefiend_crusher,card_abyss_gorefiend_crusher,Taunting tank that hardens under pressure.,epic
-card_abyss_archdemon,Archdemon,unit,6,chaos_essence,abyss_archdemon,card_abyss_archdemon,Overlord anchor with fear aura.,epic
-card_abyss_ballista_fiend,Abyss Ballista Fiend,unit,3,chaos_essence,abyss_ballista_fiend,card_abyss_ballista_fiend,Long-range siege bolts with corruption.,rare
-card_abyss_hellcannon_behemoth,Hellcannon Behemoth,unit,4,chaos_essence,abyss_hellcannon_behemoth,card_abyss_hellcannon_behemoth,Artillery beast firing explosive shells.,rare
-card_abyss_succubus_temptress,Succubus Temptress,unit,3,chaos_essence,abyss_succubus_temptress,card_abyss_succubus_temptress,Charm controller that turns foes.,rare
-card_abyss_crimson_acolyte,Crimson Acolyte,unit,2,chaos_essence,abyss_crimson_acolyte,card_abyss_crimson_acolyte,Support cultist that fuels Chaos Essence.,common
-card_abyss_veiled_enchantress,Veiled Enchantress,unit,3,chaos_essence,abyss_veiled_enchantress,card_abyss_veiled_enchantress,Area charm and damage debuff.,rare
-card_abyss_blood_siren,Blood Siren,unit,4,chaos_essence,abyss_blood_siren,card_abyss_blood_siren,Assassin that lifesteals from charmed enemies.,rare
-card_abyss_cult_magister,Cult Magister,unit,3,chaos_essence,abyss_cult_magister,card_abyss_cult_magister,High DPS chaos caster applying corruption.,rare
-card_abyss_oracle_abyss,Oracle of the Abyss,unit,3,chaos_essence,abyss_oracle_abyss,card_abyss_oracle_abyss,Debuff specialist that marks targets.,rare
-card_abyss_sacrifice_master,Sacrifice Master,unit,4,chaos_essence,abyss_sacrifice_master,card_abyss_sacrifice_master,Ritual engine that converts allies into power.,rare
-card_abyss_abyssal_prophet,Abyssal Prophet,unit,4,chaos_essence,abyss_abyssal_prophet,card_abyss_abyssal_prophet,Summoner support that spawns imps.,rare
-card_abyss_spawning_pit,Abyssal Spawning Pit,structure,3,chaos_essence,abyss_spawning_pit,card_cannon_tower,Spawns imps periodically.,common
-card_abyss_blood_altar,Blood Altar,structure,3,chaos_essence,abyss_blood_altar,card_cannon_tower,Boosts sacrifice power and essence gain.,common
-card_abyss_infernal_obelisk,Infernal Obelisk,structure,4,chaos_essence,abyss_infernal_obelisk,card_cannon_tower,Chaos damage aura with corruption stacks.,rare
-card_abyss_demon_forge,Demon Forge,structure,3,chaos_essence,abyss_demon_forge,card_cannon_tower,Increases demon HP and armor.,common
-card_abyss_corruption_tower,Corruption Tower,structure,4,chaos_essence,abyss_corruption_tower,card_cannon_tower,Applies corruption to enemies in range.,rare
-card_abyss_hellgate_portal,Hellgate Portal,structure,2,chaos_essence,abyss_hellgate_portal,card_cannon_tower,Reinforcement portal with speed boost.,common
-card_abyss_regeneration_pool,Flesh Regeneration Pool,structure,3,chaos_essence,abyss_regeneration_pool,card_cannon_tower,Heals nearby allies over time.,common
-card_abyss_shrine_of_terror,Shrine of Terror,structure,4,chaos_essence,abyss_shrine_of_terror,card_cannon_tower,Periodic fear pulses in area.,rare
-card_abyss_chaos_heart,Chaos Heart Node,module,2,chaos_essence,abyss_chaos_heart,card_spell_barrier,Boosts Chaos Essence generation.,common
-card_abyss_bloodlust_sigil,Bloodlust Sigil,module,2,chaos_essence,abyss_bloodlust_sigil,card_spell_barrier,Kill-based attack speed surges.,common
-card_abyss_corruption_amplifier,Corruption Amplifier,module,3,chaos_essence,abyss_corruption_amplifier,card_spell_barrier,Strengthens corruption damage.,rare
-card_abyss_soul_harvest_core,Soul Harvest Core,module,2,chaos_essence,abyss_soul_harvest_core,card_spell_barrier,Essence gain on nearby deaths.,common
-card_abyss_infernal_armor,Infernal Armor Plates,module,2,chaos_essence,abyss_infernal_armor,card_spell_barrier,Adjacent demons gain armor.,common
-card_abyss_demonic_frenzy,Demonic Frenzy Node,module,2,chaos_essence,abyss_demonic_frenzy,card_spell_barrier,Low-health frenzy for allies.,common
-card_abyss_fear_resonance,Fear Resonance Totem,module,3,chaos_essence,abyss_fear_resonance,card_spell_barrier,Extends fear and amplifies damage.,rare
-card_abyss_hellfire_conduit,Hellfire Conduit,module,3,chaos_essence,abyss_hellfire_conduit,card_spell_barrier,Spells ignite enemies with burn.,rare
-card_abyss_chaos_bolt,Chaos Bolt,spell,1,chaos_essence,chaos_bolt,card_spell_barrier,Single-target chaos damage with corruption.,common
-card_abyss_infernal_explosion,Infernal Explosion,spell,2,chaos_essence,infernal_explosion,card_spell_barrier,Explosive chaos burst in an area.,rare
-card_abyss_mass_fear,Mass Fear,spell,2,chaos_essence,mass_fear,card_spell_barrier,Briefly fears enemies in an area.,rare
-card_abyss_blood_pact,Blood Pact,spell,1,chaos_essence,blood_pact,card_spell_barrier,Sacrifice a unit to heal allies.,common
-card_abyss_corruption_wave,Corruption Wave,spell,3,chaos_essence,corruption_wave,card_spell_barrier,Wide arc applying corruption stacks.,epic
-card_abyss_demonic_regrowth,Demonic Regrowth,spell,2,chaos_essence,demonic_regrowth,card_spell_barrier,Mass regeneration buff for allies.,rare
-card_abyss_abyssal_rift,Abyssal Rift,spell,4,chaos_essence,abyssal_rift,card_spell_barrier,Damage zone that spawns imps.,epic
+id,name,type,cost,resource_type,target_id,portrait_key,description,rarity,unit_level
+card_soldier_1,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common,5
+card_soldier_2,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common,7
+card_soldier_3,Feral Warrior,unit,2,profit,cog_soldier,card_soldier,Deploy a sturdy frontline soldier.,common,10
+card_railgunner_1,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare,43
+card_railgunner_2,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare,53
+card_railgunner_3,Railgunner,unit,3,profit,cog_railgunner,card_railgunner,Deploy a long-range marksman.,rare,62
+card_aegis_tank_1,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare,72
+card_aegis_tank_2,Aegis Tank,unit,4,profit,cog_aegis_tank,card_tank,Deploy a defensive tank.,rare,81
+card_medic_drone_1,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare,15
+card_medic_drone_2,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare,24
+card_medic_drone_3,Medic Druid,unit,2,profit,cog_medic_drone,card_medic,Deploy a drone that heals nearby allies.,rare,34
+card_thunder_cannon_1,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic,91
+card_thunder_cannon_2,Thunder Mage,unit,5,profit,cog_thunder_cannon,card_thunder_mage,Deploy a heavy artillery cannon.,epic,100
+card_cannon_tower_1,Cannon Tower,spell,4,profit,cannon_tower,card_cannon_tower,Build a stationary cannon tower on the fortress grid.,common,
+card_barrier_field,Armor Shop,spell,3,profit,barrier_field,card_spell_barrier,Construct an armor shop that grants shields to units on this tile.,common,
+card_overclock,Overclock,spell,2,profit,overclock,card_spell_overclock,Increase attack speed briefly.,common,
+card_jade_scimitar_soldier,Scimitar Soldier,unit,2,chi_flow,jade_scimitar_soldier,card_jade_shuriken_ninjas,Fast basic rogue for early melee pressure.,common,5
+card_jade_archer,Jade Archer,unit,2,chi_flow,jade_archer,card_jade_crossbow_gunners,Basic Jade archer for steady ranged support.,common,10
+card_jade_azure_spear,Azure Spear Chargers,unit,2,chi_flow,jade_azure_spear,card_jade_azure_spear,Long reach melee; first hit stuns; gains Chi on kill.,common,15
+card_jade_chi_dragoon,Chi Dragoon,unit,3,chi_flow,jade_chi_dragoon,card_jade_chi_dragoon,Bruiser that scales damage with Chi Flow.,rare,54
+card_jade_storm_monks,Storm Monks,unit,3,chi_flow,jade_storm_monks,card_jade_storm_monks,Fast melee combo; dual hits can stun.,rare,61
+card_jade_shuriken_ninjas,Shuriken Ninjas,unit,2,chi_flow,jade_shuriken_ninjas,card_jade_shuriken_ninjas,Ranged daggers; crits apply Bleeding Chi and stealth on kill.,common,23
+card_jade_shadowblade_assassins,Shadowblade Assassins,unit,3,chi_flow,jade_shadowblade_assassins,card_jade_shadowblade_assassins,Stealth assassin; opening crit with brief stun; re-stealth on kill.,rare,69
+card_jade_halberd_guardian,Jade Halberd Guardian,unit,4,chi_flow,jade_halberd_guardian,card_jade_halberd_guardian,Tank with wide cleave; periodic shock slam.,rare,92
+card_jade_crossbow_gunners,Repeating Crossbow Gunners,unit,3,chi_flow,jade_crossbow_gunners,card_jade_crossbow_gunners,Ranged support; applies vulnerability and AoE slow.,common,46
+card_jade_war_drum,War Drum of the South Wind,structure,3,chi_flow,jade_war_drum,card_jade_war_drum,Aura: +10% AS; +20% MS on spawn.,common,
+card_jade_resonance_tower,Chi Resonance Tower,structure,4,chi_flow,jade_resonance_tower,card_jade_resonance_tower,Pulses stun every few seconds.,rare,
+card_jade_amplifier,Chi Amplifier Node,module,3,chi_flow,jade_amplifier,card_jade_amplifier,+20% stun duration; +Chi damage to melee.,rare,
+card_jade_expansion_slots,Expansion Slots,spell,2,chi_flow,jade_expansion,card_jade_expansion_slots,Choose any locked base slot to unlock it.,common,
+card_jade_move_units,Move the Units or Building,spell,3,chi_flow,jade_move_units,card_placeholder,Relocate a unit or building to an adjacent empty slot.,common,
+card_jade_shrine_oni,Shrine Oni Guardian,unit,4,chi_flow,jade_shrine_oni,card_jade_shrine_oni,Tank spirit that taunts and gains Chi Shield.,rare,100
+card_jade_spirit_lantern,Spirit Lantern Healer,unit,2,chi_flow,jade_spirit_lantern,card_jade_spirit_lantern,Heals allies; debuffs enemies in aura.,common,30
+card_jade_healing_shrine,Jade Healing Shrine,structure,2,chi_flow,jade_healing_shrine,card_jade_healing_shrine,Heals allies and generates Chi Flow.,common,
+card_jade_spirit_bell,Spirit Bell Shrine,structure,2,chi_flow,jade_spirit_bell,card_jade_spirit_bell,Healing pulses; slows and lowers stun resistance.,rare,
+card_jade_spirit_gate,Spirit Gate Node,module,3,chi_flow,jade_spirit_gate,card_jade_spirit_gate,Spawns random Shikigami periodically.,rare,
+card_jade_resource_gathering,Resource Gathering,spell,3,chi_flow,jade_resource_gathering,card_placeholder,Expand a slot and gain gold; leaves a taunting clone.,common,
+card_jade_destroy_improve,Destroy To Improve Surrounding,spell,4,chi_flow,jade_destroy_improve,card_placeholder,Destroy a unit/building to reinforce adjacent allies.,rare,
+card_jade_paper_doll,Paper Doll Guardian,unit,2,chi_flow,jade_paper_doll,card_jade_paper_doll,Evasive tank; dodge chance; roots on death.,common,38
+card_jade_blue_oni,Blue Oni Bruiser,unit,3,chi_flow,jade_blue_oni,card_jade_blue_oni,Bruiser applying Frost Chi slow; scales with Chi Flow.,rare,77
+card_jade_shikigami_fox,Golden Shikigami Fox,unit,3,chi_flow,jade_shikigami_fox,card_jade_shikigami_fox,Agile ranged spirit with homing flames and mini-stun.,rare,85
+card_azariel_screaming_coffin,Screaming Coffin,structure,2,soulfrost,screaming_coffin,card_frost_screaming_coffin,Structure that adds fear aura causing misses.,common,
+card_azariel_putrid_archer,Putrid Archer,unit,3,soulfrost,putrid_archer,card_frost_putrid_archer,Ranged undead archer that slows enemies with decay gas.,common,46
+card_azariel_cursed_walker,Cursed Walker,unit,4,soulfrost,cursed_walker,card_frost_cursed_walker,Support lich granting debuff immunity to nearby undead.,rare,69
+card_azariel_agony_screamer,Agony Screamer,unit,3,soulfrost,agony_screamer,card_frost_agony_screamer,Ethereal AoE attacker dealing splash spiritual damage.,rare,54
+card_azariel_living_sacrifice,Living Sacrifice,spell,4,soulfrost,living_sacrifice,card_frost_spell_living_sacrifice,Auto-sacrifice low-cost unit to grant global damage buff.,rare,
+card_azariel_soul_shackles,Soul Shackles,spell,3,soulfrost,soul_shackles,card_frost_spell_soul_shackles,Chains a random enemy reducing armor over time.,common,
+card_bellucci_bound_spectre,Bound Spectre,unit,2,soulfrost,bound_spectre,card_frost_bound_spectre,Flying curse aura reducing enemy damage output.,common,30
+card_bellucci_bloodline_noble,Bloodline Noble,unit,3,soulfrost,bloodline_noble,card_frost_bloodline_noble,Vampire melee applying bleed on hit.,rare,61
+card_bellucci_forbidden_scientist,Forbidden Scientist,unit,4,soulfrost,forbidden_scientist,card_frost_forbidden_scientist,Sacrifices ally HP cap to boost their damage.,rare,77
+card_bellucci_shade_servant,Shade Servant,unit,2,soulfrost,shade_servant,card_frost_shade_servant,Chance to convert killed enemy into Flesh Weaver.,common,38
+card_bellucci_eternal_watcher,Eternal Watcher,unit,5,soulfrost,eternal_watcher,card_frost_eternal_watcher,Giant abomination gaining temp HP on nearby deaths.,epic,92
+card_frost_skeleton_soldiers,Skeleton Soldiers,unit,2,soulfrost,skeleton_soldiers,card_frost_shade_servant,Basic undead rogue skirmishers for early pressure.,common,5
+card_frost_skeleton_archer,Skeleton Archer,unit,2,soulfrost,skeleton_archer,card_frost_putrid_archer,Basic undead archer for simple ranged pressure.,common,10
+card_bellucci_pact_of_blood,Pact of Blood,spell,2,soulfrost,pact_of_blood,card_frost_spell_pact_of_blood,Blood pool heals allies when high-cost unit dies.,common,
+card_zhaquille_flesh_weaver,Flesh Weaver,unit,1,soulfrost,flesh_weaver,card_frost_flesh_weaver,Low-cost abomination with self-sacrifice AoE on death.,common,15
+card_zhaquille_abomination,Abomination,unit,5,soulfrost,abomination,card_frost_abomination,Heavy tank distributing max HP to nearby allies.,rare,85
+card_zhaquille_flesh_crawler,Flesh Crawler,unit,1,soulfrost,flesh_crawler,card_frost_flesh_crawler,Fast abomination with chance to inflict Corrupt.,common,23
+card_zhaquille_flesh_titan,Flesh Titan,unit,6,soulfrost,flesh_titan,card_frost_flesh_titan,Berserk core bruiser that self-bleeds below half HP.,epic,100
+card_zhaquille_living_altar,Living Altar,structure,3,soulfrost,living_altar,card_frost_living_altar,Sacrifices allies periodically to generate Essence.,common,
+card_zhaquille_abominable_hatchery,Abominable Hatchery,structure,5,soulfrost,abominable_hatchery,card_frost_abominable_hatchery,Produces Flesh Weavers faster when allies die nearby.,rare,
+card_zhaquille_torment_spire,Torment Spire,structure,3,soulfrost,torment_spire,card_frost_torment_spire,Decay ray turret that weakens armor on hit.,rare,
+card_jade_smoke_bomb,Smoke Bomb Generator,structure,3,chi_flow,jade_smoke_bomb,card_jade_smoke_bomb,Smoke field reduces enemy accuracy; boosts ninja dodge.,common,
+card_jade_archer_turret,Jade Archer Turret,structure,3,chi_flow,jade_archer_turret,card_jade_archer_turret,Piercing arrows; periodic AoE stun.,rare,
+card_jade_feng_shui_ward,Feng Shui Ward Node,module,3,chi_flow,jade_feng_shui_ward,card_jade_feng_shui_ward,Healing aura; increased healing received.,common,
+card_triarch_dominion_footmen,Dominion Footmen,unit,2,gold,triarch_dominion_footmen,card_triarch_zealot_duelist,Basic Dominion melee skirmishers.,common,5
+card_triarch_dominion_gunner,Dominion Gunner,unit,2,gold,triarch_dominion_gunner,card_triarch_rifleman_squad,Basic Dominion gunner with reliable ranged fire.,common,10
+card_triarch_zealot_duelist,Zealot Duelist,unit,2,gold,triarch_zealot_duelist,card_triarch_zealot_duelist,Fast melee striker with holy cleave.,common,15
+card_triarch_acolyte_healer,Acolyte Healer,unit,2,gold,triarch_acolyte_healer,card_triarch_acolyte_healer,Single-target healer that generates faith.,common,22
+card_triarch_priestess_dawn,Priestess of Dawn,unit,3,gold,triarch_priestess_dawn,card_triarch_priestess_dawn,Cone healer with periodic cleanse.,rare,50
+card_triarch_crusader_shieldbearer,Crusader Shieldbearer,unit,3,gold,triarch_crusader_shieldbearer,card_triarch_crusader_shieldbearer,Frontline tank projecting shield cone.,rare,58
+card_triarch_seraph_guardian,Seraph Guardian,unit,4,gold,triarch_seraph_guardian,card_triarch_seraph_guardian,Elite melee controller with stun swings.,epic,93
+card_triarch_rifleman_squad,Rifleman Squad,unit,2,gold,triarch_rifleman_squad,card_triarch_rifleman_squad,Core ranged DPS squad.,common,29
+card_triarch_sniper_elite,Sniper Elite,unit,3,gold,triarch_sniper_elite,card_triarch_sniper_elite,Long-range execution with armor crack.,rare,65
+card_triarch_firethrower_unit,Firethrower Unit,unit,3,gold,triarch_firethrower_unit,card_triarch_firethrower_unit,Short-range flame cone DoT and scorch.,rare,72
+card_triarch_heavy_siege_walker,Heavy Siege Walker,unit,6,gold,triarch_heavy_siege_walker,card_triarch_heavy_siege_walker,Heavy walker with cannon and stomp.,epic,100
+card_triarch_lightning_sorcerer,Lightning Sorcerer,unit,3,gold,triarch_lightning_sorcerer,card_triarch_lightning_sorcerer,Chain lightning caster with slows.,rare,79
+card_triarch_aether_golem,Aether Golem,unit,4,gold,triarch_aether_golem,card_triarch_aether_golem,Floating construct bruiser with burst.,rare,86
+card_triarch_mana_siphon_adept,Mana Siphon Adept,unit,2,gold,triarch_mana_siphon_adept,card_triarch_mana_siphon_adept,Suppresses enemy attack speed with a siphon bolt.,common,36
+card_triarch_aether_archer,Aether Archer,unit,2,gold,triarch_aether_archer,card_triarch_aether_archer,Piercing arcane arrows strong vs shields.,common,43
+card_triarch_field_command_post,Field Command Post,structure,3,gold,triarch_field_command_post,card_triarch_field_command_post,Aura boosts ranged accuracy and fire rate.,rare,
+card_triarch_healing_beacon,Healing Beacon,structure,2,gold,triarch_healing_beacon,card_triarch_healing_beacon,Pulsing heals; faith generation for holy play.,common,
+card_triarch_cannon_turret,Cannon Turret,structure,4,gold,triarch_cannon_turret,card_triarch_cannon_turret,Explosive shells applying stagger.,rare,
+card_triarch_lightbringer_tower,Lightbringer Tower,structure,3,gold,triarch_lightbringer_tower,card_triarch_lightbringer_tower,Piercing holy beam with minor slow.,rare,
+card_triarch_machine_gun_nest,Machine Gun Nest,structure,3,gold,triarch_machine_gun_nest,card_triarch_machine_gun_nest,Rapid fire turret that suppresses enemies.,rare,
+card_triarch_aether_tower,Aether Tower,structure,4,gold,triarch_aether_tower,card_triarch_aether_tower,Chain lightning turret that jumps targets.,rare,
+card_triarch_storm_generator,Storm Generator,structure,4,gold,triarch_storm_generator,card_triarch_storm_generator,Storm zone slowing and damaging enemies.,rare,
+card_jade_ninja_warp,Ninja Warp Pad,module,3,chi_flow,jade_ninja_warp,card_jade_ninja_warp,Grants brief invisibility and crit bonus to ninjas.,rare,
+card_jade_shield_node,Jade Shield Node,module,3,chi_flow,jade_shield_node,card_jade_shield_node,Grants Chi Shield to allies (+HP shield).,common,
+card_jade_chi_reactor,Chi Reactor Node,module,3,chi_flow,jade_chi_reactor,card_jade_chi_reactor,Generates Chi Flow over time; boosts damage at high Chi.,rare,
+card_elf_elven_scout,Elven Scout,unit,2,lifeforce,elf_elven_scout,card_elf_emerald_shadow_guards,Quick basic rogue that flanks enemy lines.,common,5
+card_elf_elven_bowmen,Elven Bowmen,unit,2,lifeforce,elf_elven_bowmen,card_elf_spirit_bound_hunter,Basic Elven archers with steady ranged volleys.,common,10
+card_elf_glow_sprout_spirit,Glow-Sprout Spirit,unit,1,lifeforce,elf_glow_sprout_spirit,card_elf_glow_sprout_spirit,Low health spirit that splits on death.,common,15
+card_elf_spore_wing_scout,Spore-Wing Scout,unit,2,lifeforce,elf_spore_wing_scout,card_elf_starlight_sky_skimmers,Flying scout that weakens enemy ranged aim.,common,24
+card_elf_verdant_legionary,Verdant Legionary,unit,2,lifeforce,elf_verdant_legionary,card_elf_verdant_legionary,Nearby legionaries boost its attack power.,common,28
+card_elf_root_kin_swarm,Root-Kin Swarm,unit,3,lifeforce,elf_root_kin_swarm,card_elf_emerald_shadow_guards,Swarm melee fighters for early pressure.,common,45
+card_elf_seed_pod_artillery,Seed-Pod Artillery,unit,4,lifeforce,elf_seed_pod_artillery,card_elf_seed_pod_artillery,Ranged splash attacks that seed poison flowers.,rare,70
+card_elf_pollen_burster,Pollen Burster,unit,3,lifeforce,elf_pollen_burster,card_elf_pollen_burster,Melee bruiser that slows nearby attackers.,rare,58
+card_elf_bloom_thrower,Bloom Thrower,unit,2,lifeforce,elf_bloom_thrower,card_elf_bloom_thrower,Ranged attacker that spawns poison blooms.,common,32
+card_elf_emerald_justiciar,Emerald Justiciar,unit,5,lifeforce,elf_emerald_justiciar,card_elf_emerald_justiciar,Elite guardian empowered by allied buffs.,epic,92
+card_elf_kaelas_squire,Kaelas's Squire,unit,2,lifeforce,elf_kaelas_squire,card_elf_kaelas_squire,Guardian that protects the highest cost ally.,common,36
+card_elf_guardian_world_tree,Guardian of the World Tree,unit,6,lifeforce,elf_guardian_world_tree,card_elf_guardian_world_tree,Massive tank with extreme armor.,epic,100
+card_elf_emerald_dragonling,Emerald Dragonling,unit,4,lifeforce,elf_emerald_dragonling,card_elf_emerald_dragonling,Flying attacker that punishes wounded foes.,rare,75
+card_elf_champion_glade,Champion of the Glade,unit,4,lifeforce,elf_champion_glade,card_elf_champion_glade,Duelist that excels against elite enemies.,rare,79
+card_elf_emerald_vanguard,Emerald Vanguard,unit,4,lifeforce,elf_emerald_vanguard,card_elf_emerald_vanguard,Charging elite that stuns on impact.,rare,83
+card_elf_hallow_tree_paladin,Hallow-Tree Paladin,unit,5,lifeforce,elf_hallow_tree_paladin,card_elf_hallow_tree_paladin,Elite guardian that cleanses nearby allies.,epic,96
+card_elf_soul_seer_disciple,Soul-Seer Disciple,unit,2,lifeforce,elf_soul_seer_disciple,card_elf_soul_seer_disciple,Healed allies trigger pulsing damage.,common,41
+card_elf_spirit_bound_deer,Spirit-Bound Deer,unit,3,lifeforce,elf_spirit_bound_deer,card_elf_spirit_bound_hunter,Lifesteal fighter that heals allies on death.,rare,62
+card_elf_oracle,Oracle,unit,4,lifeforce,elf_oracle,card_elf_oracle,Amplifies all healing effects in range.,rare,87
+card_elf_ethereal_weaver,Ethereal Weaver,unit,3,lifeforce,elf_ethereal_weaver,card_elf_turmaline_weaver,Support caster that stacks slows.,common,49
+card_elf_grove_petitioner,Grove Petitioner,unit,3,lifeforce,elf_grove_petitioner,card_elf_grove_petitioner,Support healer that tends injured allies.,common,53
+card_elf_soul_light_butterfly,Soul-Light Butterfly,unit,1,lifeforce,elf_soul_light_butterfly,card_elf_soul_light_butterfly,Flying support that grants lifesteal aura.,common,19
+card_elf_vitality_bonder,Vitality Bonder,unit,3,lifeforce,elf_vitality_bonder,card_elf_vitality_bonder,Ranged healer that links damage to healing.,rare,66
+card_elf_bloom_hatchery,Bloom Hatchery,structure,4,lifeforce,elf_bloom_hatchery,card_elf_bloom_hatchery,Produces Glow-Sprout Spirits on a timer.,rare,
+card_elf_altar_of_heroes,Altar of Heroes,structure,3,lifeforce,elf_altar_of_heroes,card_elf_altar_of_heroes,Reduces damage for the weakest ally in range.,rare,
+card_elf_emerald_shield_battery,Emerald Shield Battery,structure,4,lifeforce,elf_emerald_shield_battery,card_elf_emerald_shield_battery,Grants shielding to allies at wave start.,rare,
+card_elf_soul_stone_monument,Soul-Stone Monument,structure,3,lifeforce,elf_soul_stone_monument,card_elf_soul_stone_monument,Stores souls then emits a healing pulse.,rare,
+card_elf_spore_mist_pillar,Spore-Mist Pillar,structure,2,lifeforce,elf_spore_mist_pillar,card_elf_spore_mist_pillar,Conceals allies and boosts ranged evasion.,common,
+card_elf_healing_grove,Healing Grove,structure,5,lifeforce,elf_healing_grove,card_elf_healing_grove,Large healing zone for allied units.,epic,
+card_elf_sun_crystal_spire,Sun-Crystal Spire,structure,5,lifeforce,elf_sun_crystal_spire,card_elf_sun_crystal_spire,Accurate beam turret strong vs flying.,epic,
+card_elf_living_vine_wall,Living Vine Wall,structure,1,lifeforce,elf_living_vine_wall,card_elf_living_vine_wall,High health wall that deals thorn damage.,common,
+card_elf_fountain_of_life,Fountain of Life,structure,3,lifeforce,elf_fountain_of_life,card_elf_fountain_of_life,Restores health to nearby units and structures.,common,
+card_abyss_feral_imp,Feral Imp,unit,1,chaos_essence,abyss_feral_imp,card_abyss_abyssal_imp,Cheap feral rogue that swarms targets quickly.,common,5
+card_abyss_abyssal_firespitter,Abyssal Firespitter,unit,2,chaos_essence,abyss_abyssal_firespitter,card_abyss_ballista_fiend,Basic ranged demon that spits volatile chaos fire.,common,10
+card_abyss_abyssal_imp,Abyssal Imp,unit,1,chaos_essence,abyss_abyssal_imp,card_abyss_abyssal_imp,Swarm fodder that explodes on death.,common,15
+card_abyss_demon_brute,Demon Brute,unit,3,chaos_essence,abyss_demon_brute,card_abyss_demon_brute,Regenerating frontline bruiser.,rare,28
+card_abyss_gorefiend_crusher,Gorefiend Crusher,unit,5,chaos_essence,abyss_gorefiend_crusher,card_abyss_gorefiend_crusher,Taunting tank that hardens under pressure.,epic,93
+card_abyss_archdemon,Archdemon,unit,6,chaos_essence,abyss_archdemon,card_abyss_archdemon,Overlord anchor with fear aura.,epic,100
+card_abyss_ballista_fiend,Abyss Ballista Fiend,unit,3,chaos_essence,abyss_ballista_fiend,card_abyss_ballista_fiend,Long-range siege bolts with corruption.,rare,35
+card_abyss_hellcannon_behemoth,Hellcannon Behemoth,unit,4,chaos_essence,abyss_hellcannon_behemoth,card_abyss_hellcannon_behemoth,Artillery beast firing explosive shells.,rare,67
+card_abyss_succubus_temptress,Succubus Temptress,unit,3,chaos_essence,abyss_succubus_temptress,card_abyss_succubus_temptress,Charm controller that turns foes.,rare,41
+card_abyss_crimson_acolyte,Crimson Acolyte,unit,2,chaos_essence,abyss_crimson_acolyte,card_abyss_crimson_acolyte,Support cultist that fuels Chaos Essence.,common,22
+card_abyss_veiled_enchantress,Veiled Enchantress,unit,3,chaos_essence,abyss_veiled_enchantress,card_abyss_veiled_enchantress,Area charm and damage debuff.,rare,48
+card_abyss_blood_siren,Blood Siren,unit,4,chaos_essence,abyss_blood_siren,card_abyss_blood_siren,Assassin that lifesteals from charmed enemies.,rare,74
+card_abyss_cult_magister,Cult Magister,unit,3,chaos_essence,abyss_cult_magister,card_abyss_cult_magister,High DPS chaos caster applying corruption.,rare,54
+card_abyss_oracle_abyss,Oracle of the Abyss,unit,3,chaos_essence,abyss_oracle_abyss,card_abyss_oracle_abyss,Debuff specialist that marks targets.,rare,61
+card_abyss_sacrifice_master,Sacrifice Master,unit,4,chaos_essence,abyss_sacrifice_master,card_abyss_sacrifice_master,Ritual engine that converts allies into power.,rare,80
+card_abyss_abyssal_prophet,Abyssal Prophet,unit,4,chaos_essence,abyss_abyssal_prophet,card_abyss_abyssal_prophet,Summoner support that spawns imps.,rare,87
+card_abyss_spawning_pit,Abyssal Spawning Pit,structure,3,chaos_essence,abyss_spawning_pit,card_cannon_tower,Spawns imps periodically.,common,
+card_abyss_blood_altar,Blood Altar,structure,3,chaos_essence,abyss_blood_altar,card_cannon_tower,Boosts sacrifice power and essence gain.,common,
+card_abyss_infernal_obelisk,Infernal Obelisk,structure,4,chaos_essence,abyss_infernal_obelisk,card_cannon_tower,Chaos damage aura with corruption stacks.,rare,
+card_abyss_demon_forge,Demon Forge,structure,3,chaos_essence,abyss_demon_forge,card_cannon_tower,Increases demon HP and armor.,common,
+card_abyss_corruption_tower,Corruption Tower,structure,4,chaos_essence,abyss_corruption_tower,card_cannon_tower,Applies corruption to enemies in range.,rare,
+card_abyss_hellgate_portal,Hellgate Portal,structure,2,chaos_essence,abyss_hellgate_portal,card_cannon_tower,Reinforcement portal with speed boost.,common,
+card_abyss_regeneration_pool,Flesh Regeneration Pool,structure,3,chaos_essence,abyss_regeneration_pool,card_cannon_tower,Heals nearby allies over time.,common,
+card_abyss_shrine_of_terror,Shrine of Terror,structure,4,chaos_essence,abyss_shrine_of_terror,card_cannon_tower,Periodic fear pulses in area.,rare,
+card_abyss_chaos_heart,Chaos Heart Node,module,2,chaos_essence,abyss_chaos_heart,card_spell_barrier,Boosts Chaos Essence generation.,common,
+card_abyss_bloodlust_sigil,Bloodlust Sigil,module,2,chaos_essence,abyss_bloodlust_sigil,card_spell_barrier,Kill-based attack speed surges.,common,
+card_abyss_corruption_amplifier,Corruption Amplifier,module,3,chaos_essence,abyss_corruption_amplifier,card_spell_barrier,Strengthens corruption damage.,rare,
+card_abyss_soul_harvest_core,Soul Harvest Core,module,2,chaos_essence,abyss_soul_harvest_core,card_spell_barrier,Essence gain on nearby deaths.,common,
+card_abyss_infernal_armor,Infernal Armor Plates,module,2,chaos_essence,abyss_infernal_armor,card_spell_barrier,Adjacent demons gain armor.,common,
+card_abyss_demonic_frenzy,Demonic Frenzy Node,module,2,chaos_essence,abyss_demonic_frenzy,card_spell_barrier,Low-health frenzy for allies.,common,
+card_abyss_fear_resonance,Fear Resonance Totem,module,3,chaos_essence,abyss_fear_resonance,card_spell_barrier,Extends fear and amplifies damage.,rare,
+card_abyss_hellfire_conduit,Hellfire Conduit,module,3,chaos_essence,abyss_hellfire_conduit,card_spell_barrier,Spells ignite enemies with burn.,rare,
+card_abyss_chaos_bolt,Chaos Bolt,spell,1,chaos_essence,chaos_bolt,card_spell_barrier,Single-target chaos damage with corruption.,common,
+card_abyss_infernal_explosion,Infernal Explosion,spell,2,chaos_essence,infernal_explosion,card_spell_barrier,Explosive chaos burst in an area.,rare,
+card_abyss_mass_fear,Mass Fear,spell,2,chaos_essence,mass_fear,card_spell_barrier,Briefly fears enemies in an area.,rare,
+card_abyss_blood_pact,Blood Pact,spell,1,chaos_essence,blood_pact,card_spell_barrier,Sacrifice a unit to heal allies.,common,
+card_abyss_corruption_wave,Corruption Wave,spell,3,chaos_essence,corruption_wave,card_spell_barrier,Wide arc applying corruption stacks.,epic,
+card_abyss_demonic_regrowth,Demonic Regrowth,spell,2,chaos_essence,demonic_regrowth,card_spell_barrier,Mass regeneration buff for allies.,rare,
+card_abyss_abyssal_rift,Abyssal Rift,spell,4,chaos_essence,abyssal_rift,card_spell_barrier,Damage zone that spawns imps.,epic,

@@ -128,6 +128,9 @@ export class PreloadScene extends Phaser.Scene {
         // Stage maps use node icons only for now; stage_map PNG backgrounds are intentionally not loaded.
         // Story slides
         this.load.image('story_begining_01_prelude', 'assets/StorySlides/begining_01_prelude.png');
+        this.load.image('story_begining_02_prelude', 'assets/StorySlides/begining_02_prelude.png');
+        this.load.image('story_begining_03_prelude', 'assets/StorySlides/begining_03_prelude.png');
+        this.load.image('story_begining_04_prelude', 'assets/StorySlides/begining_04_prelude.png');
         this.load.image('story_begining_01_stage1', 'assets/StorySlides/begining_01_stage1.png');
         this.load.image('story_begining_01_stage3', 'assets/StorySlides/begining_01_stage3.png');
         this.load.image('story_begining_01_stage4', 'assets/StorySlides/begining_01_stage4.png');
@@ -298,6 +301,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('card_triarch_machine_gun_nest', `${triarchBuildingCardPath}Machine_Gun_Nest.png`);
         this.load.image('card_triarch_aether_tower', `${triarchBuildingCardPath}Aether_Tower.png`);
         this.load.image('card_triarch_storm_generator', `${triarchBuildingCardPath}Storm_Generator.png`);
+        this.load.image('card_jade_expansion_slots', `${triarchBuildingCardPath}empty_arena_chunky.png`);
 
         // Elf Covenant card art (units / structures)
         const elfUnitCardPath = 'assets/cards/Elf_covenant/units/';

@@ -261,7 +261,12 @@ export class DataManager {
     private parseCards(csv: string): void {
         if (!csv) return;
         const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const result = Papa.parse(normalizedCsv, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            comments: '#'
+        });
         
         result.data.forEach((row: any) => {
             const id = typeof row.id === 'string' ? row.id.trim() : row.id;
@@ -275,7 +280,8 @@ export class DataManager {
                 resourceType: row.resource_type as ResourceType,
                 portraitKey: row.portrait_key,
                 description: row.description,
-                rarity: row.rarity
+                rarity: row.rarity,
+                unitLevel: row.unit_level !== undefined && row.unit_level !== '' ? Number(row.unit_level) : undefined
             };
 
             if (card.type === CardType.UNIT) card.unitId = targetId;
@@ -289,12 +295,14 @@ export class DataManager {
 
     private parseWaves(csv: string): void {
         if (!csv) return;
-        const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         
         // Group by encounter_id, then by wave_index
         this.wavesByEncounter.clear();
 
         result.data.forEach((row: any) => {
+            if (!row.encounter_id || !row.wave_id || !row.spawn_unit_id) return;
             const encounterId = row.encounter_id || 'default';
             const waveIndex = row.wave_index;
             
@@ -456,6 +464,7 @@ export class DataManager {
                 type: (row.type as NodeType) || NodeType.BATTLE,
                 stageIndex: Number(row.stage_index ?? 0),
                 tier: Number(row.tier ?? 1),
+                enemyLevel: row.enemy_level !== undefined && row.enemy_level !== '' ? Number(row.enemy_level) : undefined,
                 encounterId: row.encounter_id || undefined,
                 nextNodeIds,
                 posX: Number(row.pos_x ?? 0),

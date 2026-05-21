@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getStorySlidePath } from '../data/StorySlides';
+import { getStorySlideNarration, getStorySlidePath } from '../data/StorySlides';
 
 interface StorySlidesSceneData {
     slideKeys: string[];
@@ -17,6 +17,9 @@ export class StorySlidesScene extends Phaser.Scene {
     private hintText?: Phaser.GameObjects.Text;
     private missingText?: Phaser.GameObjects.Text;
     private loadingText?: Phaser.GameObjects.Text;
+    private narrationText?: Phaser.GameObjects.Text;
+    private narrationShade?: Phaser.GameObjects.Graphics;
+    private narrationTween?: Phaser.Tweens.Tween;
     private clickZone?: Phaser.GameObjects.Zone;
     private returnSceneKey?: string;
     private nextSceneKey?: string;
@@ -44,6 +47,7 @@ export class StorySlidesScene extends Phaser.Scene {
         this.missingText = undefined;
         this.loadingText?.destroy();
         this.loadingText = undefined;
+        this.clearNarration();
         this.clickZone?.destroy();
         this.clickZone = undefined;
 
@@ -95,6 +99,7 @@ export class StorySlidesScene extends Phaser.Scene {
             this.finishSlides();
             return;
         }
+        this.clearNarration();
 
         const renderSlide = () => {
             const { width, height } = this.scale;
@@ -113,6 +118,7 @@ export class StorySlidesScene extends Phaser.Scene {
             this.missingText?.destroy();
             this.missingText = undefined;
             this.loadingText?.setVisible(false);
+            this.showNarration(key);
         };
 
         if (this.textures.exists(key)) {
@@ -134,7 +140,7 @@ export class StorySlidesScene extends Phaser.Scene {
                 this.showMissingSlide(key);
             }
         });
-        this.load.once(Phaser.Loader.Events.LOAD_ERROR, () => {
+        this.load.once(Phaser.Loader.Events.FILE_LOAD_ERROR, () => {
             this.showMissingSlide(key);
         });
         this.load.image(key, path);
@@ -147,6 +153,7 @@ export class StorySlidesScene extends Phaser.Scene {
             this.slideImage.setVisible(false);
         }
         this.missingText?.destroy();
+        this.clearNarration();
         this.missingText = this.add.text(width / 2, height / 2, `Missing story slide:\n${key}`, {
             fontFamily: 'Georgia, serif',
             fontSize: '28px',
@@ -156,7 +163,68 @@ export class StorySlidesScene extends Phaser.Scene {
         this.loadingText?.setVisible(false);
     }
 
+    private showNarration(key: string): void {
+        this.clearNarration();
+
+        const narration = getStorySlideNarration(key);
+        if (!narration) {
+            return;
+        }
+
+        const { width, height } = this.scale;
+        const textWidth = Math.min(width * 0.84, 1180);
+        const fontSize = width < 900 ? '33px' : '42px';
+        const startY = height / 3;
+        const endY = height * 0.12;
+        const scrollDuration = Phaser.Math.Clamp(narration.length * 58, 11000, 18000);
+
+        this.narrationShade = this.add.graphics();
+        this.narrationShade.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.36, 0.36, 0.08, 0.08);
+        this.narrationShade.fillRect(0, height * 0.22, width, height * 0.36);
+        this.narrationShade.setDepth(9);
+
+        this.narrationText = this.add.text(width / 2, startY, narration, {
+            fontFamily: 'Georgia, serif',
+            fontSize,
+            color: '#fff3c8',
+            align: 'center',
+            lineSpacing: 14,
+            stroke: '#120a04',
+            strokeThickness: 7,
+            shadow: {
+                offsetX: 0,
+                offsetY: 3,
+                color: '#000000',
+                blur: 8,
+                fill: true
+            },
+            wordWrap: {
+                width: textWidth,
+                useAdvancedWrap: true
+            }
+        }).setOrigin(0.5, 0).setDepth(10).setAlpha(0);
+
+        this.narrationTween = this.tweens.add({
+            targets: this.narrationText,
+            y: endY,
+            alpha: 1,
+            duration: scrollDuration,
+            ease: 'Sine.easeOut'
+        });
+    }
+
+    private clearNarration(): void {
+        this.narrationTween?.stop();
+        this.narrationTween = undefined;
+        this.narrationText?.destroy();
+        this.narrationText = undefined;
+        this.narrationShade?.destroy();
+        this.narrationShade = undefined;
+    }
+
     private finishSlides(): void {
+        this.clearNarration();
+
         if (this.onComplete) {
             this.onComplete();
         }

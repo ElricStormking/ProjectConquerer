@@ -27,6 +27,7 @@ export interface ICard {
     structureId?: string;
     spellEffectId?: string;
     moduleId?: string;
+    unitLevel?: number;
     portraitKey: string;
     description: string;
     rarity?: 'common' | 'rare' | 'epic' | 'legendary';
@@ -52,6 +53,7 @@ export interface IFortressCellState {
     healthRatio?: number;
     unitCount?: number;
     maxUnitCount?: number;
+    unitLevel?: number;
 }
 
 export interface IFortressConfig {
@@ -252,6 +254,7 @@ export interface IMapNode {
     type: NodeType;
     stageIndex: number;
     tier: number;
+    enemyLevel?: number;
     encounterId?: string;
     nextNodeIds: string[];
     posX: number;

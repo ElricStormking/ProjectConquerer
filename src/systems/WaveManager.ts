@@ -9,6 +9,7 @@ import { DataManager } from './DataManager';
 export class WaveManager extends Phaser.Events.EventEmitter {
     private waves: IWaveConfig[] = [];
     private activeWaveIndex = -1;
+    private enemyLevel = 1;
     private pendingSpawnEvents = 0;
     private activeEnemyIds: Set<string> = new Set();
     private timers: Phaser.Time.TimerEvent[] = [];
@@ -46,14 +47,15 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         console.log('[WaveManager] Destroyed and cleaned up');
     }
 
-    public loadWaves(waves: IWaveConfig[]): void {
+    public loadWaves(waves: IWaveConfig[], enemyLevel = 1): void {
         // Reset state when loading new waves
         this.clearTimers();
         this.activeWaveIndex = -1;
         this.pendingSpawnEvents = 0;
         this.activeEnemyIds.clear();
         this.waves = waves;
-        console.log(`[WaveManager] Loaded ${waves.length} waves, state reset`);
+        this.enemyLevel = Math.max(1, Math.round(enemyLevel));
+        console.log(`[WaveManager] Loaded ${waves.length} waves at enemy level ${this.enemyLevel}, state reset`);
     }
 
     public startFirstWave(): void {
@@ -118,6 +120,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
                 lanePoint.x + offsetX,
                 lanePoint.y + offsetY
             );
+            this.applyEnemyLevelScaling(config);
             const unit = this.unitManager.spawnUnit(config);
             if (unit) {
                 this.activeEnemyIds.add(unit.getId());
@@ -128,6 +131,22 @@ export class WaveManager extends Phaser.Events.EventEmitter {
 
     private applyEnemyBehavior(unit: any) {
         unit.setAttackSpeedMultiplier(1);
+    }
+
+    private applyEnemyLevelScaling(config: ReturnType<UnitManager['createUnitConfig']>): void {
+        const level = Math.max(1, this.enemyLevel);
+        const healthMultiplier = 1 + (level - 1) * 0.035;
+        const damageMultiplier = 1 + (level - 1) * 0.025;
+        const armorBonus = Math.floor((level - 1) / 10);
+
+        config.stats = {
+            ...config.stats,
+            maxHealth: Math.max(1, Math.round(config.stats.maxHealth * healthMultiplier)),
+            damage: Math.max(1, Math.round(config.stats.damage * damageMultiplier)),
+            armor: Math.round(config.stats.armor + armorBonus)
+        };
+        config.unitLevel = level;
+        config.enemyLevel = level;
     }
 
     private getLanePoint(lane: IEnemySpawn['lane']): { x: number; y: number } {

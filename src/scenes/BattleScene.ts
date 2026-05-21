@@ -86,8 +86,10 @@ export class BattleScene extends Phaser.Scene {
     private abyssSacrificeTick: Map<string, number> = new Map();
     
     // Scene data passed from NodeEncounterSystem
+    private nodeId: string = '';
     private encounterId: string = 'default';
     private nodeType: NodeType = NodeType.BATTLE;
+    private enemyLevel = 1;
 
     constructor() {
         super({ key: 'BattleScene' });
@@ -146,9 +148,11 @@ export class BattleScene extends Phaser.Scene {
         subtitle.on('pointerup', proceed);
     }
 
-    public init(data: { nodeId?: string; encounterId?: string; nodeType?: string }): void {
+    public init(data: { nodeId?: string; encounterId?: string; nodeType?: string; enemyLevel?: number }): void {
+        this.nodeId = data.nodeId ?? '';
         this.encounterId = data.encounterId ?? 'default';
         this.nodeType = (data.nodeType as NodeType) ?? NodeType.BATTLE;
+        this.enemyLevel = Math.max(1, Number(data.enemyLevel ?? 1));
         
         // Reset battle state for new encounter
         this.battleState = 'preparation';
@@ -178,9 +182,9 @@ export class BattleScene extends Phaser.Scene {
         const stageIndex = runManager.getRunState()?.currentStageIndex ?? 0;
         const key =
             stageIndex === 0
-                ? 'bgm_battle_jade'
-                : stageIndex === 2
                 ? 'bgm_battle_triarch'
+                : stageIndex === 2
+                ? 'bgm_battle_jade'
                 : stageIndex === 3
                 ? 'bgm_battle_elf'
                 : stageIndex === 4
@@ -263,14 +267,14 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private createEnvironment() {
-        // Pick battle background based on current stage (stage 1 uses Jade map)
+        // Pick battle background based on current stage.
         const runManager = RunProgressionManager.getInstance();
         const stageIndex = runManager.getRunState()?.currentStageIndex ?? 0;
         let bgKey = 'world_bg';
-        if (stageIndex === 0 && this.textures.exists('battle_bg_stage_1')) {
-            bgKey = 'battle_bg_stage_1';
-        } else if (stageIndex === 2 && this.textures.exists('battle_bg_stage_3')) {
+        if (stageIndex === 0 && this.textures.exists('battle_bg_stage_3')) {
             bgKey = 'battle_bg_stage_3';
+        } else if (stageIndex === 2 && this.textures.exists('battle_bg_stage_1')) {
+            bgKey = 'battle_bg_stage_1';
         } else if (stageIndex === 3 && this.textures.exists('battle_bg_stage_4')) {
             bgKey = 'battle_bg_stage_4';
         } else if (stageIndex === 4 && this.textures.exists('battle_bg_stage_5')) {
@@ -412,8 +416,8 @@ export class BattleScene extends Phaser.Scene {
         const waves = this.nodeType === NodeType.BATTLE
             ? encounterWaves.slice(0, NORMAL_ENCOUNTER_WAVE_COUNT)
             : encounterWaves;
-        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
-        this.waveManager.loadWaves(waves);
+        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, node: ${this.nodeId}, enemyLevel: ${this.enemyLevel}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
+        this.waveManager.loadWaves(waves, this.enemyLevel);
 
         const commanderManager = CommanderManager.getInstance();
         const rosterIds = (runState?.commanderRoster ?? [this.starterData.commander.id]).slice(0, 5);

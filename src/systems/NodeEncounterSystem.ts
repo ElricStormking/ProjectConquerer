@@ -75,7 +75,7 @@ export class NodeEncounterSystem {
         if (scenePlugin.isActive(battleKey)) {
             battleScene = scenePlugin.get(battleKey) as Phaser.Scene;
             attachBattleListeners(battleScene);
-            battleScene.scene.restart({ nodeId: node.id, encounterId: node.encounterId, nodeType: node.type });
+            battleScene.scene.restart({ nodeId: node.id, encounterId: node.encounterId, nodeType: node.type, enemyLevel: node.enemyLevel });
         } else {
             try {
                 if (scenePlugin.get(battleKey)) {
@@ -84,7 +84,7 @@ export class NodeEncounterSystem {
             } catch (err) {
                 /* scene not created yet, safe to ignore */
             }
-            scenePlugin.launch(battleKey, { nodeId: node.id, encounterId: node.encounterId, nodeType: node.type });
+            scenePlugin.launch(battleKey, { nodeId: node.id, encounterId: node.encounterId, nodeType: node.type, enemyLevel: node.enemyLevel });
             battleScene = scenePlugin.get(battleKey) as Phaser.Scene;
             attachBattleListeners(battleScene);
         }
