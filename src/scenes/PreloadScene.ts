@@ -127,6 +127,7 @@ export class PreloadScene extends Phaser.Scene {
 
         // Stage maps use node icons only for now; stage_map PNG backgrounds are intentionally not loaded.
         // Story slides
+        this.load.text('story_slide_text_data', 'assets/StorySlides/story_slide_text.csv');
         this.load.image('story_begining_01_prelude', 'assets/StorySlides/begining_01_prelude.png');
         this.load.image('story_begining_02_prelude', 'assets/StorySlides/begining_02_prelude.png');
         this.load.image('story_begining_03_prelude', 'assets/StorySlides/begining_03_prelude.png');

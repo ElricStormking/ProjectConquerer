@@ -7,6 +7,7 @@ import { UnitType, UnitTemplate } from '../data/UnitTypes';
 import { RelicManager } from '../systems/RelicManager';
 import { GameStateManager } from '../systems/GameStateManager';
 import { DataManager } from '../systems/DataManager';
+import { clampUnitLevel, getUnitLevelScaling } from '../systems/UnitLevelScaling';
 import { IRelicContext, NodeType, UnitSkillTemplate } from '../types/ironwars';
 
 const GLOBAL_MOVE_SPEED_MULTIPLIER = 2;
@@ -1574,6 +1575,38 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.die();
         }
     }
+
+    public applyUnitLevelUpgrade(levelInput: number): void {
+        if (this.dead) return;
+
+        const currentLevel = this.getDisplayLevel();
+        const nextLevel = clampUnitLevel(levelInput);
+        if (nextLevel <= currentLevel) {
+            return;
+        }
+
+        const currentScaling = getUnitLevelScaling(currentLevel);
+        const nextScaling = getUnitLevelScaling(nextLevel);
+        const healthRatio = this.maxHealth > 0 ? Phaser.Math.Clamp(this.health / this.maxHealth, 0, 1) : 1;
+        const healthMultiplier = nextScaling.healthMultiplier / currentScaling.healthMultiplier;
+        const damageMultiplier = nextScaling.damageMultiplier / currentScaling.damageMultiplier;
+        const armorBonusDelta = nextScaling.armorBonus - currentScaling.armorBonus;
+
+        this.maxHealth = Math.max(1, Math.round(this.maxHealth * healthMultiplier));
+        this.health = Math.max(1, Math.min(this.maxHealth, Math.round(this.maxHealth * healthRatio)));
+        this.damage = Math.max(1, Math.round(this.damage * damageMultiplier));
+        this.armor = Math.max(0, Math.round(this.armor + armorBonusDelta));
+        this.config.stats = {
+            ...this.config.stats,
+            maxHealth: this.maxHealth,
+            damage: this.damage,
+            armor: this.armor
+        };
+        this.config.unitLevel = nextLevel;
+        this.levelLabel?.setText(`Lv ${nextLevel}`);
+        this.updateHealthBar();
+    }
+
     public setCollisionEnabled(enabled: boolean): void {
         if (!this.body || this.dead) return;
         const sensor = !enabled;

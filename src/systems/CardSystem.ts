@@ -9,8 +9,10 @@ import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
 import { UnitType } from '../data/UnitTypes';
 import { TurretVFXSystem } from './TurretVFXSystem';
+import { applyUnitLevelScalingToStats, clampUnitLevel } from './UnitLevelScaling';
 
 const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
+const UNIT_LEVELS_PER_CARD_UPGRADE = 3;
 
 export class CardSystem {
     private isRestoring: boolean = false;
@@ -229,9 +231,11 @@ export class CardSystem {
                 } else if (card.type === CardType.UNIT && card.unitId) {
                     console.log(`[CardSystem] Max enhancement reached, reinforcing unit at (${gridX}, ${gridY})`);
                     if (this.gameState.spendResource(card.cost)) {
+                        const upgradedUnitLevel = this.getNextUnitLevelForCell(cell, card);
                         const statMultiplier = Math.pow(1.5, Math.max(1, currentLevel));
-                        const placed = this.spawnUnitCard(card.unitId, gridX, gridY, statMultiplier, currentLevel, false, undefined, card.unitLevel);
+                        const placed = this.spawnUnitCard(card.unitId, gridX, gridY, statMultiplier, currentLevel, false, undefined, upgradedUnitLevel);
                         if (placed) {
+                            this.applyUnitLevelUpgradeToCell(cell, card, upgradedUnitLevel);
                             this.deckSystem.discard(card.id);
                             return true;
                         }
@@ -315,14 +319,14 @@ export class CardSystem {
             // Stats: 1.5^Level
             const batchesToAdd = 1;
             const statMultiplier = Math.pow(1.5, newLevel);
+            const upgradedUnitLevel = this.getNextUnitLevelForCell(cell, card);
             
             for (let i = 0; i < batchesToAdd; i++) {
                 // Offset slightly to avoid perfect stacking, though physics handles it
                 const batchIndex = newLevel + i;
-                this.spawnUnitCard(card.unitId, cell.x, cell.y, statMultiplier, batchIndex, false, undefined, card.unitLevel);
+                this.spawnUnitCard(card.unitId, cell.x, cell.y, statMultiplier, batchIndex, false, undefined, upgradedUnitLevel);
             }
-            // Note: We don't update existing units' stats here, only new ones. 
-            // Ideally we would find and buff existing ones, but without tracking them it's hard.
+            this.applyUnitLevelUpgradeToCell(cell, card, upgradedUnitLevel);
         } else if (card.type === CardType.SPELL && card.spellEffectId) {
             // Building enhancements
             // Increase effect by 150% of base per level.
@@ -416,7 +420,10 @@ export class CardSystem {
                 break;
         }
         if (occupantType) {
-            this.persistCellState(cell.x, cell.y, card.type, occupantType, card.unitLevel);
+            const unitLevel = card.type === CardType.UNIT
+                ? this.getCurrentUnitLevelForCell(cell, card)
+                : card.unitLevel;
+            this.persistCellState(cell.x, cell.y, card.type, occupantType, unitLevel);
         }
     }
 
@@ -1259,21 +1266,8 @@ export class CardSystem {
         config: ReturnType<UnitManager['createUnitConfig']>,
         unitLevel?: number
     ): void {
-        const level = Math.max(1, Math.min(100, Math.round(unitLevel ?? 1)));
-        if (level <= 1) {
-            config.unitLevel = level;
-            return;
-        }
-
-        const healthMultiplier = 1 + (level - 1) * 0.035;
-        const damageMultiplier = 1 + (level - 1) * 0.025;
-        const armorBonus = Math.floor((level - 1) / 10);
-        config.stats = {
-            ...config.stats,
-            maxHealth: Math.max(1, Math.round(config.stats.maxHealth * healthMultiplier)),
-            damage: Math.max(1, Math.round(config.stats.damage * damageMultiplier)),
-            armor: Math.round(config.stats.armor + armorBonus)
-        };
+        const level = clampUnitLevel(unitLevel);
+        config.stats = applyUnitLevelScalingToStats(config.stats, level);
         config.unitLevel = level;
     }
 
@@ -1369,6 +1363,61 @@ export class CardSystem {
         return Math.max(...matchingCards.map(card => card.unitLevel ?? 1));
     }
 
+    private getPersistedCellState(gridX: number, gridY: number): IFortressCellState | undefined {
+        return RunProgressionManager.getInstance()
+            .getFortressCellStates(this.fortressSystem.getFortressId())
+            .find(state => state.x === gridX && state.y === gridY);
+    }
+
+    private getCurrentUnitLevelForCell(cell: import('../types/ironwars').IFortressCell, card: ICard): number {
+        const unitId = card.unitId ?? cell.occupantType;
+        if (!unitId) {
+            return clampUnitLevel(card.unitLevel);
+        }
+        const persistedState = this.getPersistedCellState(cell.x, cell.y);
+        return clampUnitLevel(persistedState?.unitLevel ?? card.unitLevel ?? this.getUnitLevelForOccupant(unitId));
+    }
+
+    private getNextUnitLevelForCell(cell: import('../types/ironwars').IFortressCell, card: ICard): number {
+        return clampUnitLevel(this.getCurrentUnitLevelForCell(cell, card) + UNIT_LEVELS_PER_CARD_UPGRADE);
+    }
+
+    private applyUnitLevelUpgradeToCell(
+        cell: import('../types/ironwars').IFortressCell,
+        card: ICard,
+        upgradedUnitLevel: number
+    ): void {
+        if (!card.unitId) {
+            return;
+        }
+
+        const units = this.getAssignedUnitsForCell(cell.x, cell.y);
+        units.forEach(unit => unit.applyUnitLevelUpgrade?.(upgradedUnitLevel));
+
+        const persistedState = this.getPersistedCellState(cell.x, cell.y);
+        const unitCount = units.length;
+        const entry: IFortressCellState = {
+            ...(persistedState ?? {
+                x: cell.x,
+                y: cell.y,
+                occupantKind: CardType.UNIT,
+                occupantType: card.unitId,
+                enhancementLevel: cell.enhancementLevel || 0
+            }),
+            x: cell.x,
+            y: cell.y,
+            occupantKind: CardType.UNIT,
+            occupantType: card.unitId,
+            enhancementLevel: cell.enhancementLevel || 0,
+            healthRatio: persistedState?.healthRatio ?? 1,
+            unitCount,
+            maxUnitCount: Math.max(persistedState?.maxUnitCount ?? 0, unitCount),
+            unitLevel: upgradedUnitLevel
+        };
+
+        RunProgressionManager.getInstance().upsertFortressCellState(this.fortressSystem.getFortressId(), entry);
+    }
+
     private buildFallbackCard(occupantKind: CardType, occupantType: string): ICard {
         return {
             id: `restored_${occupantKind}_${occupantType}`,
@@ -1397,9 +1446,7 @@ export class CardSystem {
         if (!occupantType) return;
         const cell = this.fortressSystem.getCell(gridX, gridY);
         if (!cell || !cell.occupantId) return;
-        const existingState = RunProgressionManager.getInstance()
-            .getFortressCellStates(this.fortressSystem.getFortressId())
-            .find(state => state.x === gridX && state.y === gridY);
+        const existingState = this.getPersistedCellState(gridX, gridY);
         const entry: IFortressCellState = {
             x: gridX,
             y: gridY,

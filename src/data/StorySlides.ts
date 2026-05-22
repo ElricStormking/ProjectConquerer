@@ -27,29 +27,61 @@ export const STORY_SLIDE_PATHS: Record<string, string> = {
 
 export const getStorySlidePath = (key: string): string | undefined => STORY_SLIDE_PATHS[key];
 
-const STORY_SLIDE_NARRATION: Record<string, string> = {
-    story_begining_01_prelude:
-        'During a storm night, in a dark temple of the shadow goddess. A sound from the mystery goddess sculpture whispered: You will be a commander that starts the war, conquer the land, and bring the honor and believers for me. I bestow you the war wisdom.',
-    story_begining_02_prelude:
-        "A new born baby in the arms of a nun, is sleeping. The nun can't hear anything whispered from the goddess sculpture whispered, but the sleeping baby...",
-    story_begining_03_prelude:
-        'The sleeping baby has a old soul from other metaverse. He hears the goddess whisper..... then suddenly opened eyes. In his mind thinking. "You better shut up, Fake god"',
-    story_begining_04_prelude:
-        "The baby grew up in a general's family. He is receiving his first mission from his dad: defeat all the bandits who are plundering this land."
+let cachedNarrationCsv: string | undefined;
+let cachedNarration: Record<string, string> = {};
+
+export const parseStorySlideNarration = (csv?: string): Record<string, string> => {
+    if (!csv) {
+        return {};
+    }
+    if (cachedNarrationCsv === csv) {
+        return cachedNarration;
+    }
+
+    const narration: Record<string, string> = {};
+    const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalizedCsv.split('\n');
+
+    lines.slice(1).forEach(line => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) {
+            return;
+        }
+
+        const commaIndex = trimmedLine.indexOf(',');
+        if (commaIndex <= 0) {
+            return;
+        }
+
+        const key = trimmedLine.slice(0, commaIndex).trim();
+        let text = trimmedLine.slice(commaIndex + 1).trim();
+        if (text.startsWith('"') && text.endsWith('"')) {
+            text = text.slice(1, -1);
+        }
+        text = text.replace(/""/g, '"').trim();
+        if (key && text) {
+            narration[key] = text;
+        }
+    });
+
+    cachedNarrationCsv = csv;
+    cachedNarration = narration;
+    return narration;
 };
 
-export const getStorySlideNarration = (key: string): string | undefined => STORY_SLIDE_NARRATION[key];
+export const getStorySlideNarration = (key: string, csv?: string): string | undefined =>
+    parseStorySlideNarration(csv)[key];
 
 const STAGE_INTRO_SLIDES: Record<number, string[]> = {
-    0: ['story_begining_01_stage3'],
-    2: ['story_begining_01_stage1'],
+    0: ['story_begining_01_stage1'],
+    2: ['story_begining_01_stage3'],
     3: ['story_begining_01_stage4']
 };
 
 const STAGE_OUTRO_SLIDES: Record<number, string[]> = {
-    0: ['story_ending_01_stage3'],
+    0: ['story_ending_01_stage1'],
     1: ['story_ending_01_stage2'],
-    2: ['story_ending_01_stage1'],
+    2: ['story_ending_01_stage3'],
     3: ['story_ending_01_stage4'],
     4: ['story_ending_01_stage5']
 };

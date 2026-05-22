@@ -5,6 +5,7 @@ import { GameStateManager } from './GameStateManager';
 import { RelicManager } from './RelicManager';
 import { UnitType } from '../data/UnitTypes';
 import { DataManager } from './DataManager';
+import { applyUnitLevelScalingToStats, clampUnitLevel } from './UnitLevelScaling';
 
 export class WaveManager extends Phaser.Events.EventEmitter {
     private waves: IWaveConfig[] = [];
@@ -54,7 +55,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         this.pendingSpawnEvents = 0;
         this.activeEnemyIds.clear();
         this.waves = waves;
-        this.enemyLevel = Math.max(1, Math.round(enemyLevel));
+        this.enemyLevel = clampUnitLevel(enemyLevel);
         console.log(`[WaveManager] Loaded ${waves.length} waves at enemy level ${this.enemyLevel}, state reset`);
     }
 
@@ -134,17 +135,8 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     }
 
     private applyEnemyLevelScaling(config: ReturnType<UnitManager['createUnitConfig']>): void {
-        const level = Math.max(1, this.enemyLevel);
-        const healthMultiplier = 1 + (level - 1) * 0.035;
-        const damageMultiplier = 1 + (level - 1) * 0.025;
-        const armorBonus = Math.floor((level - 1) / 10);
-
-        config.stats = {
-            ...config.stats,
-            maxHealth: Math.max(1, Math.round(config.stats.maxHealth * healthMultiplier)),
-            damage: Math.max(1, Math.round(config.stats.damage * damageMultiplier)),
-            armor: Math.round(config.stats.armor + armorBonus)
-        };
+        const level = clampUnitLevel(this.enemyLevel);
+        config.stats = applyUnitLevelScalingToStats(config.stats, level);
         config.unitLevel = level;
         config.enemyLevel = level;
     }

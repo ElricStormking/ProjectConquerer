@@ -25,6 +25,7 @@ export class StorySlidesScene extends Phaser.Scene {
     private nextSceneKey?: string;
     private nextSceneData?: Record<string, unknown>;
     private onComplete?: () => void;
+    private narrationCsv?: string;
 
     constructor() {
         super({ key: 'StorySlidesScene' });
@@ -81,7 +82,28 @@ export class StorySlidesScene extends Phaser.Scene {
             .setInteractive({ useHandCursor: true });
         this.clickZone.on('pointerup', () => this.advanceSlide());
 
-        this.showSlide(this.slideIndex);
+        void this.loadNarrationCsv().then(() => {
+            if (this.scene.isActive()) {
+                this.showSlide(this.slideIndex);
+            }
+        });
+    }
+
+    private async loadNarrationCsv(): Promise<void> {
+        const cachedCsv = this.cache.text.get('story_slide_text_data');
+        this.narrationCsv = typeof cachedCsv === 'string' ? cachedCsv : undefined;
+
+        try {
+            const response = await fetch(`assets/StorySlides/story_slide_text.csv?v=${Date.now()}`, {
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                return;
+            }
+            this.narrationCsv = await response.text();
+        } catch (error) {
+            console.warn('[StorySlidesScene] Failed to refresh story_slide_text.csv, using preloaded cache.', error);
+        }
     }
 
     private advanceSlide(): void {
@@ -166,7 +188,7 @@ export class StorySlidesScene extends Phaser.Scene {
     private showNarration(key: string): void {
         this.clearNarration();
 
-        const narration = getStorySlideNarration(key);
+        const narration = getStorySlideNarration(key, this.narrationCsv);
         if (!narration) {
             return;
         }
