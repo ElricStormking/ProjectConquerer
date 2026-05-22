@@ -546,8 +546,9 @@ export class Unit extends Phaser.Events.EventEmitter {
         const hasCorruption = Array.isArray(skill.statusEffects) && skill.statusEffects.includes('corruption');
         targets.forEach(target => {
             // Direct damage (data-driven)
-            if (!hasCorruption && typeof skill.damage === 'number' && skill.damage > 0 && combatSystem?.dealDamage) {
-                combatSystem.dealDamage(this as any, target as any, skill.damage);
+            const skillDamage = this.resolveSkillDamage(skill);
+            if (!hasCorruption && skillDamage > 0 && combatSystem?.dealDamage) {
+                combatSystem.dealDamage(this as any, target as any, skillDamage);
             }
             if (skill.statusEffects) {
                 skill.statusEffects.forEach(effect => {
@@ -660,6 +661,17 @@ export class Unit extends Phaser.Events.EventEmitter {
             }
         });
         this.markSkillUsed(skill, currentTime);
+    }
+
+    private resolveSkillDamage(skill: UnitSkillTemplate): number {
+        const rawDamage = Number(skill.damage);
+        if (!Number.isFinite(rawDamage) || rawDamage <= 0) return 0;
+
+        if (skill.id === 'skill_triarch_golem_burst') {
+            return Math.max(1, Math.round(this.getDamage()));
+        }
+
+        return rawDamage;
     }
     
     public performMeleeAttack(targetUnit: any, currentTime: number, unitManager?: UnitManager, combatSystem?: CombatSystem): void {

@@ -1611,7 +1611,9 @@ export class BattleScene extends Phaser.Scene {
 
                 if (targets.length > 0 && unit.triggerSkill) {
                     // Visualize aura tick
-                    if (skill.auraRadius && skill.target === 'ally') {
+                    if (skill.id === 'skill_triarch_golem_burst') {
+                        this.drawAetherBurstEffect(origin, radius || 140, targets);
+                    } else if (skill.auraRadius && skill.target === 'ally') {
                         const g = this.add.graphics();
                         g.setDepth(origin.y + 3000);
                         g.setBlendMode(Phaser.BlendModes.ADD);
@@ -1626,6 +1628,70 @@ export class BattleScene extends Phaser.Scene {
                     }
                     unit.triggerSkill(skill, targets, currentTime, this.combatSystem);
                 }
+            });
+        });
+    }
+
+    private drawAetherBurstEffect(origin: { x: number; y: number }, radius: number, targets: any[]): void {
+        const burst = this.add.graphics();
+        burst.setPosition(origin.x, origin.y);
+        burst.setDepth(origin.y + 4200);
+        burst.setBlendMode(Phaser.BlendModes.ADD);
+
+        burst.fillStyle(0x52d9ff, 0.18);
+        burst.fillCircle(0, 0, radius * 0.72);
+        burst.lineStyle(5, 0xf4fbff, 0.9);
+        burst.strokeCircle(0, 0, radius * 0.34);
+        burst.lineStyle(3, 0x4ed8ff, 0.95);
+        burst.strokeCircle(0, 0, radius * 0.68);
+        burst.lineStyle(2, 0x9d7bff, 0.85);
+        burst.strokeCircle(0, 0, radius);
+
+        for (let i = 0; i < 12; i++) {
+            const angle = (Math.PI * 2 * i) / 12;
+            const inner = radius * 0.26;
+            const outer = radius * (i % 2 === 0 ? 0.95 : 0.78);
+            burst.lineStyle(i % 2 === 0 ? 2 : 1, i % 2 === 0 ? 0xeefaff : 0x73e5ff, 0.72);
+            burst.lineBetween(
+                Math.cos(angle) * inner,
+                Math.sin(angle) * inner,
+                Math.cos(angle) * outer,
+                Math.sin(angle) * outer
+            );
+        }
+
+        this.tweens.add({
+            targets: burst,
+            alpha: 0,
+            scaleX: 1.22,
+            scaleY: 1.22,
+            duration: 520,
+            ease: 'Cubic.easeOut',
+            onComplete: () => burst.destroy()
+        });
+
+        targets.forEach(target => {
+            const pos = target.getPosition?.();
+            if (!pos) return;
+            const impact = this.add.graphics();
+            impact.setPosition(pos.x, pos.y);
+            impact.setDepth(pos.y + 4300);
+            impact.setBlendMode(Phaser.BlendModes.ADD);
+            impact.fillStyle(0xf6fbff, 0.42);
+            impact.fillCircle(0, 0, 18);
+            impact.lineStyle(3, 0x52d9ff, 0.95);
+            impact.strokeCircle(0, 0, 28);
+            impact.lineStyle(1, 0x9d7bff, 0.9);
+            impact.strokeCircle(0, 0, 40);
+
+            this.tweens.add({
+                targets: impact,
+                alpha: 0,
+                scaleX: 1.35,
+                scaleY: 1.35,
+                duration: 360,
+                ease: 'Quad.easeOut',
+                onComplete: () => impact.destroy()
             });
         });
     }

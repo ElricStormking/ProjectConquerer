@@ -6,6 +6,7 @@ import { IFactionConfig, ICommanderFullConfig } from '../types/ironwars';
 
 const CARD_WIDTH = 1920;
 const CARD_SPACING = 50;
+const INITIAL_FACTION_ID = 'triarch_dominion';
 const ELF_CARD_PORTRAITS: Record<string, string> = {
     card_elf_glow_sprout_spirit: 'assets/cards/Elf_covenant/units/Glow_Sprout_Spirit.png',
     card_elf_seed_pod_artillery: 'assets/cards/Elf_covenant/units/Seed_Pod_Artillery.png',
@@ -73,20 +74,19 @@ export class FactionSelectionScene extends Phaser.Scene {
             this.sound.play('bgm_faction_select', { loop: true, volume: 0.7 });
         }
         
-        // Only show supported factions
-        const allowedFactions = new Set(['jade_dynasty', 'frost_clan', 'triarch_dominion', 'elf_covenant', 'abyss_legion']);
-        this.factions = this.factionRegistry.getAllFactions().filter(f => allowedFactions.has(f.id));
+        // New campaigns begin in Triarch Dominion. Other factions are unlocked later.
+        this.factions = this.factionRegistry.getAllFactions().filter(f => f.id === INITIAL_FACTION_ID);
         if (this.factions.length === 0) {
             // Fallback if no factions loaded
             console.warn('[FactionSelectionScene] No factions loaded, using default');
             this.factions = [{
-                id: 'cog_dominion',
-                name: 'Cog Dominion',
-                resourceType: 'profit' as any,
-                fortressId: 'iron_citadel',
-                startingCommanderId: 'commander_valen',
-                emblemKey: 'emblem_cog',
-                description: 'Masters of steam and steel'
+                id: INITIAL_FACTION_ID,
+                name: 'Triarch Dominion',
+                resourceType: 'gold' as any,
+                fortressId: 'fortress_triarch_dominion_01',
+                startingCommanderId: 'commander_valerius',
+                emblemKey: 'emblem_triarch',
+                description: 'Combined-arms holy, tactical, and arcane coalition.'
             }];
         }
         
@@ -115,14 +115,14 @@ export class FactionSelectionScene extends Phaser.Scene {
     }
 
     private createTitle(width: number): void {
-        this.add.text(width / 2, 60, 'CHOOSE YOUR FACTION', {
+        this.add.text(width / 2, 60, 'CHOOSE YOUR COMMANDER', {
             fontFamily: 'Georgia, serif',
             fontSize: '48px',
             color: '#f0dba5',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        this.add.text(width / 2, 110, 'Select a faction to lead into battle', {
+        this.add.text(width / 2, 110, 'Triarch Dominion begins the campaign. Select your first commander.', {
             fontFamily: 'Georgia, serif',
             fontSize: '20px',
             color: '#8a9cc5',
@@ -146,16 +146,20 @@ export class FactionSelectionScene extends Phaser.Scene {
 
     private createFactionPanel(faction: IFactionConfig, _index: number): Phaser.GameObjects.Container {
         const panel = this.add.container(0, 0);
-        const panelWidth = 800;
-        const panelHeight = 550;
+        const panelWidth = 1320;
+        const panelHeight = 660;
         
         // Panel background
         const bg = this.add.graphics();
         const factionColor = this.factionRegistry.getFactionColor(faction.id);
-        bg.fillStyle(0x1a1d2e, 0.95);
-        bg.fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
-        bg.lineStyle(3, factionColor, 1);
-        bg.strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 16);
+        bg.fillStyle(0x111522, 0.96);
+        bg.fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 10);
+        bg.fillStyle(0x24304a, 0.32);
+        bg.fillRoundedRect(-panelWidth / 2 + 18, -panelHeight / 2 + 18, panelWidth - 36, panelHeight - 36, 6);
+        bg.lineStyle(4, factionColor, 0.95);
+        bg.strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 10);
+        bg.lineStyle(1, 0xf0dba5, 0.46);
+        bg.strokeRoundedRect(-panelWidth / 2 + 20, -panelHeight / 2 + 20, panelWidth - 40, panelHeight - 40, 6);
         panel.add(bg);
         
         // Faction emblem (use logo art if available)
@@ -166,37 +170,37 @@ export class FactionSelectionScene extends Phaser.Scene {
         };
         const logoKey = logoKeyMap[faction.id];
         if (logoKey && this.textures.exists(logoKey)) {
-            const logo = this.add.image(-280, -170, logoKey);
-            logo.setDisplaySize(120, 120);
+            const logo = this.add.image(-565, -245, logoKey);
+            logo.setDisplaySize(110, 110);
             panel.add(logo);
         } else {
-            const emblem = this.add.circle(-280, -180, 50, factionColor, 1);
+            const emblem = this.add.circle(-565, -245, 52, factionColor, 1);
             emblem.setStrokeStyle(3, 0xffffff, 0.3);
             panel.add(emblem);
         }
         
         // Faction name
-        const nameText = this.add.text(-200, -200, faction.name.toUpperCase(), {
+        const nameText = this.add.text(-480, -280, faction.name.toUpperCase(), {
             fontFamily: 'Georgia, serif',
-            fontSize: '36px',
+            fontSize: '42px',
             color: '#f0dba5',
             fontStyle: 'bold'
         }).setOrigin(0, 0);
         panel.add(nameText);
         
         // Description
-        const descText = this.add.text(-200, -150, faction.description || 'No description available', {
+        const descText = this.add.text(-480, -228, faction.description || 'No description available', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '18px',
             color: '#c0c0c0',
-            wordWrap: { width: 500 }
+            wordWrap: { width: 660 }
         }).setOrigin(0, 0);
         panel.add(descText);
         
         // Divider line
         const divider = this.add.graphics();
-        divider.lineStyle(2, factionColor, 0.5);
-        divider.lineBetween(-panelWidth / 2 + 40, -80, panelWidth / 2 - 40, -80);
+        divider.lineStyle(2, factionColor, 0.55);
+        divider.lineBetween(-panelWidth / 2 + 42, -170, panelWidth / 2 - 42, -170);
         panel.add(divider);
         
         // Commander section
@@ -223,25 +227,36 @@ export class FactionSelectionScene extends Phaser.Scene {
     }
 
     private addCommanderSelector(panel: Phaser.GameObjects.Container, commanders: ICommanderFullConfig[], factionColor: number): void {
-        const selectorY = -40;
-        const startX = -200;
-        const btnW = 160;
-        const btnH = 40;
-        const gap = 20;
+        const selectorY = -128;
+        const startX = -488;
+        const btnW = 225;
+        const btnH = 52;
+        const gap = 14;
+        let tabs = panel.getByName('commanderTabs') as Phaser.GameObjects.Container | undefined;
+        if (!tabs) {
+            tabs = this.add.container(0, 0);
+            tabs.setName('commanderTabs');
+            panel.add(tabs);
+        }
+        tabs.removeAll(true);
 
         commanders.forEach((cmd, i) => {
             const btn = this.add.container(startX + i * (btnW + gap), selectorY);
             const bg = this.add.graphics();
-            bg.fillStyle(0x2a2d3a, 0.9);
-            bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-            bg.lineStyle(2, factionColor, 0.8);
-            bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+            const isSelected = this.selectedCommanderByFaction[cmd.factionId] === cmd.id;
+            bg.fillStyle(isSelected ? 0x3a2f19 : 0x20283f, 0.94);
+            bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 6);
+            bg.lineStyle(2, isSelected ? 0xf0dba5 : factionColor, isSelected ? 1 : 0.72);
+            bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 6);
             btn.add(bg);
 
             const txt = this.add.text(0, 0, cmd.name, {
                 fontFamily: 'Georgia, serif',
-                fontSize: '14px',
-                color: '#f0dba5'
+                fontSize: '18px',
+                color: isSelected ? '#fff2bc' : '#d9d0ad',
+                fontStyle: 'bold',
+                align: 'center',
+                wordWrap: { width: btnW - 24 }
             }).setOrigin(0.5);
             btn.add(txt);
 
@@ -254,11 +269,12 @@ export class FactionSelectionScene extends Phaser.Scene {
             bg.on('pointerout', () => btn.setScale(1));
             bg.on('pointerup', () => {
                 this.selectedCommanderByFaction[cmd.factionId] = cmd.id;
+                this.addCommanderSelector(panel, commanders, factionColor);
                 this.renderCommanderSection(panel, cmd.factionId, factionColor);
                 this.renderCardsPreview(panel, cmd.factionId, factionColor);
             });
 
-            panel.add(btn);
+            tabs.add(btn);
         });
     }
 
@@ -267,49 +283,70 @@ export class FactionSelectionScene extends Phaser.Scene {
         container.removeAll(true);
         const selectedId = this.selectedCommanderByFaction[factionId];
         if (!selectedId) {
-            container.add(this.add.text(-200, -20, 'No commander available', { fontSize: '16px', color: '#c0c0c0' }));
+            container.add(this.add.text(-540, -20, 'No commander available', { fontSize: '18px', color: '#c0c0c0' }));
             return;
         }
         const commander = this.commanderManager.getCommander(selectedId);
         if (!commander) return;
 
-        // Portrait
+        const portraitFrame = this.add.graphics();
+        portraitFrame.fillStyle(0x080b12, 0.68);
+        portraitFrame.fillRoundedRect(-596, -62, 270, 330, 6);
+        portraitFrame.lineStyle(3, factionColor, 0.92);
+        portraitFrame.strokeRoundedRect(-596, -62, 270, 330, 6);
+        portraitFrame.lineStyle(1, 0xf0dba5, 0.48);
+        portraitFrame.strokeRoundedRect(-584, -50, 246, 306, 4);
+        container.add(portraitFrame);
+
         if (this.textures.exists(commander.portraitKey)) {
-            const portrait = this.add.image(-300, 40, commander.portraitKey);
-            portrait.setDisplaySize(110, 130);
+            const portrait = this.add.image(-461, 103, commander.portraitKey);
+            const scale = Math.min(238 / portrait.width, 292 / portrait.height);
+            portrait.setScale(scale);
             container.add(portrait);
         } else {
-            const portrait = this.add.rectangle(-300, 40, 110, 130, factionColor, 0.3);
+            const portrait = this.add.rectangle(-461, 103, 238, 292, factionColor, 0.28);
             portrait.setStrokeStyle(2, factionColor);
             container.add(portrait);
         }
 
-        const cmdLabel = this.add.text(-200, -10, 'Commander:', {
+        const infoPlate = this.add.graphics();
+        infoPlate.fillStyle(0x121826, 0.78);
+        infoPlate.fillRoundedRect(-292, -62, 420, 174, 6);
+        infoPlate.lineStyle(1, factionColor, 0.45);
+        infoPlate.strokeRoundedRect(-292, -62, 420, 174, 6);
+        container.add(infoPlate);
+
+        const cmdLabel = this.add.text(-268, -38, 'COMMANDER', {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            fontSize: '15px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
         container.add(cmdLabel);
 
-        const cmdName = this.add.text(-200, 15, commander.name, {
+        const cmdName = this.add.text(-268, -8, commander.name, {
             fontFamily: 'Georgia, serif',
-            fontSize: '24px',
+            fontSize: '31px',
             color: '#f0dba5',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            wordWrap: { width: 370 }
         }).setOrigin(0, 0);
         container.add(cmdName);
 
-        const skillLabel = this.add.text(-200, 55, 'Active Skill:', {
+        const skillLabel = this.add.text(-268, 66, 'ACTIVE SKILL', {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            fontSize: '15px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
         container.add(skillLabel);
 
-        const skillName = this.add.text(-200, 78, commander.activeSkillId.replace(/_/g, ' ').toUpperCase(), {
+        const activeSkill = commander.activeSkillId
+            ? commander.activeSkillId.replace(/_/g, ' ').toUpperCase()
+            : 'COMMAND PROTOCOL';
+        const skillName = this.add.text(-268, 90, activeSkill, {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '18px',
-            color: '#c0c0c0'
+            fontSize: '20px',
+            color: '#d7d2c0',
+            wordWrap: { width: 360 }
         }).setOrigin(0, 0);
         container.add(skillName);
     }
@@ -325,23 +362,31 @@ export class FactionSelectionScene extends Phaser.Scene {
         const cards = this.commanderManager.getCardsForCommander(selectedId).slice(0, 6);
         this.queueMissingElfCardPortraits(cards, panel, factionId, factionColor);
 
-        const startX = 100;
-        const cardWidth = 80;
-        const cardHeight = 110;
-        const gap = 20;
+        const startX = 178;
+        const startY = -58;
+        const cardWidth = 132;
+        const cardHeight = 184;
+        const gap = 22;
         const cols = 3;
 
-        const label = this.add.text(startX + 60, -40, 'Sample Cards:', {
+        const shelf = this.add.graphics();
+        shelf.fillStyle(0x080b12, 0.55);
+        shelf.fillRoundedRect(startX - 26, startY - 90, 514, 454, 6);
+        shelf.lineStyle(2, factionColor, 0.55);
+        shelf.strokeRoundedRect(startX - 26, startY - 90, 514, 454, 6);
+        container.add(shelf);
+
+        const label = this.add.text(startX - 4, startY - 68, 'STARTING CARDS', {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            fontSize: '16px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
         container.add(label);
 
         if (cards.length === 0) {
-            const placeholder = this.add.text(startX, 20, 'Coming soon', {
+            const placeholder = this.add.text(startX, startY + 40, 'Coming soon', {
                 fontFamily: 'Arial, sans-serif',
-                fontSize: '14px',
+                fontSize: '18px',
                 color: '#c0c0c0'
             }).setOrigin(0, 0);
             container.add(placeholder);
@@ -352,22 +397,22 @@ export class FactionSelectionScene extends Phaser.Scene {
             const col = i % cols;
             const row = Math.floor(i / cols);
             const x = startX + col * (cardWidth + gap);
-            const y = 40 + row * (cardHeight + 30);
+            const y = startY + row * (cardHeight + 28);
 
             const cardBg = this.add.graphics();
-            cardBg.fillStyle(0x2a2d3a, 1);
+            cardBg.fillStyle(0x20283f, 1);
             cardBg.fillRoundedRect(x, y - cardHeight / 2, cardWidth, cardHeight, 6);
             cardBg.lineStyle(2, factionColor, 0.8);
             cardBg.strokeRoundedRect(x, y - cardHeight / 2, cardWidth, cardHeight, 6);
             container.add(cardBg);
 
-            const costCircle = this.add.circle(x + 15, y - cardHeight / 2 + 15, 12, 0x3d4663);
+            const costCircle = this.add.circle(x + 20, y - cardHeight / 2 + 20, 17, 0x3d4663);
             costCircle.setStrokeStyle(1, factionColor);
             container.add(costCircle);
 
-            const costText = this.add.text(x + 15, y - cardHeight / 2 + 15, String(card.cost), {
+            const costText = this.add.text(x + 20, y - cardHeight / 2 + 20, String(card.cost), {
                 fontFamily: 'Arial, sans-serif',
-                fontSize: '14px',
+                fontSize: '17px',
                 color: '#f0dba5',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
@@ -375,25 +420,26 @@ export class FactionSelectionScene extends Phaser.Scene {
 
             // Portrait
             const artW = cardWidth - 16;
-            const artH = 60;
+            const artH = 112;
             if (card.portraitKey && this.textures.exists(card.portraitKey)) {
-                const img = this.add.image(x + cardWidth / 2, y - 10, card.portraitKey).setOrigin(0.5);
+                const img = this.add.image(x + cardWidth / 2, y - 18, card.portraitKey).setOrigin(0.5);
                 const texW = img.width || artW;
                 const texH = img.height || artH;
                 const scale = Math.min(artW / texW, artH / texH);
                 img.setScale(scale);
                 container.add(img);
             } else {
-                const placeholder = this.add.rectangle(x + cardWidth / 2, y - 10, artW, artH, 0x1a1d2e);
+                const placeholder = this.add.rectangle(x + cardWidth / 2, y - 18, artW, artH, 0x111522);
                 container.add(placeholder);
             }
 
-            const cardName = card.name.length > 10 ? card.name.slice(0, 9) + '...' : card.name;
-            const nameText = this.add.text(x + cardWidth / 2, y + 30, cardName, {
+            const cardName = card.name.length > 18 ? card.name.slice(0, 17) + '...' : card.name;
+            const nameText = this.add.text(x + cardWidth / 2, y + 65, cardName, {
                 fontFamily: 'Arial, sans-serif',
-                fontSize: '11px',
-                color: '#c0c0c0',
-                align: 'center'
+                fontSize: '13px',
+                color: '#d7d2c0',
+                align: 'center',
+                wordWrap: { width: cardWidth - 16 }
             }).setOrigin(0.5);
             container.add(nameText);
         });
@@ -449,19 +495,47 @@ export class FactionSelectionScene extends Phaser.Scene {
         const fortress = this.factionRegistry.getFortressForFaction(factionId);
         if (!fortress) return;
         
-        // Position fortress preview on the left side of the panel to avoid overlap
-        const startX = -450;
-        const startY = 140;
-        const cellSize = 26;
+        const startX = -292;
+        const startY = 124;
+        const bayWidth = 440;
+        const bayHeight = 196;
+        const cellSize = 21;
         const isoRatio = 0.5;
+
+        const bay = this.add.graphics();
+        bay.fillStyle(0x080b12, 0.62);
+        bay.fillRoundedRect(startX, startY, bayWidth, bayHeight, 6);
+        bay.lineStyle(2, factionColor, 0.5);
+        bay.strokeRoundedRect(startX, startY, bayWidth, bayHeight, 6);
+        bay.lineStyle(1, 0xf0dba5, 0.32);
+        bay.strokeRoundedRect(startX + 10, startY + 10, bayWidth - 20, bayHeight - 20, 4);
+        panel.add(bay);
         
         // Section label
-        const label = this.add.text(startX, startY - 30, 'Mobile Fortress:', {
+        const label = this.add.text(startX + 18, startY + 14, 'MOBILE BASE', {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            fontSize: '15px',
             color: '#8a9cc5'
         }).setOrigin(0, 0);
         panel.add(label);
+
+        // Fortress art preview
+        const fortressKeyMap: Record<string, string> = {
+            jade_dynasty: 'fortress_jade_dynasty_01',
+            frost_clan: 'fortress_frost_clan_01',
+            triarch_dominion: 'fortress_triarch_dominion_01',
+            elf_covenant: 'fortress_elf_covenant_02',
+            abyss_legion: 'fortress_abyss_legion_01'
+        };
+        const fortressKey = fortressKeyMap[factionId];
+        if (fortressKey && this.textures.exists(fortressKey)) {
+            const art = this.add.image(startX + 105, startY + 126, fortressKey);
+            art.setOrigin(0.5, 0.68);
+            const scale = Math.min(240 / art.width, 122 / art.height);
+            art.setScale(scale);
+            art.setAlpha(0.98);
+            panel.add(art);
+        }
         
         // Draw isometric grid preview
         const gridGraphics = this.add.graphics();
@@ -469,8 +543,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         for (let y = 0; y < fortress.gridHeight; y++) {
             for (let x = 0; x < fortress.gridWidth; x++) {
                 const cell = fortress.cells.find(c => c.x === x && c.y === y);
-                const isoX = startX + 100 + (x - y) * (cellSize * 0.8);
-                const isoY = startY + 40 + (x + y) * (cellSize * isoRatio);
+                const isoX = startX + 300 + (x - y) * (cellSize * 0.8);
+                const isoY = startY + 46 + (x + y) * (cellSize * isoRatio);
                 
                 let fillColor = 0x3d4663;
                 let alpha = 0.6;
@@ -500,38 +574,20 @@ export class FactionSelectionScene extends Phaser.Scene {
         panel.add(gridGraphics);
         
         // Fortress name and HP
-        const fortressName = this.add.text(startX + 220, startY - 5, fortress.name, {
+        const fortressName = this.add.text(startX + 242, startY + 98, fortress.name, {
             fontFamily: 'Georgia, serif',
             fontSize: '18px',
-            color: '#f0dba5'
+            color: '#f0dba5',
+            wordWrap: { width: 170 }
         }).setOrigin(0, 0);
         panel.add(fortressName);
         
-        const fortressHp = this.add.text(startX + 220, startY + 20, `HP: ${fortress.maxHp}`, {
+        const fortressHp = this.add.text(startX + 242, startY + 124, `HP: ${fortress.maxHp}`, {
             fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            fontSize: '15px',
             color: '#c0c0c0'
         }).setOrigin(0, 0);
         panel.add(fortressHp);
-
-        // Fortress art preview to the right
-        const fortressKeyMap: Record<string, string> = {
-            jade_dynasty: 'fortress_jade_dynasty_01',
-            frost_clan: 'fortress_frost_clan_01',
-            triarch_dominion: 'fortress_triarch_dominion_01',
-            elf_covenant: 'fortress_elf_covenant_02',
-            abyss_legion: 'fortress_abyss_legion_01'
-        };
-        const fortressKey = fortressKeyMap[factionId];
-        if (fortressKey && this.textures.exists(fortressKey)) {
-            const art = this.add.image(startX - 50, startY + 10, fortressKey);
-            art.setOrigin(0.5, 0.65);
-            const targetWidth = 200;
-            const scale = targetWidth / art.width;
-            art.setScale(scale);
-            art.setAlpha(0.95);
-            panel.add(art);
-        }
     }
 
     private createNavigationArrows(width: number, height: number): void {
@@ -732,10 +788,10 @@ export class FactionSelectionScene extends Phaser.Scene {
         
         const bg = this.add.graphics();
         bg.fillStyle(0xd4a017, 1);
-        bg.fillRoundedRect(-120, -30, 240, 60, 10);
+        bg.fillRoundedRect(-150, -30, 300, 60, 10);
         this.selectButton.add(bg);
         
-        const text = this.add.text(0, 0, 'SELECT FACTION', {
+        const text = this.add.text(0, 0, 'SELECT COMMANDER', {
             fontFamily: 'Georgia, serif',
             fontSize: '24px',
             color: '#1a1a1a',
@@ -745,21 +801,21 @@ export class FactionSelectionScene extends Phaser.Scene {
         
         // Interactive on the button background
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-120, -30, 240, 60),
+            new Phaser.Geom.Rectangle(-150, -30, 300, 60),
             Phaser.Geom.Rectangle.Contains
         );
         
         bg.on('pointerover', () => {
             bg.clear();
             bg.fillStyle(0xf0dba5, 1);
-            bg.fillRoundedRect(-120, -30, 240, 60, 10);
+            bg.fillRoundedRect(-150, -30, 300, 60, 10);
             this.selectButton.setScale(1.05);
         });
         
         bg.on('pointerout', () => {
             bg.clear();
             bg.fillStyle(0xd4a017, 1);
-            bg.fillRoundedRect(-120, -30, 240, 60, 10);
+            bg.fillRoundedRect(-150, -30, 300, 60, 10);
             this.selectButton.setScale(1);
         });
         
