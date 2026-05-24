@@ -353,6 +353,12 @@ export interface IStorySlideState {
     pendingFinal?: boolean;
 }
 
+export interface ICommanderRescueState {
+    commanderId: string;
+    nodeIds: string[];
+    claimed: boolean;
+}
+
 export interface IRunState {
     currentStageIndex: number;
     currentNodeId: string;
@@ -377,6 +383,7 @@ export interface IRunState {
     relics: string[];
     curses: string[];
     commanderRoster: string[];
+    commanderRescues?: Record<string, ICommanderRescueState>;
     factionId: string;
     storySlides?: IStorySlideState;
     /**

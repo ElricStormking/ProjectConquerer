@@ -90,6 +90,7 @@ export class BattleScene extends Phaser.Scene {
     private encounterId: string = 'default';
     private nodeType: NodeType = NodeType.BATTLE;
     private enemyLevel = 1;
+    private nodeLevel = 1;
 
     constructor() {
         super({ key: 'BattleScene' });
@@ -153,10 +154,16 @@ export class BattleScene extends Phaser.Scene {
         this.encounterId = data.encounterId ?? 'default';
         this.nodeType = (data.nodeType as NodeType) ?? NodeType.BATTLE;
         this.enemyLevel = Math.max(1, Number(data.enemyLevel ?? 1));
+        this.nodeLevel = this.getNodeLevelFromId(this.nodeId);
         
         // Reset battle state for new encounter
         this.battleState = 'preparation';
         this.hasStartedFirstWave = false;
+    }
+
+    private getNodeLevelFromId(nodeId: string): number {
+        const match = nodeId.match(/^(\d+)/);
+        return match ? Math.max(1, Number(match[1]) || 1) : 1;
     }
 
     public create() {
@@ -416,8 +423,8 @@ export class BattleScene extends Phaser.Scene {
         const waves = this.nodeType === NodeType.BATTLE
             ? encounterWaves.slice(0, NORMAL_ENCOUNTER_WAVE_COUNT)
             : encounterWaves;
-        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, node: ${this.nodeId}, enemyLevel: ${this.enemyLevel}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
-        this.waveManager.loadWaves(waves, this.enemyLevel);
+        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, node: ${this.nodeId}, nodeLevel: ${this.nodeLevel}, enemyLevel: ${this.enemyLevel}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
+        this.waveManager.loadWaves(waves, this.enemyLevel, this.nodeLevel);
 
         const commanderManager = CommanderManager.getInstance();
         const rosterIds = (runState?.commanderRoster ?? [this.starterData.commander.id]).slice(0, 5);

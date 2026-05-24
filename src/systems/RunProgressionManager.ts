@@ -16,10 +16,14 @@ import {
     IFortressCell,
     IFortressCellState,
     IStorySlideState,
+    ICommanderFullConfig,
+    ICommanderRescueState,
     CardType
 } from '../types/ironwars';
 
 export type RunStateSnapshot = IRunState & { deck: ICard[] };
+
+const COMMANDER_RESCUE_FACTION_IDS = ['triarch_dominion', 'frost_clan', 'jade_dynasty'];
 
 export class RunProgressionManager extends Phaser.Events.EventEmitter {
     private static instance: RunProgressionManager;
@@ -99,6 +103,22 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         };
     }
 
+    private cloneCommanderRescues(
+        rescues?: Record<string, ICommanderRescueState>
+    ): Record<string, ICommanderRescueState> | undefined {
+        if (!rescues) return undefined;
+        const clone: Record<string, ICommanderRescueState> = {};
+        Object.keys(rescues).forEach(stageIndex => {
+            const rescue = rescues[stageIndex];
+            clone[stageIndex] = {
+                commanderId: rescue.commanderId,
+                nodeIds: [...(rescue.nodeIds ?? [])],
+                claimed: !!rescue.claimed
+            };
+        });
+        return clone;
+    }
+
     private buildCollectionFromCards(cards: ICard[]): string[] {
         return cards.map(card => this.normalizeCardId(card.id));
     }
@@ -145,6 +165,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             relics: [...this.runState.relics],
             curses: [...this.runState.curses],
             commanderRoster: [...this.runState.commanderRoster],
+            commanderRescues: this.cloneCommanderRescues(this.runState.commanderRescues),
             cardCollection: [...(this.runState.cardCollection ?? [])],
             newCardsAvailable: this.runState.newCardsAvailable ?? false,
             factionId: this.runState.factionId,
@@ -368,12 +389,14 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
+            commanderRescues: {},
             factionId: factionId,
             storySlides: this.createStorySlidesState(true),
             fortressUnlockedCells: { [fortressId]: initialUnlocked },
             fortressCellStates: { [fortressId]: [] }
         };
 
+        this.ensureCommanderRescueAssignments();
         this.updateNodeAccessibility();
         this.saveRun();
         this.emit('lives-updated', startingLives);
@@ -404,6 +427,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (this.runState) {
             this.runState.newCardsAvailable = this.runState.newCardsAvailable ?? false;
             this.ensureCardCollectionInitialized();
+            this.ensureCommanderRescueAssignments();
             const storySlides = this.ensureStorySlidesState(true);
             if (storySlides.stageIntroSeen.length === 0) {
                 storySlides.stageIntroSeen = [this.runState.currentStageIndex];
@@ -640,6 +664,36 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return this.runState?.commanderRoster ? [...this.runState.commanderRoster] : [];
     }
 
+    public getCommanderRescueForNode(nodeId: string): ICommanderFullConfig | undefined {
+        const rescue = this.findCommanderRescueByNode(nodeId);
+        if (!rescue || rescue.claimed) {
+            return undefined;
+        }
+        return this.commanderManager.getCommander(rescue.commanderId);
+    }
+
+    public claimCommanderRescueForNode(nodeId: string): ICommanderFullConfig | undefined {
+        if (!this.runState) return undefined;
+        const rescue = this.findCommanderRescueByNode(nodeId);
+        if (!rescue || rescue.claimed) {
+            return undefined;
+        }
+
+        const commander = this.commanderManager.getCommander(rescue.commanderId);
+        if (!commander) {
+            rescue.claimed = true;
+            this.saveRun();
+            return undefined;
+        }
+
+        rescue.claimed = true;
+        this.commanderManager.unlockCommander(commander.id);
+        this.addCommanderToRoster(commander.id);
+        this.saveRun();
+        this.emit('commander-rescues-updated', this.cloneCommanderRescues(this.runState.commanderRescues));
+        return commander;
+    }
+
     public addRelic(relicId: string): void {
         if (!this.runState) return;
         const config = this.dataManager.getRelicConfig(relicId);
@@ -829,6 +883,101 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             this.stageGraph.set(stageClone.index, stageClone);
             this.stageGraphById.set(stageClone.id, stageClone);
         });
+    }
+
+    private ensureCommanderRescueAssignments(): void {
+        if (!this.runState) return;
+
+        const existingAssignments = this.runState.commanderRescues ?? {};
+        const nextAssignments: Record<string, ICommanderRescueState> = {};
+        const usedCommanderIds = new Set(this.runState.commanderRoster);
+        const stages = Array.from(this.stageGraph.values()).sort((a, b) => a.index - b.index);
+
+        stages.forEach(stage => {
+            this.getLevelTenNodeIds(stage).forEach(nodeId => {
+                const key = this.getCommanderRescueKey(nodeId);
+                const existing = existingAssignments[key];
+                if (!existing?.commanderId) {
+                    return;
+                }
+
+                nextAssignments[key] = {
+                    commanderId: existing.commanderId,
+                    nodeIds: [nodeId],
+                    claimed: !!existing.claimed
+                };
+                usedCommanderIds.add(existing.commanderId);
+            });
+        });
+
+        // Migrate old per-stage rescue assignments to one branch node, then
+        // assign distinct commanders to any remaining level-10 branch nodes.
+        stages.forEach(stage => {
+            const legacy = existingAssignments[String(stage.index)];
+            if (!legacy?.commanderId || usedCommanderIds.has(legacy.commanderId)) {
+                return;
+            }
+
+            const openNodeId = this.getLevelTenNodeIds(stage)
+                .find(nodeId => !nextAssignments[this.getCommanderRescueKey(nodeId)]);
+            if (!openNodeId) {
+                return;
+            }
+
+            nextAssignments[this.getCommanderRescueKey(openNodeId)] = {
+                commanderId: legacy.commanderId,
+                nodeIds: [openNodeId],
+                claimed: !!legacy.claimed
+            };
+            usedCommanderIds.add(legacy.commanderId);
+        });
+
+        const candidates = Phaser.Utils.Array.Shuffle(
+            this.commanderManager.getAllCommanders().filter(commander =>
+                COMMANDER_RESCUE_FACTION_IDS.includes(commander.factionId) &&
+                !usedCommanderIds.has(commander.id)
+            )
+        );
+
+        stages.forEach(stage => {
+            this.getLevelTenNodeIds(stage).forEach(nodeId => {
+                const key = this.getCommanderRescueKey(nodeId);
+                if (nextAssignments[key]) {
+                    return;
+                }
+
+                const commander = candidates.shift();
+                if (!commander) {
+                    return;
+                }
+
+                nextAssignments[key] = {
+                    commanderId: commander.id,
+                    nodeIds: [nodeId],
+                    claimed: false
+                };
+                usedCommanderIds.add(commander.id);
+            });
+        });
+
+        this.runState.commanderRescues = nextAssignments;
+    }
+
+    private getLevelTenNodeIds(stage: IStageConfig): string[] {
+        return stage.nodes
+            .filter(node => /^10[A-Z]_/.test(node.id))
+            .map(node => node.id);
+    }
+
+    private findCommanderRescueByNode(nodeId: string): ICommanderRescueState | undefined {
+        const rescues = this.runState?.commanderRescues;
+        if (!rescues) return undefined;
+        return rescues[this.getCommanderRescueKey(nodeId)] ??
+            Object.values(rescues).find(rescue => rescue.nodeIds.includes(nodeId));
+    }
+
+    private getCommanderRescueKey(nodeId: string): string {
+        return `node:${nodeId}`;
     }
 
     private findEntryNodeId(stageIndex: number): string {

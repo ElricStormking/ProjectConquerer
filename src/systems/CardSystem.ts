@@ -1003,7 +1003,9 @@ export class CardSystem {
             let radius = width * 3;
             let intervalMs = 2000;
             let baseHeal = 18;
-            if (beacon.effectId === 'elf_healing_grove') {
+            if (beacon.effectId === 'triarch_healing_pulse') {
+                radius = Number.POSITIVE_INFINITY;
+            } else if (beacon.effectId === 'elf_healing_grove') {
                 radius = width * 4;
                 intervalMs = 1200;
                 baseHeal = 12;
@@ -1022,12 +1024,33 @@ export class CardSystem {
 
             const healAmount = baseHeal * scale;
 
-            allies.forEach(u => {
+            const alliesInRange = allies.filter(u => {
                 if (u.isDead?.()) return;
                 const uPos = u.getPosition?.();
                 if (!uPos) return;
                 const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
-                if (dist > radius) return;
+                return dist <= radius;
+            });
+            const healTargets = beacon.effectId === 'triarch_healing_pulse'
+                ? alliesInRange
+                    .filter(u => {
+                        const health = Number(u.getHealth?.() ?? 0);
+                        const maxHealth = Number(u.getMaxHealth?.() ?? 0);
+                        return maxHealth > 0 && health < maxHealth;
+                    })
+                    .sort((a, b) => {
+                        const aHealth = Number(a.getHealth?.() ?? 0);
+                        const bHealth = Number(b.getHealth?.() ?? 0);
+                        const aMaxHealth = Number(a.getMaxHealth?.() ?? 1);
+                        const bMaxHealth = Number(b.getMaxHealth?.() ?? 1);
+                        const aHealthRatio = aHealth / Math.max(1, aMaxHealth);
+                        const bHealthRatio = bHealth / Math.max(1, bMaxHealth);
+                        return aHealthRatio - bHealthRatio || aHealth - bHealth;
+                    })
+                    .slice(0, 3)
+                : alliesInRange;
+
+            healTargets.forEach(u => {
                 u.heal?.(healAmount);
                 u.markBuildingBuff?.();
             });

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { IRunState, IMetaProgression, ISaveData, ICard, IFortressCellState } from '../types/ironwars';
+import { IRunState, IMetaProgression, ISaveData, ICard, IFortressCellState, ICommanderRescueState } from '../types/ironwars';
 
 const SAVE_KEY = 'ironwars_save';
 const SAVE_VERSION = '1.0.0';
@@ -76,6 +76,22 @@ export class SaveManager extends Phaser.Events.EventEmitter {
         return clone;
     }
 
+    private cloneCommanderRescues(
+        rescues?: Record<string, ICommanderRescueState>
+    ): Record<string, ICommanderRescueState> | undefined {
+        if (!rescues) return undefined;
+        const clone: Record<string, ICommanderRescueState> = {};
+        Object.keys(rescues).forEach(stageIndex => {
+            const rescue = rescues[stageIndex];
+            clone[stageIndex] = {
+                commanderId: rescue.commanderId,
+                nodeIds: [...(rescue.nodeIds ?? [])],
+                claimed: !!rescue.claimed
+            };
+        });
+        return clone;
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // Run State Methods
     // ─────────────────────────────────────────────────────────────────
@@ -93,6 +109,7 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...runState.relics],
             curses: [...runState.curses],
             commanderRoster: [...runState.commanderRoster],
+            commanderRescues: this.cloneCommanderRescues(runState.commanderRescues),
             cardCollection: [...(runState.cardCollection ?? [])],
             newCardsAvailable: runState.newCardsAvailable ?? false,
             fortressUnlockedCells: runState.fortressUnlockedCells,
@@ -115,6 +132,7 @@ export class SaveManager extends Phaser.Events.EventEmitter {
             relics: [...run.relics],
             curses: [...run.curses],
             commanderRoster: [...run.commanderRoster],
+            commanderRescues: this.cloneCommanderRescues(run.commanderRescues),
             cardCollection: [...(run.cardCollection ?? [])],
             newCardsAvailable: run.newCardsAvailable ?? false,
             fortressUnlockedCells: run.fortressUnlockedCells ? { ...run.fortressUnlockedCells } : undefined,

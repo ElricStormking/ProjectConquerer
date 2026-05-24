@@ -4,7 +4,7 @@ import { NodeEncounterSystem } from '../systems/NodeEncounterSystem';
 import { FactionRegistry } from '../systems/FactionRegistry';
 import { getFinalSlides, getStageIntroSlides, getStageOutroSlides } from '../data/StorySlides';
 import { RelicInventoryUI } from '../ui/RelicInventoryUI';
-import { IMapNode, IStageConfig } from '../types/ironwars';
+import { ICommanderFullConfig, IMapNode, IStageConfig } from '../types/ironwars';
 
 const MAP_WIDTH = 2400;
 const MAP_HEIGHT = 1080;
@@ -475,6 +475,9 @@ export class StageMapScene extends Phaser.Scene {
         this.drawParchmentBase(this.stageDecor);
         this.drawCartographyGrid(this.stageDecor);
         this.drawMapLandmarks(this.stageDecor, stage);
+        if (this.isFrostStage(stage)) {
+            this.drawEternalFrostDecor(this.stageDecor, `${stage.id}-${stage.index}`);
+        }
         this.drawCompassRose(this.stageDecor, MAP_WIDTH - 225, MAP_HEIGHT - 205);
         this.drawMapBorder(this.stageDecor);
 
@@ -723,6 +726,208 @@ export class StageMapScene extends Phaser.Scene {
                 color: '#5c3c1f',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setAlpha(0.32).setAngle(label.angle);
+            container.add(text);
+        });
+    }
+
+    private isFrostStage(stage: IStageConfig): boolean {
+        return stage.theme === 'frost_clan' || stage.id === 'stage_2';
+    }
+
+    private drawEternalFrostDecor(container: Phaser.GameObjects.Container, seed: string): void {
+        this.drawFrostAtmosphere(container, seed);
+        this.drawFrozenWasteland(container, seed);
+        this.drawDeadFrostTrees(container, seed);
+        this.drawAncientBones(container, seed);
+        this.drawFrostRegionNames(container, seed);
+    }
+
+    private drawFrostAtmosphere(container: Phaser.GameObjects.Container, seed: string): void {
+        const atmosphere = this.add.graphics();
+        atmosphere.fillStyle(0x151128, 0.42);
+        atmosphere.fillRect(64, 52, MAP_WIDTH - 128, MAP_HEIGHT - 104);
+        atmosphere.fillStyle(0x241343, 0.22);
+        atmosphere.fillRect(90, 80, MAP_WIDTH - 180, MAP_HEIGHT - 160);
+        atmosphere.fillStyle(0x88c9e8, 0.11);
+        atmosphere.fillRect(120, 116, MAP_WIDTH - 240, MAP_HEIGHT - 238);
+
+        for (let i = 0; i < 38; i++) {
+            const x = this.seededRange(`${seed}-frost-fog-x`, i, 130, MAP_WIDTH - 130);
+            const y = this.seededRange(`${seed}-frost-fog-y`, i, 120, MAP_HEIGHT - 115);
+            const radius = this.seededRange(`${seed}-frost-fog-r`, i, 34, 125);
+            atmosphere.fillStyle(i % 2 === 0 ? 0x58316f : 0x91d6ee, i % 2 === 0 ? 0.08 : 0.07);
+            atmosphere.fillEllipse(x, y, radius * 1.9, radius);
+        }
+
+        for (let i = 0; i < 180; i++) {
+            const x = this.seededRange(`${seed}-snow-x`, i, 92, MAP_WIDTH - 92);
+            const y = this.seededRange(`${seed}-snow-y`, i, 82, MAP_HEIGHT - 82);
+            const radius = this.seededRange(`${seed}-snow-r`, i, 0.8, 2.4);
+            atmosphere.fillStyle(0xd8f6ff, this.seededRange(`${seed}-snow-a`, i, 0.12, 0.32));
+            atmosphere.fillCircle(x, y, radius);
+        }
+
+        container.add(atmosphere);
+    }
+
+    private drawFrozenWasteland(container: Phaser.GameObjects.Container, seed: string): void {
+        const ice = this.add.graphics();
+
+        for (let i = 0; i < 9; i++) {
+            const centerX = this.seededRange(`${seed}-ice-x`, i, 170, MAP_WIDTH - 170);
+            const centerY = this.seededRange(`${seed}-ice-y`, i, 135, MAP_HEIGHT - 130);
+            const radiusX = this.seededRange(`${seed}-ice-rx`, i, 120, 310);
+            const radiusY = this.seededRange(`${seed}-ice-ry`, i, 54, 140);
+            const points: Phaser.Math.Vector2[] = [];
+            const pointCount = 14;
+
+            for (let j = 0; j < pointCount; j++) {
+                const angle = (Math.PI * 2 * j) / pointCount;
+                const wobble = this.seededRange(`${seed}-ice-wobble-${i}`, j, 0.7, 1.25);
+                points.push(new Phaser.Math.Vector2(
+                    centerX + Math.cos(angle) * radiusX * wobble,
+                    centerY + Math.sin(angle) * radiusY * wobble
+                ));
+            }
+
+            ice.fillStyle(i % 2 === 0 ? 0x9fd8ef : 0x6f68b3, i % 2 === 0 ? 0.16 : 0.12);
+            ice.beginPath();
+            ice.moveTo(points[0].x, points[0].y);
+            for (let j = 1; j < points.length; j++) {
+                ice.lineTo(points[j].x, points[j].y);
+            }
+            ice.closePath();
+            ice.fillPath();
+            ice.lineStyle(2, 0xcff4ff, 0.26);
+            ice.strokePath();
+        }
+
+        ice.lineStyle(2, 0xcdf7ff, 0.28);
+        for (let i = 0; i < 34; i++) {
+            const x = this.seededRange(`${seed}-crack-x`, i, 110, MAP_WIDTH - 110);
+            const y = this.seededRange(`${seed}-crack-y`, i, 105, MAP_HEIGHT - 105);
+            const length = this.seededRange(`${seed}-crack-l`, i, 42, 132);
+            const angle = this.seededRange(`${seed}-crack-a`, i, -Math.PI, Math.PI);
+            const x2 = x + Math.cos(angle) * length;
+            const y2 = y + Math.sin(angle) * length;
+            ice.lineBetween(x, y, x2, y2);
+            ice.lineStyle(1, 0xffffff, 0.22);
+            ice.lineBetween(x2, y2, x2 + Math.cos(angle + 0.75) * length * 0.32, y2 + Math.sin(angle + 0.75) * length * 0.32);
+            ice.lineBetween(x2, y2, x2 + Math.cos(angle - 0.65) * length * 0.26, y2 + Math.sin(angle - 0.65) * length * 0.26);
+            ice.lineStyle(2, 0xcdf7ff, 0.28);
+        }
+
+        container.add(ice);
+    }
+
+    private drawDeadFrostTrees(container: Phaser.GameObjects.Container, seed: string): void {
+        const trees = this.add.graphics();
+        trees.lineStyle(5, 0x120d19, 0.72);
+
+        for (let i = 0; i < 28; i++) {
+            const x = this.seededRange(`${seed}-dead-tree-x`, i, 120, MAP_WIDTH - 120);
+            const y = this.seededRange(`${seed}-dead-tree-y`, i, 145, MAP_HEIGHT - 135);
+            const size = this.seededRange(`${seed}-dead-tree-s`, i, 28, 56);
+            const lean = this.seededRange(`${seed}-dead-tree-lean`, i, -18, 18);
+            const topX = x + lean;
+            const topY = y - size;
+
+            trees.lineStyle(5, 0x110b18, 0.72);
+            trees.lineBetween(x, y, topX, topY);
+            trees.lineStyle(3, 0x281a35, 0.75);
+            trees.lineBetween(x - 9, y + 5, x, y - 11);
+            trees.lineBetween(x + 10, y + 4, x + 1, y - 13);
+
+            for (let j = 0; j < 4; j++) {
+                const branchY = Phaser.Math.Linear(y - size * 0.26, topY + 8, j / 3);
+                const branchX = Phaser.Math.Linear(x, topX, j / 3);
+                const side = j % 2 === 0 ? -1 : 1;
+                const branchLength = size * this.seededRange(`${seed}-dead-tree-branch-${i}`, j, 0.26, 0.48);
+                trees.lineBetween(branchX, branchY, branchX + side * branchLength, branchY - size * 0.18);
+                trees.lineStyle(1, 0xbdf2ff, 0.28);
+                trees.lineBetween(branchX + side * branchLength * 0.62, branchY - size * 0.11, branchX + side * branchLength, branchY - size * 0.18);
+                trees.lineStyle(3, 0x281a35, 0.75);
+            }
+        }
+
+        container.add(trees);
+    }
+
+    private drawAncientBones(container: Phaser.GameObjects.Container, seed: string): void {
+        for (let i = 0; i < 10; i++) {
+            const x = this.seededRange(`${seed}-bone-x`, i, 145, MAP_WIDTH - 145);
+            const y = this.seededRange(`${seed}-bone-y`, i, 160, MAP_HEIGHT - 145);
+            const scale = this.seededRange(`${seed}-bone-s`, i, 0.72, 1.45);
+            const angle = this.seededRange(`${seed}-bone-a`, i, -32, 32);
+            const bone = i % 3 === 0
+                ? this.createRibcageGraphic(x, y, scale, angle)
+                : this.createLongBoneGraphic(x, y, scale, angle);
+            container.add(bone);
+        }
+    }
+
+    private createLongBoneGraphic(x: number, y: number, scale: number, angle: number): Phaser.GameObjects.Container {
+        const bone = this.add.container(x, y);
+        bone.setScale(scale);
+        bone.setAngle(angle);
+
+        const graphic = this.add.graphics();
+        graphic.lineStyle(10, 0xd4c8aa, 0.58);
+        graphic.lineBetween(-42, 0, 42, 0);
+        graphic.fillStyle(0xd4c8aa, 0.58);
+        graphic.fillCircle(-50, -6, 13);
+        graphic.fillCircle(-50, 8, 12);
+        graphic.fillCircle(50, -7, 12);
+        graphic.fillCircle(50, 8, 13);
+        graphic.lineStyle(2, 0x5b4b61, 0.32);
+        graphic.lineBetween(-35, -2, 36, -2);
+        bone.add(graphic);
+
+        return bone;
+    }
+
+    private createRibcageGraphic(x: number, y: number, scale: number, angle: number): Phaser.GameObjects.Container {
+        const ribcage = this.add.container(x, y);
+        ribcage.setScale(scale);
+        ribcage.setAngle(angle);
+
+        const graphic = this.add.graphics();
+        graphic.lineStyle(5, 0xd4c8aa, 0.52);
+        graphic.lineBetween(0, -44, 0, 46);
+        for (let i = 0; i < 5; i++) {
+            const yOffset = -28 + i * 15;
+            const width = 34 + i * 9;
+            graphic.strokeEllipse(-width / 2, yOffset, width, 18);
+            graphic.strokeEllipse(width / 2, yOffset, width, 18);
+        }
+        graphic.fillStyle(0xd4c8aa, 0.48);
+        graphic.fillCircle(0, -58, 16);
+        graphic.fillStyle(0x20172d, 0.5);
+        graphic.fillCircle(-6, -60, 3);
+        graphic.fillCircle(6, -60, 3);
+        ribcage.add(graphic);
+
+        return ribcage;
+    }
+
+    private drawFrostRegionNames(container: Phaser.GameObjects.Container, seed: string): void {
+        const labels = [
+            { text: 'Black Ice Barrows', x: 365, y: 230, angle: -6 },
+            { text: 'Deadwood March', x: 790, y: 835, angle: 4 },
+            { text: 'Gravewind Plain', x: 1390, y: 330, angle: -5 },
+            { text: 'Bone Crown Road', x: 1830, y: 875, angle: 5 }
+        ];
+
+        labels.forEach((label, index) => {
+            const x = label.x + this.seededRange(`${seed}-frost-label-x`, index, -44, 44);
+            const y = label.y + this.seededRange(`${seed}-frost-label-y`, index, -26, 26);
+            const text = this.add.text(x, y, label.text.toUpperCase(), {
+                fontFamily: 'Georgia, serif',
+                fontSize: '24px',
+                color: '#c9e9ff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setAlpha(0.34).setAngle(label.angle);
+            text.setStroke('#241343', 4);
             container.add(text);
         });
     }
@@ -1019,12 +1224,76 @@ export class StageMapScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(label);
 
+        const rescueCommander = this.runManager.getCommanderRescueForNode(node.id);
+        if (rescueCommander) {
+            container.add(this.createCommanderHelpMarker(rescueCommander));
+        }
+
         icon.setInteractive({ useHandCursor: true });
         icon.on('pointerdown', () => this.handleNodeClick(node.id));
         icon.on('pointerover', () => container.setScale(1.1));
         icon.on('pointerout', () => container.setScale(1));
 
         this.nodeContainers.set(node.id, container);
+    }
+
+    private createCommanderHelpMarker(commander: ICommanderFullConfig): Phaser.GameObjects.Container {
+        const marker = this.add.container(56, -78);
+        marker.setName('commanderRescueMarker');
+        marker.setScale(0.74);
+
+        const factionColor = this.factionRegistry.getFactionColor(commander.factionId);
+        const shadow = this.add.rectangle(4, 6, 78, 104, 0x000000, 0.36);
+        shadow.setOrigin(0.5);
+        marker.add(shadow);
+
+        const card = this.add.graphics();
+        card.fillStyle(0x171222, 0.96);
+        card.fillRoundedRect(-39, -52, 78, 104, 5);
+        card.lineStyle(3, factionColor, 1);
+        card.strokeRoundedRect(-39, -52, 78, 104, 5);
+        card.lineStyle(1, 0xf0dba5, 0.72);
+        card.strokeRoundedRect(-34, -47, 68, 94, 3);
+        marker.add(card);
+
+        if (commander.portraitKey && this.textures.exists(commander.portraitKey)) {
+            const portrait = this.add.image(0, -7, commander.portraitKey).setOrigin(0.5);
+            const scale = Math.max(0.01, Math.min(54 / portrait.width, 54 / portrait.height));
+            portrait.setScale(scale);
+            marker.add(portrait);
+        } else {
+            const portrait = this.add.rectangle(0, -7, 58, 58, factionColor, 0.32);
+            portrait.setStrokeStyle(1, 0xf0dba5, 0.8);
+            marker.add(portrait);
+        }
+
+        const banner = this.add.graphics();
+        banner.fillStyle(0x8b1010, 0.98);
+        banner.fillRoundedRect(-34, 24, 68, 23, 4);
+        banner.lineStyle(2, 0xffe08a, 1);
+        banner.strokeRoundedRect(-34, 24, 68, 23, 4);
+        marker.add(banner);
+
+        const help = this.add.text(0, 35, 'HELP!', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '17px',
+            color: '#fff1b0',
+            fontStyle: 'bold',
+            stroke: '#290000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+        marker.add(help);
+
+        this.tweens.add({
+            targets: marker,
+            y: { from: -80, to: -72 },
+            duration: 760,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        return marker;
     }
 
     private handleNodeClick(nodeId: string): void {
@@ -1078,6 +1347,9 @@ export class StageMapScene extends Phaser.Scene {
                 container.setAlpha(0.55);
                 container.setScale(1);
             }
+
+            const rescueMarker = container.getByName('commanderRescueMarker') as Phaser.GameObjects.Container | null;
+            rescueMarker?.setVisible(!!this.runManager.getCommanderRescueForNode(nodeId));
         });
 
         const stage = this.runManager.getStageSnapshot(this.currentStageIndex);

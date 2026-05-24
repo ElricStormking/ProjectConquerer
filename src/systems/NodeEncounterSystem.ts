@@ -3,7 +3,7 @@ import { DataManager } from './DataManager';
 import { RunProgressionManager } from './RunProgressionManager';
 import { RelicManager } from './RelicManager';
 import { CommanderManager } from './CommanderManager';
-import { CardType, IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger } from '../types/ironwars';
+import { CardType, IMapNode, NodeType, ICard, IRelicConfig, IEventOption, RelicTrigger, ICommanderFullConfig } from '../types/ironwars';
 
 type RewardSceneResult = {
     card?: ICard;
@@ -339,9 +339,34 @@ export class NodeEncounterSystem {
             this.runManager.completeNode(node.id);
             latest = this.runManager.getNodeSnapshot(node.id);
         }
-        this.runManager.finalizePendingStageCompletion();
-        this.resolving = false;
-        this.hostScene.events.emit('node-resolved', latest ?? node);
+        const resolvedNode = latest ?? node;
+        const rescuedCommander = this.runManager.claimCommanderRescueForNode(resolvedNode.id);
+
+        const finalize = () => {
+            this.runManager.finalizePendingStageCompletion();
+            this.resolving = false;
+            this.hostScene.events.emit('node-resolved', resolvedNode);
+        };
+
+        if (rescuedCommander) {
+            this.presentCommanderRescue(rescuedCommander, finalize);
+            return;
+        }
+
+        finalize();
+    }
+
+    private presentCommanderRescue(commander: ICommanderFullConfig, onComplete: () => void): void {
+        const scenePlugin = this.hostScene.scene;
+        const unlockSceneKey = 'CommanderUnlockScene';
+        scenePlugin.launch(unlockSceneKey, {
+            commander,
+            onComplete: () => {
+                scenePlugin.stop(unlockSceneKey);
+                onComplete();
+            }
+        });
+        scenePlugin.bringToTop(unlockSceneKey);
     }
 
     private getBattleRewardCardPool(types?: CardType[]): ICard[] {

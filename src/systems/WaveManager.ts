@@ -11,6 +11,8 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     private waves: IWaveConfig[] = [];
     private activeWaveIndex = -1;
     private enemyLevel = 1;
+    private nodeLevel = 1;
+    private enemyCountMultiplier = 1;
     private pendingSpawnEvents = 0;
     private activeEnemyIds: Set<string> = new Set();
     private timers: Phaser.Time.TimerEvent[] = [];
@@ -48,7 +50,7 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         console.log('[WaveManager] Destroyed and cleaned up');
     }
 
-    public loadWaves(waves: IWaveConfig[], enemyLevel = 1): void {
+    public loadWaves(waves: IWaveConfig[], enemyLevel = 1, nodeLevel = 1): void {
         // Reset state when loading new waves
         this.clearTimers();
         this.activeWaveIndex = -1;
@@ -56,7 +58,9 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         this.activeEnemyIds.clear();
         this.waves = waves;
         this.enemyLevel = clampUnitLevel(enemyLevel);
-        console.log(`[WaveManager] Loaded ${waves.length} waves at enemy level ${this.enemyLevel}, state reset`);
+        this.nodeLevel = this.clampNodeLevel(nodeLevel);
+        this.enemyCountMultiplier = this.getEnemyCountMultiplier(this.nodeLevel);
+        console.log(`[WaveManager] Loaded ${waves.length} waves at enemy level ${this.enemyLevel}, node level ${this.nodeLevel}, enemy count x${this.enemyCountMultiplier.toFixed(2)}, state reset`);
     }
 
     public startFirstWave(): void {
@@ -112,7 +116,8 @@ export class WaveManager extends Phaser.Events.EventEmitter {
             return;
         }
         const lanePoint = this.getLanePoint(spawn.lane);
-        for (let i = 0; i < spawn.count; i++) {
+        const spawnCount = this.getScaledSpawnCount(spawn.count);
+        for (let i = 0; i < spawnCount; i++) {
             const offsetX = Phaser.Math.Between(-20, 20);
             const offsetY = Phaser.Math.Between(-20, 20);
             const config = this.unitManager.createUnitConfig(
@@ -139,6 +144,21 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         config.stats = applyUnitLevelScalingToStats(config.stats, level);
         config.unitLevel = level;
         config.enemyLevel = level;
+    }
+
+    private clampNodeLevel(nodeLevel: number): number {
+        return Math.max(1, Math.min(15, Math.round(Number(nodeLevel) || 1)));
+    }
+
+    private getEnemyCountMultiplier(nodeLevel: number): number {
+        if (nodeLevel <= 3) return 1;
+        return 1 + (nodeLevel - 3) * 0.12;
+    }
+
+    private getScaledSpawnCount(baseCount: number): number {
+        const count = Math.max(0, Math.round(Number(baseCount) || 0));
+        if (count <= 0) return 0;
+        return Math.max(count, Math.ceil(count * this.enemyCountMultiplier));
     }
 
     private getLanePoint(lane: IEnemySpawn['lane']): { x: number; y: number } {

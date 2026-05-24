@@ -111,7 +111,10 @@ export class CommanderUnlockScene extends Phaser.Scene {
         }).setOrigin(0.5);
         container.add(skillLabel);
         
-        const skillName = this.add.text(0, 158, this.commander.activeSkillId.replace(/_/g, ' ').toUpperCase(), {
+        const activeSkillName = this.commander.activeSkillId
+            ? this.commander.activeSkillId.replace(/_/g, ' ').toUpperCase()
+            : 'COMMAND PROTOCOL';
+        const skillName = this.add.text(0, 158, activeSkillName, {
             fontFamily: 'Georgia, serif',
             fontSize: '18px',
             color: '#f0dba5'
