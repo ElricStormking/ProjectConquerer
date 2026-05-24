@@ -369,6 +369,11 @@ export interface IRunState {
      * automatically inserting them into the active deck.
      */
     cardCollection: string[];
+    /**
+     * True when rewards, shops, events, or commander unlocks have added cards
+     * the player has not reviewed in DeckBuilding yet.
+     */
+    newCardsAvailable?: boolean;
     relics: string[];
     curses: string[];
     commanderRoster: string[];

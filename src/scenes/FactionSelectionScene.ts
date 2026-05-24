@@ -244,20 +244,40 @@ export class FactionSelectionScene extends Phaser.Scene {
             const btn = this.add.container(startX + i * (btnW + gap), selectorY);
             const bg = this.add.graphics();
             const isSelected = this.selectedCommanderByFaction[cmd.factionId] === cmd.id;
-            bg.fillStyle(isSelected ? 0x3a2f19 : 0x20283f, 0.94);
+            bg.fillStyle(isSelected ? 0x574213 : 0x20283f, 0.94);
             bg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 6);
-            bg.lineStyle(2, isSelected ? 0xf0dba5 : factionColor, isSelected ? 1 : 0.72);
+            bg.lineStyle(isSelected ? 4 : 2, isSelected ? 0xffd35a : factionColor, isSelected ? 1 : 0.72);
             bg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 6);
             btn.add(bg);
+
+            if (isSelected) {
+                const highlight = this.add.graphics();
+                highlight.fillStyle(0xffd35a, 0.18);
+                highlight.fillRoundedRect(-btnW / 2 + 6, -btnH / 2 + 6, btnW - 12, btnH - 12, 4);
+                highlight.lineStyle(1, 0xfff0b5, 0.8);
+                highlight.strokeRoundedRect(-btnW / 2 + 8, -btnH / 2 + 8, btnW - 16, btnH - 16, 3);
+                btn.add(highlight);
+
+                const underline = this.add.rectangle(0, btnH / 2 - 5, btnW - 30, 5, 0xffd35a, 1);
+                underline.setOrigin(0.5);
+                btn.add(underline);
+
+                const marker = this.add.triangle(0, btnH / 2 + 11, -9, 0, 9, 0, 0, 8, 0xffd35a, 1);
+                marker.setStrokeStyle(1, 0x3a2f19, 0.8);
+                btn.add(marker);
+            }
 
             const txt = this.add.text(0, 0, cmd.name, {
                 fontFamily: 'Georgia, serif',
                 fontSize: '18px',
-                color: isSelected ? '#fff2bc' : '#d9d0ad',
+                color: isSelected ? '#fff7cf' : '#d9d0ad',
                 fontStyle: 'bold',
                 align: 'center',
                 wordWrap: { width: btnW - 24 }
             }).setOrigin(0.5);
+            if (isSelected) {
+                txt.setStroke('#1c1405', 3);
+            }
             btn.add(txt);
 
             bg.setInteractive(
@@ -368,12 +388,18 @@ export class FactionSelectionScene extends Phaser.Scene {
         const cardHeight = 184;
         const gap = 22;
         const cols = 3;
+        const cardOffsetX = -5;
+        const cardOffsetY = 20;
+        const shelfX = startX - 26;
+        const shelfY = startY - 90;
+        const shelfWidth = 496;
+        const shelfHeight = 454;
 
         const shelf = this.add.graphics();
         shelf.fillStyle(0x080b12, 0.55);
-        shelf.fillRoundedRect(startX - 26, startY - 90, 514, 454, 6);
+        shelf.fillRoundedRect(shelfX, shelfY, shelfWidth, shelfHeight, 6);
         shelf.lineStyle(2, factionColor, 0.55);
-        shelf.strokeRoundedRect(startX - 26, startY - 90, 514, 454, 6);
+        shelf.strokeRoundedRect(shelfX, shelfY, shelfWidth, shelfHeight, 6);
         container.add(shelf);
 
         const label = this.add.text(startX - 4, startY - 68, 'STARTING CARDS', {
@@ -396,8 +422,8 @@ export class FactionSelectionScene extends Phaser.Scene {
         cards.forEach((card, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
-            const x = startX + col * (cardWidth + gap);
-            const y = startY + row * (cardHeight + 28);
+            const x = startX + col * (cardWidth + gap) + cardOffsetX;
+            const y = startY + row * (cardHeight + 28) + cardOffsetY;
 
             const cardBg = this.add.graphics();
             cardBg.fillStyle(0x20283f, 1);

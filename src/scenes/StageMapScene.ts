@@ -30,6 +30,7 @@ export class StageMapScene extends Phaser.Scene {
     private fortressToken?: Phaser.GameObjects.Container;
     private hudText?: Phaser.GameObjects.Text;
     private hudBg?: Phaser.GameObjects.Rectangle;
+    private deckAttentionDot?: Phaser.GameObjects.Container;
     private relicInventory?: RelicInventoryUI;
     private currentStageIndex = 0;
     private stageDecor?: Phaser.GameObjects.Container;
@@ -38,6 +39,8 @@ export class StageMapScene extends Phaser.Scene {
     private stageBgmKey: string = '';
     private storySlidesActive = false;
     private fortressMoveTween?: Phaser.Tweens.Tween;
+    private pendingEncounterNodeId?: string;
+    private nodeTransitionInProgress = false;
     private gameOverOverlay?: Phaser.GameObjects.Container;
 
     constructor() {
@@ -87,6 +90,8 @@ export class StageMapScene extends Phaser.Scene {
             this.stopStageBgm();
             this.fortressMoveTween?.stop();
             this.fortressMoveTween = undefined;
+            this.pendingEncounterNodeId = undefined;
+            this.nodeTransitionInProgress = false;
             this.gameOverOverlay?.destroy();
             this.gameOverOverlay = undefined;
             this.fortressToken = undefined;
@@ -114,13 +119,15 @@ export class StageMapScene extends Phaser.Scene {
         const { width } = this.cameras.main;
         
         // Deck button
-        this.createHudButton(width - 280, 35, 'DECK', () => this.openDeckBuilding());
+        const deckButton = this.createHudButton(width - 280, 35, 'DECK', () => this.openDeckBuilding());
+        this.deckAttentionDot = this.createDeckAttentionDot(deckButton, 54, -16);
+        this.updateDeckAttentionDot();
         
         // Menu button
         this.createHudButton(width - 120, 35, 'MENU', () => this.openMenu());
     }
 
-    private createHudButton(x: number, y: number, label: string, callback: () => void): void {
+    private createHudButton(x: number, y: number, label: string, callback: () => void): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
         container.setScrollFactor(0);
         container.setDepth(240);
@@ -170,6 +177,39 @@ export class StageMapScene extends Phaser.Scene {
         });
         
         bg.on('pointerup', callback);
+        return container;
+    }
+
+    private createDeckAttentionDot(parent: Phaser.GameObjects.Container, x: number, y: number): Phaser.GameObjects.Container {
+        const dot = this.add.container(x, y);
+        dot.setVisible(false);
+
+        const halo = this.add.circle(0, 0, 13, 0xff2e22, 0.22);
+        dot.add(halo);
+
+        const body = this.add.circle(0, 0, 8, 0xd41414, 1);
+        body.setStrokeStyle(2, 0xfff1d0, 1);
+        dot.add(body);
+
+        const shine = this.add.circle(-3, -3, 2.5, 0xffb6a8, 0.95);
+        dot.add(shine);
+
+        this.tweens.add({
+            targets: halo,
+            scale: { from: 0.82, to: 1.26 },
+            alpha: { from: 0.5, to: 0.12 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        parent.add(dot);
+        return dot;
+    }
+
+    private updateDeckAttentionDot = (): void => {
+        this.deckAttentionDot?.setVisible(this.runManager.hasNewCardsAvailable());
     }
 
     private createRelicInventory(): void {
@@ -325,6 +365,7 @@ export class StageMapScene extends Phaser.Scene {
         this.runManager.on('gold-updated', this.refreshHud, this);
         this.runManager.on('fortress-updated', this.refreshHud, this);
         this.runManager.on('lives-updated', this.refreshHud, this);
+        this.runManager.on('new-cards-available-updated', this.updateDeckAttentionDot, this);
         this.runManager.on('run-failed', this.onRunFailed, this);
         this.runManager.on('stage-completed', this.onStageCompleted, this);
         this.runManager.on('run-completed', this.onRunCompleted, this);
@@ -338,6 +379,7 @@ export class StageMapScene extends Phaser.Scene {
             this.runManager.off('gold-updated', this.refreshHud, this);
             this.runManager.off('fortress-updated', this.refreshHud, this);
             this.runManager.off('lives-updated', this.refreshHud, this);
+            this.runManager.off('new-cards-available-updated', this.updateDeckAttentionDot, this);
             this.runManager.off('run-failed', this.onRunFailed, this);
             this.runManager.off('stage-completed', this.onStageCompleted, this);
             this.runManager.off('run-completed', this.onRunCompleted, this);
@@ -421,6 +463,7 @@ export class StageMapScene extends Phaser.Scene {
             this.playStageBgm();
             this.moveFortressToken(this.runManager.getCurrentNode());
         }
+        this.updateDeckAttentionDot();
         this.maybeShowStorySlides();
     }
 
@@ -985,18 +1028,23 @@ export class StageMapScene extends Phaser.Scene {
     }
 
     private handleNodeClick(nodeId: string): void {
+        if (this.nodeTransitionInProgress) {
+            return;
+        }
+
         const node = this.runManager.getNodeSnapshot(nodeId);
         if (!node) return;
         if (!this.runManager.canAccessNode(nodeId)) {
             return;
         }
 
+        this.pendingEncounterNodeId = nodeId;
+        this.nodeTransitionInProgress = true;
+
         const moved = this.runManager.moveToNode(nodeId);
         if (!moved) {
-            return;
-        }
-        const liveNode = this.runManager.getNodeSnapshot(nodeId);
-        if (!liveNode) {
+            this.pendingEncounterNodeId = undefined;
+            this.nodeTransitionInProgress = false;
             return;
         }
         
@@ -1006,8 +1054,6 @@ export class StageMapScene extends Phaser.Scene {
         if (stage) {
             this.drawPaths(stage);
         }
-        
-        this.encounterSystem.resolveNode(liveNode);
     }
 
     private updateAllNodeStates(): void {
@@ -1040,7 +1086,7 @@ export class StageMapScene extends Phaser.Scene {
         }
     }
 
-    private moveFortressToken(node?: IMapNode): void {
+    private moveFortressToken(node?: IMapNode, onMoveComplete?: () => void): void {
         if (!node) return;
         const position = this.normalizeToPixels(node);
         // Lift the fortress token above the node so it doesn't block the node visuals.
@@ -1052,14 +1098,47 @@ export class StageMapScene extends Phaser.Scene {
         this.fortressToken?.setAlpha(1);
         this.fortressToken?.setDepth(4);
         this.fortressMoveTween?.stop();
+
+        const currentX = this.fortressToken?.x ?? position.x;
+        const currentY = this.fortressToken?.y ?? tokenY;
+        const distance = Phaser.Math.Distance.Between(currentX, currentY, position.x, tokenY);
+        const duration = distance < 2 ? 0 : 450;
+
+        if (duration === 0) {
+            this.fortressToken?.setPosition(position.x, tokenY);
+            this.cameras.main.pan(position.x, position.y, 1, 'Sine.easeInOut');
+            onMoveComplete?.();
+            return;
+        }
+
         this.fortressMoveTween = this.tweens.add({
             targets: this.fortressToken,
             x: position.x,
             y: tokenY,
             duration: 450,
-            ease: 'Sine.easeInOut'
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                this.fortressMoveTween = undefined;
+                onMoveComplete?.();
+            }
         });
-        this.cameras.main.pan(position.x, position.y, 450, 'Sine.easeInOut');
+        this.cameras.main.pan(position.x, position.y, duration, 'Sine.easeInOut');
+    }
+
+    private startPendingNodeEncounter(node: IMapNode): void {
+        if (this.pendingEncounterNodeId !== node.id) {
+            return;
+        }
+
+        this.pendingEncounterNodeId = undefined;
+        this.nodeTransitionInProgress = false;
+
+        const liveNode = this.runManager.getNodeSnapshot(node.id);
+        if (!liveNode) {
+            return;
+        }
+
+        this.encounterSystem.resolveNode(liveNode);
     }
 
     private isFortressTokenAlive(): boolean {
@@ -1159,12 +1238,17 @@ export class StageMapScene extends Phaser.Scene {
         } else {
             this.renderCurrentStage();
         }
+        this.updateDeckAttentionDot();
         this.maybeShowStorySlides();
     };
 
     private onNodeSelected = (node?: IMapNode) => {
         if (node) {
-            this.moveFortressToken(node);
+            const shouldStartEncounter = this.pendingEncounterNodeId === node.id;
+            this.moveFortressToken(
+                node,
+                shouldStartEncounter ? () => this.startPendingNodeEncounter(node) : undefined
+            );
         }
         this.updateAllNodeStates();
     };
@@ -1181,6 +1265,7 @@ export class StageMapScene extends Phaser.Scene {
             this.moveFortressToken(this.runManager.getCurrentNode());
             this.updateAllNodeStates();
         }
+        this.updateDeckAttentionDot();
         this.maybeShowStorySlides();
     };
 

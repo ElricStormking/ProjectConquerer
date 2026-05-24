@@ -146,6 +146,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             curses: [...this.runState.curses],
             commanderRoster: [...this.runState.commanderRoster],
             cardCollection: [...(this.runState.cardCollection ?? [])],
+            newCardsAvailable: this.runState.newCardsAvailable ?? false,
             factionId: this.runState.factionId,
             lives: this.runState.lives,
             fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined,
@@ -363,6 +364,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             lives: startingLives,
             deck: [...deck],
             cardCollection: this.buildCollectionFromCards(initialCollection),
+            newCardsAvailable: false,
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
@@ -400,6 +402,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             this.runState.lives = 3;
         }
         if (this.runState) {
+            this.runState.newCardsAvailable = this.runState.newCardsAvailable ?? false;
             this.ensureCardCollectionInitialized();
             const storySlides = this.ensureStorySlidesState(true);
             if (storySlides.stageIntroSeen.length === 0) {
@@ -583,7 +586,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (!this.runState) return;
         this.ensureCardCollectionInitialized();
         this.runState.cardCollection!.push(this.normalizeCardId(card.id));
+        this.runState.newCardsAvailable = true;
         this.saveRun();
+        this.emit('new-cards-available-updated', true);
     }
 
     public clearCardCollection(): void {
@@ -611,9 +616,24 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         unlockCards.forEach(card => {
             this.runState?.cardCollection?.push(this.normalizeCardId(card.id));
         });
+        if (unlockCards.length > 0) {
+            this.runState.newCardsAvailable = true;
+            this.emit('new-cards-available-updated', true);
+        }
         this.saveRun();
         this.emit('roster-updated', [...this.runState.commanderRoster]);
         return true;
+    }
+
+    public hasNewCardsAvailable(): boolean {
+        return this.runState?.newCardsAvailable ?? false;
+    }
+
+    public clearNewCardsAvailable(): void {
+        if (!this.runState || !this.runState.newCardsAvailable) return;
+        this.runState.newCardsAvailable = false;
+        this.saveRun();
+        this.emit('new-cards-available-updated', false);
     }
 
     public getCommanderRoster(): string[] {

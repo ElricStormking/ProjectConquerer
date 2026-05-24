@@ -92,6 +92,9 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.renderCommanders();
         this.renderAvailableCards();
         this.renderDeck();
+        if (!this.isNewRun) {
+            this.runManager.clearNewCardsAvailable();
+        }
         
         this.cameras.main.fadeIn(400, 0, 0, 0);
     }
