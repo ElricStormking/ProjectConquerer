@@ -47,7 +47,7 @@ export class BattleScene extends Phaser.Scene {
     private activeCommanderIndex = 0;
     private commanderHotkeys: Phaser.Input.Keyboard.Key[] = [];
 
-    private battlefield = { centerX: 960, centerY: 540, width: 1720, height: 880 };
+    private battlefield = { centerX: 960, centerY: 540, width: 1880, height: 1040 };
     private currentDraggedCard?: ICard;
     private fortressCoreWorld = { x: 0, y: 0 };
     private fortressCoreGraphic?: Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
@@ -270,7 +270,14 @@ export class BattleScene extends Phaser.Scene {
         this.unitManager = new UnitManager(this, this.physicsManager);
         this.combatSystem = new CombatSystem(this, this.unitManager);
         this.projectileSystem = new ProjectileSystem(this);
-        this.physicsManager.setBattlefieldBounds(100, 100, 1720, 880, 5, 5);
+        const battlefieldLeft = this.battlefield.centerX - this.battlefield.width / 2;
+        const battlefieldTop = this.battlefield.centerY - this.battlefield.height / 2;
+        this.physicsManager.setBattlefieldBounds(
+            battlefieldLeft,
+            battlefieldTop,
+            this.battlefield.width,
+            this.battlefield.height
+        );
     }
 
     private createEnvironment() {

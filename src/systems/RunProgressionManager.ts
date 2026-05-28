@@ -1057,6 +1057,21 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             return;
         }
 
+        // Stage entry nodes are map anchors, not playable encounters. Treat the
+        // entry as already passed and expose its outgoing nodes as the first
+        // choices on the stage.
+        if (this.isStageEntryNode(currentNode, currentStage)) {
+            currentNode.isCompleted = true;
+            currentNode.isAccessible = false;
+            currentNode.nextNodeIds.forEach(nextId => {
+                const nextNode = this.nodeGraph.get(nextId);
+                if (nextNode && !nextNode.isCompleted) {
+                    nextNode.isAccessible = true;
+                }
+            });
+            return;
+        }
+
         // CASE 1: Player is standing on a node that isn't finished yet.
         // Only that node should be clickable; all other paths are locked out.
         if (!currentNode.isCompleted) {
@@ -1074,6 +1089,18 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
                 nextNode.isAccessible = true;
             }
         });
+    }
+
+    private isStageEntryNode(node: IMapNode, stage: IStageConfig): boolean {
+        if (node.stageIndex !== stage.index) {
+            return false;
+        }
+
+        const inbound = (this.inboundEdges.get(node.id) || []).filter(prevId => {
+            const previous = this.nodeGraph.get(prevId);
+            return previous?.stageIndex === stage.index;
+        });
+        return inbound.length === 0;
     }
 
     public getCurrentStage(): IStageConfig | undefined {

@@ -19,6 +19,10 @@ export class WaveManager extends Phaser.Events.EventEmitter {
     private readonly relicManager = RelicManager.getInstance();
     private unitDeathHandler: (unit: any) => void;
     private readonly dataManager: DataManager;
+    private readonly waveGridColumns = 5;
+    private readonly waveGridRows = 5;
+    private readonly waveGridCellSpacing = 74;
+    private readonly waveGridCenter = { x: 1580, y: 760 };
 
     constructor(
         private scene: Phaser.Scene,
@@ -76,19 +80,13 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         this.activeWaveIndex = index;
         const wave = this.waves[index];
         console.log(`[WaveManager] Starting wave ${wave.index} (array index ${index}) with ${wave.spawns.length} spawn events`);
-        this.pendingSpawnEvents = wave.spawns.length;
-        wave.spawns.forEach(spawn => {
-            const timer = this.scene.time.delayedCall(spawn.spawnTime * 1000, () => {
-                this.spawnEnemy(spawn);
-                this.pendingSpawnEvents -= 1;
-                this.tryCompleteWave();
-            });
-            this.timers.push(timer);
-        });
+        this.pendingSpawnEvents = 0;
         this.emit('wave-started', wave.index);
 
         const waveStartContext = this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_START, {});
         this.emit('relic-wave-start', waveStartContext);
+        this.spawnWaveEnemies(wave);
+        this.tryCompleteWave();
     }
 
     public getWaveStartContext(): IRelicContext {
@@ -109,29 +107,38 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         return this.pendingSpawnEvents === 0 && this.activeEnemyIds.size === 0;
     }
 
-    private spawnEnemy(spawn: IEnemySpawn): void {
+    private spawnWaveEnemies(wave: IWaveConfig): void {
+        const expandedSpawns: IEnemySpawn[] = [];
+        wave.spawns.forEach(spawn => {
+            const spawnCount = this.getScaledSpawnCount(spawn.count);
+            for (let i = 0; i < spawnCount; i++) {
+                expandedSpawns.push(spawn);
+            }
+        });
+
+        expandedSpawns.forEach((spawn, index) => {
+            this.spawnEnemy(spawn, index);
+        });
+    }
+
+    private spawnEnemy(spawn: IEnemySpawn, formationIndex: number): void {
         const unitTemplate = this.dataManager.getUnitTemplate(spawn.unitId);
         if (!unitTemplate) {
             console.warn(`[WaveManager] Missing unit template for ${spawn.unitId}, skipping spawn`);
             return;
         }
-        const lanePoint = this.getLanePoint(spawn.lane);
-        const spawnCount = this.getScaledSpawnCount(spawn.count);
-        for (let i = 0; i < spawnCount; i++) {
-            const offsetX = Phaser.Math.Between(-20, 20);
-            const offsetY = Phaser.Math.Between(-20, 20);
-            const config = this.unitManager.createUnitConfig(
-                unitTemplate.type as UnitType,
-                2,
-                lanePoint.x + offsetX,
-                lanePoint.y + offsetY
-            );
-            this.applyEnemyLevelScaling(config);
-            const unit = this.unitManager.spawnUnit(config);
-            if (unit) {
-                this.activeEnemyIds.add(unit.getId());
-                this.applyEnemyBehavior(unit);
-            }
+        const spawnPoint = this.getWaveGridPoint(formationIndex);
+        const config = this.unitManager.createUnitConfig(
+            unitTemplate.type as UnitType,
+            2,
+            spawnPoint.x,
+            spawnPoint.y
+        );
+        this.applyEnemyLevelScaling(config);
+        const unit = this.unitManager.spawnUnit(config);
+        if (unit) {
+            this.activeEnemyIds.add(unit.getId());
+            this.applyEnemyBehavior(unit);
         }
     }
 
@@ -161,22 +168,25 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         return Math.max(count, Math.ceil(count * this.enemyCountMultiplier));
     }
 
-    private getLanePoint(lane: IEnemySpawn['lane']): { x: number; y: number } {
-        // Spawn enemies (red team) from the lower-right corner of the
-        // battlefield, with three lanes fanned slightly.
-        const right = 100 + 1720; // battlefield right edge
-        const bottom = 100 + 880; // battlefield bottom edge
-        const baseX = right - 260;
-        const baseY = bottom - 260;
+    private getWaveGridPoint(index: number): { x: number; y: number } {
+        const slots = this.waveGridColumns * this.waveGridRows;
+        const slot = index % slots;
+        const layer = Math.floor(index / slots);
+        const column = slot % this.waveGridColumns;
+        const row = Math.floor(slot / this.waveGridColumns);
+        const startX = this.waveGridCenter.x - ((this.waveGridColumns - 1) * this.waveGridCellSpacing) / 2;
+        const startY = this.waveGridCenter.y - ((this.waveGridRows - 1) * this.waveGridCellSpacing) / 2;
+        const layerOffset = layer === 0
+            ? { x: 0, y: 0 }
+            : {
+                x: ((layer - 1) % 3 - 1) * 14,
+                y: (Math.floor((layer - 1) / 3) % 3 - 1) * 14
+            };
 
-        switch (lane) {
-            case 'north':
-                return { x: baseX, y: baseY - 80 };
-            case 'south':
-                return { x: baseX + 80, y: baseY + 80 };
-            default:
-                return { x: baseX + 40, y: baseY };
-        }
+        return {
+            x: startX + column * this.waveGridCellSpacing + layerOffset.x,
+            y: startY + row * this.waveGridCellSpacing + layerOffset.y
+        };
     }
 
     private tryCompleteWave(): void {

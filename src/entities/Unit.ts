@@ -146,6 +146,8 @@ export class Unit extends Phaser.Events.EventEmitter {
     // Stable) shown as a yellow square next to the unit name.
     private buildingBuffActive: boolean = false;
     private buffSquare?: Phaser.GameObjects.Rectangle;
+    private commandPostBuffActive: boolean = false;
+    private commandPostBuffIcon?: Phaser.GameObjects.Graphics;
     
     // Animation state
     private lastMoveDirection: 'down' | 'up' | 'left' | 'right' = 'down';
@@ -989,6 +991,12 @@ export class Unit extends Phaser.Events.EventEmitter {
             this.buffSquare.y = labelY;
             this.buffSquare.setDepth(this.classLabel ? this.classLabel.depth : this.body.position.y + 2001);
         }
+        if (this.commandPostBuffIcon && this.commandPostBuffActive) {
+            const { barWidth, barY } = this.getHealthHudLayout();
+            this.commandPostBuffIcon.x = visualX + barWidth / 2 + 22;
+            this.commandPostBuffIcon.y = visualY + barY + 2;
+            this.commandPostBuffIcon.setDepth(visualY + 3005);
+        }
         
         // Update trail graphics
         const velocity = this.body.velocity;
@@ -1109,6 +1117,41 @@ export class Unit extends Phaser.Events.EventEmitter {
             1
         );
         this.buffSquare.setStrokeStyle(1, 0xffffff, 0.9);
+    }
+
+    public setCommandPostBuffActive(active: boolean): void {
+        this.commandPostBuffActive = active;
+
+        if (!active) {
+            this.commandPostBuffIcon?.setVisible(false);
+            return;
+        }
+
+        if (!this.commandPostBuffIcon) {
+            this.commandPostBuffIcon = this.scene.add.graphics();
+            this.drawCommandPostBuffIcon(this.commandPostBuffIcon);
+        }
+
+        this.commandPostBuffIcon.setVisible(true);
+    }
+
+    private drawCommandPostBuffIcon(icon: Phaser.GameObjects.Graphics): void {
+        icon.clear();
+
+        icon.fillStyle(0x102033, 0.85);
+        icon.lineStyle(1, 0xf0dba5, 0.95);
+        icon.fillRoundedRect(-10, -10, 20, 20, 3);
+        icon.strokeRoundedRect(-10, -10, 20, 20, 3);
+
+        icon.lineStyle(2, 0x77d7ff, 1);
+        icon.lineBetween(-7, 4, 5, 4);
+        icon.fillStyle(0x77d7ff, 1);
+        icon.fillTriangle(5, 0, 5, 8, 10, 4);
+
+        icon.lineStyle(2, 0x55ff88, 1);
+        icon.lineBetween(-3, 6, -3, -5);
+        icon.fillStyle(0x55ff88, 1);
+        icon.fillTriangle(-8, -5, 2, -5, -3, -10);
     }
 
     // Quick jump for Ninja: medium range dash with 4s cooldown
@@ -1290,14 +1333,16 @@ export class Unit extends Phaser.Events.EventEmitter {
         this.dead = true;
         this.deathTimer = 0;
         
-        this.sprite.setAlpha(0.5);
-        this.sprite.setTint(0x666666);
+        this.playDeathKnockdownAnimation();
         
         this.healthBar.setVisible(false);
         this.healthBarBg.setVisible(false);
         this.levelLabel?.setVisible(false);
         this.unitNameLabel?.setVisible(false);
         this.teamFlag.setVisible(false);
+        this.classLabel?.setVisible(false);
+        this.buffSquare?.setVisible(false);
+        this.commandPostBuffIcon?.setVisible(false);
         if (this.statusIcon) {
             this.statusIcon.setVisible(false);
             this.statusIcon.destroy();
@@ -1305,6 +1350,7 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         this.trailGraphics.clear(); // Clear trail on death
         this.trailPoints = []; // Clear trail points
+        this.attackSwingGraphics.clear();
         
         this.body.isSensor = true;
         this.physicsManager.setVelocity(this.body, { x: 0, y: 0 });
@@ -1313,6 +1359,60 @@ export class Unit extends Phaser.Events.EventEmitter {
         
         // Emit to scene for XP orb spawning
         this.scene.events.emit('unit-death', this);
+    }
+
+    private playDeathKnockdownAnimation(): void {
+        if (!this.sprite) return;
+
+        this.scene.tweens.killTweensOf(this.sprite);
+        this.sprite.anims.stop();
+        this.sprite.setAlpha(1);
+        this.sprite.setTint(0x777777);
+        this.sprite.setOrigin(0.5, 0.55);
+        this.sprite.setDepth(this.body.position.y + 850);
+
+        const fallDirection = Math.cos(this.facing) < 0 ? -1 : 1;
+        const fallAngle = 88 * fallDirection;
+        const fallDistance = Phaser.Math.Clamp(this.sprite.displayHeight * 0.18, 10, 28);
+        const targetScaleX = this.sprite.scaleX * 1.08;
+        const targetScaleY = this.sprite.scaleY * 0.72;
+
+        const dust = this.scene.add.ellipse(
+            this.sprite.x,
+            this.sprite.y + fallDistance + 12,
+            Math.max(24, this.sprite.displayWidth * 0.72),
+            16,
+            0x2b241c,
+            0.28
+        );
+        dust.setDepth(this.sprite.depth - 1);
+        this.scene.tweens.add({
+            targets: dust,
+            alpha: 0,
+            scaleX: 1.35,
+            duration: 360,
+            ease: 'Sine.easeOut',
+            onComplete: () => dust.destroy()
+        });
+
+        this.scene.tweens.add({
+            targets: this.sprite,
+            angle: fallAngle,
+            y: this.sprite.y + fallDistance,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
+            duration: 260,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.scene.tweens.add({
+                    targets: this.sprite,
+                    alpha: 0,
+                    duration: 1250,
+                    delay: 450,
+                    ease: 'Sine.easeIn'
+                });
+            }
+        });
     }
     
     public applyImpulse(force: { x: number; y: number }): void {
@@ -1561,6 +1661,9 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
         if (this.buffSquare) {
             this.buffSquare.destroy();
+        }
+        if (this.commandPostBuffIcon) {
+            this.commandPostBuffIcon.destroy();
         }
         this.removeAllListeners();
     }
@@ -1859,12 +1962,12 @@ export class Unit extends Phaser.Events.EventEmitter {
             case UnitType.FROST_FLESH_TITAN: return 'frost_eternal_watcher'; // placeholder
             case UnitType.TRIARCH_ZEALOT_DUELIST: return 'triarch_zealot_duelist';
             case UnitType.TRIARCH_ACOLYTE_HEALER: return 'triarch_acolyte_healer';
-            case UnitType.TRIARCH_PRIESTESS_DAWN: return 'warrior';
-            case UnitType.TRIARCH_CRUSADER_SHIELDBEARER: return 'warrior';
+            case UnitType.TRIARCH_PRIESTESS_DAWN: return 'army_Turmaline_Weaver';
+            case UnitType.TRIARCH_CRUSADER_SHIELDBEARER: return 'camp1_soldier1';
             case UnitType.TRIARCH_SERAPH_GUARDIAN: return 'triarch_seraph_guardian';
-            case UnitType.TRIARCH_RIFLEMAN_SQUAD: return 'sniper';
-            case UnitType.TRIARCH_SNIPER_ELITE: return 'sniper';
-            case UnitType.TRIARCH_FIRETHROWER_UNIT: return 'shotgunner';
+            case UnitType.TRIARCH_RIFLEMAN_SQUAD: return 'army_Vitality_Bonder';
+            case UnitType.TRIARCH_SNIPER_ELITE: return 'army_Starlight_Sky-Skimmers';
+            case UnitType.TRIARCH_FIRETHROWER_UNIT: return 'camp1_soldier3';
             case UnitType.TRIARCH_HEAVY_SIEGE_WALKER: return 'camp1_soldier1';
             case UnitType.TRIARCH_LIGHTNING_SORCERER: return 'triarch_lightning_sorcerer';
             case UnitType.TRIARCH_AETHER_GOLEM: return 'camp1_soldier2';

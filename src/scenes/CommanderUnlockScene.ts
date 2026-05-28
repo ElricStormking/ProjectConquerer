@@ -31,8 +31,8 @@ export class CommanderUnlockScene extends Phaser.Scene {
         const container = this.add.container(width / 2, height / 2);
         
         // Glowing background panel
-        const panelWidth = 600;
-        const panelHeight = 500;
+        const panelWidth = 760;
+        const panelHeight = 520;
         
         // Glow effect
         const glow = this.add.graphics();
@@ -50,7 +50,7 @@ export class CommanderUnlockScene extends Phaser.Scene {
         container.add(panel);
         
         // "NEW COMMANDER" title with animation
-        const title = this.add.text(0, -200, 'NEW COMMANDER UNLOCKED!', {
+        const title = this.add.text(0, -210, 'NEW COMMANDER UNLOCKED!', {
             fontFamily: 'Georgia, serif',
             fontSize: '36px',
             color: '#f0dba5',
@@ -71,31 +71,38 @@ export class CommanderUnlockScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
         
-        // Commander portrait placeholder
-        const portrait = this.add.rectangle(0, -50, 120, 150, factionColor, 0.4);
-        portrait.setStrokeStyle(3, factionColor);
-        container.add(portrait);
-        
-        const portraitLabel = this.add.text(0, -50, 'CMD', {
-            fontFamily: 'Georgia, serif',
-            fontSize: '32px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        container.add(portraitLabel);
+        const portraitFrame = this.add.graphics();
+        portraitFrame.fillStyle(0x0f1220, 0.92);
+        portraitFrame.fillRoundedRect(-315, -160, 250, 330, 12);
+        portraitFrame.lineStyle(3, factionColor, 0.95);
+        portraitFrame.strokeRoundedRect(-315, -160, 250, 330, 12);
+        portraitFrame.lineStyle(1, 0xf0dba5, 0.55);
+        portraitFrame.strokeRoundedRect(-303, -148, 226, 306, 8);
+        container.add(portraitFrame);
+
+        this.addCommanderPortrait(container, -190, 5, 218, 298, factionColor);
+
+        const divider = this.add.graphics();
+        divider.lineStyle(2, factionColor, 0.38);
+        divider.lineBetween(-30, -150, -30, 165);
+        divider.lineStyle(1, 0xf0dba5, 0.18);
+        divider.lineBetween(-20, -140, -20, 155);
+        container.add(divider);
         
         // Commander name
-        const commanderName = this.add.text(0, 60, this.commander.name, {
+        const commanderName = this.add.text(160, -105, this.commander.name, {
             fontFamily: 'Georgia, serif',
-            fontSize: '32px',
+            fontSize: '30px',
             color: '#ffffff',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: 390 }
         }).setOrigin(0.5);
         container.add(commanderName);
         
         // Faction name
         const faction = this.factionRegistry.getFaction(this.commander.factionId);
-        const factionName = this.add.text(0, 95, faction?.name ?? this.commander.factionId, {
+        const factionName = this.add.text(160, -55, faction?.name ?? this.commander.factionId, {
             fontFamily: 'Arial, sans-serif',
             fontSize: '18px',
             color: '#8a9cc5',
@@ -104,25 +111,32 @@ export class CommanderUnlockScene extends Phaser.Scene {
         container.add(factionName);
         
         // Skill info
-        const skillLabel = this.add.text(0, 135, 'Active Skill:', {
+        const skillPanel = this.add.graphics();
+        skillPanel.fillStyle(0x101625, 0.75);
+        skillPanel.fillRoundedRect(0, -12, 320, 104, 8);
+        skillPanel.lineStyle(1, factionColor, 0.45);
+        skillPanel.strokeRoundedRect(0, -12, 320, 104, 8);
+        container.add(skillPanel);
+
+        const skillLabel = this.add.text(160, 10, 'ACTIVE SKILL', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
-            color: '#8a9cc5'
+            color: '#8a9cc5',
+            letterSpacing: 1
         }).setOrigin(0.5);
         container.add(skillLabel);
         
-        const activeSkillName = this.commander.activeSkillId
-            ? this.commander.activeSkillId.replace(/_/g, ' ').toUpperCase()
-            : 'COMMAND PROTOCOL';
-        const skillName = this.add.text(0, 158, activeSkillName, {
+        const skillName = this.add.text(160, 40, this.formatSkillName(this.commander.activeSkillId), {
             fontFamily: 'Georgia, serif',
-            fontSize: '18px',
-            color: '#f0dba5'
+            fontSize: '20px',
+            color: '#f0dba5',
+            align: 'center',
+            wordWrap: { width: 290 }
         }).setOrigin(0.5);
         container.add(skillName);
         
         // Cards unlocked info
-        const cardsLabel = this.add.text(0, 195, `+${this.commander.cardIds.length} new cards now available!`, {
+        const cardsLabel = this.add.text(160, 118, `+${this.commander.cardIds.length} new cards now available!`, {
             fontFamily: 'Arial, sans-serif',
             fontSize: '16px',
             color: '#2ecc71'
@@ -130,7 +144,7 @@ export class CommanderUnlockScene extends Phaser.Scene {
         container.add(cardsLabel);
         
         // Continue button
-        const continueBtn = this.add.container(0, 255);
+        const continueBtn = this.add.container(160, 210);
         
         const btnBg = this.add.graphics();
         btnBg.fillStyle(factionColor, 1);
@@ -185,6 +199,48 @@ export class CommanderUnlockScene extends Phaser.Scene {
         
         // Particle effects
         this.createParticleEffects(factionColor);
+    }
+
+    private addCommanderPortrait(
+        container: Phaser.GameObjects.Container,
+        x: number,
+        y: number,
+        maxWidth: number,
+        maxHeight: number,
+        factionColor: number
+    ): void {
+        const portraitKey = this.commander.portraitKey;
+        if (portraitKey && this.textures.exists(portraitKey)) {
+            const portrait = this.add.image(x, y, portraitKey).setOrigin(0.5);
+            const scale = Math.min(maxWidth / portrait.width, maxHeight / portrait.height);
+            portrait.setScale(scale);
+            container.add(portrait);
+            return;
+        }
+
+        const fallback = this.add.rectangle(x, y, maxWidth, maxHeight, factionColor, 0.35);
+        fallback.setStrokeStyle(3, factionColor);
+        container.add(fallback);
+
+        const fallbackText = this.add.text(x, y, 'CMD', {
+            fontFamily: 'Georgia, serif',
+            fontSize: '32px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        container.add(fallbackText);
+    }
+
+    private formatSkillName(skillId?: string): string {
+        if (!skillId) {
+            return 'Command Protocol';
+        }
+
+        return skillId
+            .split('_')
+            .filter(Boolean)
+            .map(word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+            .join(' ');
     }
 
     private createParticleEffects(color: number): void {

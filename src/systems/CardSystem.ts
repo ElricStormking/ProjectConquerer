@@ -821,13 +821,11 @@ export class CardSystem {
         const allies = this.unitManager.getUnitsByTeam(1) as any[];
         if (allies.length === 0) return;
 
-        const { width } = this.fortressSystem.getCellDimensions();
-        const radius = width * 4; // 4 tiles
-
         // Default all units back to no building aura, then re-apply strongest aura found.
         allies.forEach(u => {
             u.setBuildingAttackSpeedMultiplier?.(1);
             u.setBuildingAccuracyMultiplier?.(1);
+            u.setCommandPostBuffActive?.(false);
         });
 
         if (this.commandPosts.length === 0) return;
@@ -841,10 +839,10 @@ export class CardSystem {
         });
 
         this.commandPosts.forEach(post => {
-            const pos = this.fortressSystem.gridToWorld(post.gridX, post.gridY);
             const cell = this.fortressSystem.getCell(post.gridX, post.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
+            const affectedCells = this.getOrthogonalAdjacentFortressCells(post.gridX, post.gridY);
 
             // Base: +15% ranged attack speed, +10% accuracy
             const atkSpeedMult = 1 + 0.15 * scale;
@@ -852,14 +850,16 @@ export class CardSystem {
 
             allies.forEach(u => {
                 if (u.isDead?.()) return;
-                const uPos = u.getPosition?.();
-                if (!uPos) return;
-                const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
-                if (dist > radius) return;
+                const assignment = this.unitCellAssignments.get(u.getId?.() ?? '');
+                const position = u.getPosition?.();
+                const uGrid = assignment ?? (position ? this.fortressSystem.worldToGrid(position.x, position.y) : undefined);
+                if (!uGrid) return;
+                const inArea = affectedCells.some(c => c.x === uGrid.x && c.y === uGrid.y);
+                if (!inArea) return;
 
                 bestAtkSpeed.set(u, Math.max(bestAtkSpeed.get(u) ?? 1, atkSpeedMult));
                 bestAcc.set(u, Math.max(bestAcc.get(u) ?? 1, accMult));
-                u.markBuildingBuff?.();
+                u.setCommandPostBuffActive?.(true);
             });
         });
 
@@ -867,6 +867,16 @@ export class CardSystem {
             u.setBuildingAttackSpeedMultiplier?.(bestAtkSpeed.get(u) ?? 1);
             u.setBuildingAccuracyMultiplier?.(bestAcc.get(u) ?? 1);
         });
+    }
+
+    private getOrthogonalAdjacentFortressCells(gridX: number, gridY: number): Array<{ x: number; y: number }> {
+        const candidates = [
+            { x: gridX + 1, y: gridY },
+            { x: gridX - 1, y: gridY },
+            { x: gridX, y: gridY + 1 },
+            { x: gridX, y: gridY - 1 }
+        ];
+        return candidates.filter(c => !!this.fortressSystem.getCell(c.x, c.y));
     }
 
     private updateBloomHatcheries(now: number): void {
@@ -1848,6 +1858,9 @@ export class CardSystem {
         const body = this.scene.add.image(x, y, textureKey);
         body.setOrigin(0.5, 0.8);
         this.fitBuildingToFortressCell(body);
+        if (effectId === 'triarch_lightbringer_tower') {
+            body.setScale(body.scaleX * 0.8, body.scaleY * 0.8);
+        }
         if (effectId === 'jade_archer_volley') {
             body.setFlipX(true);
         }

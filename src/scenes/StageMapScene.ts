@@ -26,6 +26,7 @@ export class StageMapScene extends Phaser.Scene {
     private readonly factionRegistry = FactionRegistry.getInstance();
     private encounterSystem!: NodeEncounterSystem;
     private nodeContainers: Map<string, Phaser.GameObjects.Container> = new Map();
+    private startMarkers: Phaser.GameObjects.Container[] = [];
     private pathGraphics!: Phaser.GameObjects.Graphics;
     private fortressToken?: Phaser.GameObjects.Container;
     private hudText?: Phaser.GameObjects.Text;
@@ -401,6 +402,8 @@ export class StageMapScene extends Phaser.Scene {
         this.stageDecor = undefined;
         this.nodeContainers.forEach(container => container.destroy());
         this.nodeContainers.clear();
+        this.startMarkers.forEach(marker => marker.destroy());
+        this.startMarkers = [];
         this.pathGraphics.clear();
         this.currentStageIndex = stage.index;
 
@@ -409,7 +412,14 @@ export class StageMapScene extends Phaser.Scene {
 
         this.drawBackground(stage);
         this.drawPaths(stage);
-        stage.nodes.forEach(node => this.createNodeContainer(node));
+        const entryNodeIds = new Set(this.getStageEntryNodeIds(stage));
+        stage.nodes.forEach(node => {
+            if (entryNodeIds.has(node.id)) {
+                this.createStageStartMarker(node);
+                return;
+            }
+            this.createNodeContainer(node);
+        });
         this.updateAllNodeStates();
         this.moveFortressToken(this.runManager.getCurrentNode());
         this.refreshHud();
@@ -1237,6 +1247,110 @@ export class StageMapScene extends Phaser.Scene {
         this.nodeContainers.set(node.id, container);
     }
 
+    private createStageStartMarker(node: IMapNode): void {
+        const position = this.normalizeToPixels(node);
+        const marker = this.add.container(position.x, position.y);
+        marker.setDepth(4);
+
+        const shadow = this.add.ellipse(0, 34, 118, 34, 0x2b1a0d, 0.34);
+        marker.add(shadow);
+
+        const aura = this.add.graphics();
+        aura.fillStyle(0x31d15b, 0.12);
+        aura.fillCircle(0, 2, 60);
+        aura.lineStyle(5, 0x31d15b, 0.65);
+        aura.strokeCircle(0, 2, 52);
+        aura.lineStyle(2, 0xf8f0c8, 0.75);
+        aura.strokeCircle(0, 2, 42);
+        marker.add(aura);
+
+        const plinth = this.add.graphics();
+        plinth.fillStyle(0x5a4024, 0.92);
+        plinth.fillRoundedRect(-47, 20, 94, 20, 6);
+        plinth.lineStyle(2, 0xe7c77a, 0.75);
+        plinth.strokeRoundedRect(-47, 20, 94, 20, 6);
+        marker.add(plinth);
+
+        marker.add(this.createCastleFallbackGraphic());
+
+        this.tweens.add({
+            targets: aura,
+            alpha: { from: 0.78, to: 1 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        this.startMarkers.push(marker);
+    }
+
+    private createCastleFallbackGraphic(): Phaser.GameObjects.Graphics {
+        const castle = this.add.graphics();
+        castle.setPosition(0, -4);
+
+        castle.fillStyle(0x2c1f14, 0.22);
+        castle.fillEllipse(0, 43, 98, 18);
+
+        castle.fillStyle(0x8a6a43, 1);
+        castle.lineStyle(3, 0x2b1a0d, 0.92);
+
+        castle.fillRoundedRect(-42, -8, 84, 44, 4);
+        castle.strokeRoundedRect(-42, -8, 84, 44, 4);
+        castle.fillRect(-51, -25, 24, 61);
+        castle.strokeRect(-51, -25, 24, 61);
+        castle.fillRect(27, -25, 24, 61);
+        castle.strokeRect(27, -25, 24, 61);
+        castle.fillRect(-16, -40, 32, 76);
+        castle.strokeRect(-16, -40, 32, 76);
+
+        castle.fillStyle(0x6f5334, 1);
+        for (let x = -39; x <= 29; x += 17) {
+            castle.fillRect(x, -20, 10, 12);
+            castle.strokeRect(x, -20, 10, 12);
+        }
+        [-50, -38, 28, 40].forEach(x => {
+            castle.fillRect(x, -37, 9, 12);
+            castle.strokeRect(x, -37, 9, 12);
+        });
+        [-15, -3, 9].forEach(x => {
+            castle.fillRect(x, -52, 10, 12);
+            castle.strokeRect(x, -52, 10, 12);
+        });
+
+        castle.lineStyle(2, 0x2b1a0d, 0.82);
+        castle.fillStyle(0xb59054, 1);
+        castle.fillTriangle(-54, -25, -39, -50, -24, -25);
+        castle.strokeTriangle(-54, -25, -39, -50, -24, -25);
+        castle.fillTriangle(24, -25, 39, -50, 54, -25);
+        castle.strokeTriangle(24, -25, 39, -50, 54, -25);
+        castle.fillTriangle(-18, -40, 0, -70, 18, -40);
+        castle.strokeTriangle(-18, -40, 0, -70, 18, -40);
+
+        castle.lineStyle(1, 0x4f3821, 0.55);
+        for (let y = -2; y <= 28; y += 14) {
+            castle.lineBetween(-37, y, 37, y);
+        }
+        [-31, -8, 16, 36].forEach(x => castle.lineBetween(x, -5, x, 31));
+
+        castle.fillStyle(0x1b2634, 0.96);
+        castle.fillRoundedRect(-10, 6, 20, 30, 8);
+        castle.lineStyle(2, 0xdec179, 0.78);
+        castle.strokeRoundedRect(-10, 6, 20, 30, 8);
+        castle.fillRect(-43, -8, 7, 12);
+        castle.fillRect(36, -8, 7, 12);
+        castle.fillRect(-5, -28, 10, 14);
+
+        castle.lineStyle(2, 0x2f2314, 0.9);
+        castle.lineBetween(8, -67, 8, -38);
+        castle.fillStyle(0x31d15b, 0.95);
+        castle.fillTriangle(8, -67, 36, -58, 8, -49);
+        castle.lineStyle(1, 0xf8f0c8, 0.95);
+        castle.strokeTriangle(8, -67, 36, -58, 8, -49);
+
+        return castle;
+    }
+
     private createCommanderHelpMarker(commander: ICommanderFullConfig): Phaser.GameObjects.Container {
         const marker = this.add.container(56, -78);
         marker.setName('commanderRescueMarker');
@@ -1468,6 +1582,21 @@ export class StageMapScene extends Phaser.Scene {
         const fortressId = faction?.fortressId ?? `fortress_${factionId}_01`;
         const gridConfig = this.factionRegistry.getFortressGridConfig(fortressId);
         return gridConfig?.imageKey ?? fortressId;
+    }
+
+    private getStageEntryNodeIds(stage: IStageConfig): string[] {
+        const inboundIds = new Set<string>();
+        stage.nodes.forEach(node => {
+            node.nextNodeIds.forEach(nextId => {
+                if (stage.nodes.some(candidate => candidate.id === nextId)) {
+                    inboundIds.add(nextId);
+                }
+            });
+        });
+
+        return stage.nodes
+            .filter(node => !inboundIds.has(node.id))
+            .map(node => node.id);
     }
 
     private normalizeToPixels(node: IMapNode): { x: number; y: number } {

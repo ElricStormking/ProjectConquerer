@@ -109,6 +109,29 @@ export class Projectile extends Phaser.GameObjects.Container {
                 this.projectileGraphics.fillCircle(-12, 0, 2);
                 break;
 
+            case UnitType.TRIARCH_SNIPER_ELITE:
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0xf4fbff, 1);
+                this.projectileGraphics.lineStyle(1, 0x9be8ff, 0.95);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-16, -1);
+                this.projectileGraphics.lineTo(8, -1);
+                this.projectileGraphics.lineTo(8, 1);
+                this.projectileGraphics.lineTo(-16, 1);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(8, -5);
+                this.projectileGraphics.lineTo(17, 0);
+                this.projectileGraphics.lineTo(8, 5);
+                this.projectileGraphics.closePath();
+                this.projectileGraphics.fillPath();
+                this.projectileGraphics.strokePath();
+                this.projectileGraphics.lineStyle(2, 0xdff7ff, 0.85);
+                this.projectileGraphics.lineBetween(-22, 0, -7, 0);
+                break;
+
             case UnitType.JADE_ARCHER:
                 this.projectileGraphics.clear();
                 this.projectileGraphics.fillStyle(0x7de3a1, 1);
@@ -191,6 +214,21 @@ export class Projectile extends Phaser.GameObjects.Container {
                 this.projectileGraphics.fillCircle(1, 0, 3);
                 this.projectileGraphics.lineStyle(2, 0x992200, 0.75);
                 this.projectileGraphics.strokeCircle(0, 0, 6);
+                break;
+
+            case UnitType.TRIARCH_FIRETHROWER_UNIT:
+                this.projectileGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                this.projectileGraphics.fillStyle(0xfff1a8, 0.95);
+                this.projectileGraphics.fillCircle(6, 0, 3);
+                this.projectileGraphics.fillStyle(0xff8a18, 0.9);
+                this.projectileGraphics.fillCircle(0, 0, 6);
+                this.projectileGraphics.fillStyle(0xd94213, 0.7);
+                this.projectileGraphics.fillCircle(-5, 0, 4);
+                this.projectileGraphics.lineStyle(3, 0xffc04a, 0.75);
+                this.projectileGraphics.beginPath();
+                this.projectileGraphics.moveTo(-8, 0);
+                this.projectileGraphics.lineTo(9, 0);
+                this.projectileGraphics.strokePath();
                 break;
                 
             case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
@@ -318,9 +356,11 @@ export class Projectile extends Phaser.GameObjects.Container {
             this.unitType === UnitType.JADE_ARCHER ||
             this.unitType === UnitType.FROST_SKELETON_ARCHER ||
             this.unitType === UnitType.ELF_ELVEN_BOWMEN ||
+            this.unitType === UnitType.TRIARCH_SNIPER_ELITE ||
             this.unitType === UnitType.TRIARCH_DOMINION_GUNNER ||
             this.unitType === UnitType.TRIARCH_AETHER_ARCHER ||
-            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT
+            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT ||
+            this.unitType === UnitType.TRIARCH_FIRETHROWER_UNIT
         ) {
             const angle = Math.atan2(vy, vx);
             this.projectileGraphics.setRotation(angle);
@@ -330,8 +370,10 @@ export class Projectile extends Phaser.GameObjects.Container {
         if (
             this.unitType === UnitType.DARK_MAGE ||
             this.unitType === UnitType.CHRONOTEMPORAL ||
+            this.unitType === UnitType.TRIARCH_SNIPER_ELITE ||
             this.unitType === UnitType.TRIARCH_AETHER_ARCHER ||
-            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT
+            this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT ||
+            this.unitType === UnitType.TRIARCH_FIRETHROWER_UNIT
         ) {
             this.createTrailEffect();
         }
@@ -373,10 +415,35 @@ export class Projectile extends Phaser.GameObjects.Container {
         
         if (this.unitType === UnitType.DARK_MAGE) {
             trailGraphics.fillStyle(0xAA66FF, alpha);
+        } else if (this.unitType === UnitType.TRIARCH_SNIPER_ELITE) {
+            const angle = Math.atan2(this.initialTargetY - this.y, this.initialTargetX - this.x);
+            const tailX = this.x - Math.cos(angle) * 34;
+            const tailY = this.y - Math.sin(angle) * 34;
+            trailGraphics.setBlendMode(Phaser.BlendModes.ADD);
+            trailGraphics.lineStyle(3, 0xcdf6ff, 0.42);
+            trailGraphics.lineBetween(tailX, tailY, this.x, this.y);
+            trailGraphics.lineStyle(1, 0x6fd8ff, 0.6);
+            trailGraphics.lineBetween(tailX - Math.cos(angle) * 10, tailY - Math.sin(angle) * 10, this.x, this.y);
+            trailGraphics.fillStyle(0xffffff, 0.35);
+            trailGraphics.fillCircle(this.x, this.y, 2);
+            this.trail.push(trailGraphics);
+
+            this.scene.tweens.add({
+                targets: trailGraphics,
+                alpha: 0,
+                duration: 280,
+                onComplete: () => {
+                    trailGraphics.destroy();
+                }
+            });
+            return;
         } else if (this.unitType === UnitType.TRIARCH_AETHER_ARCHER) {
             trailGraphics.fillStyle(0x7bdcff, alpha);
         } else if (this.unitType === UnitType.TRIARCH_MANA_SIPHON_ADEPT) {
             trailGraphics.fillStyle(0xc07bff, alpha);
+        } else if (this.unitType === UnitType.TRIARCH_FIRETHROWER_UNIT) {
+            trailGraphics.setBlendMode(Phaser.BlendModes.ADD);
+            trailGraphics.fillStyle(0xff7a18, 0.28);
         } else {
             trailGraphics.fillStyle(0x00FFFF, alpha);
         }
@@ -459,6 +526,15 @@ export class Projectile extends Phaser.GameObjects.Container {
                 impactGraphics.fillCircle(0, 0, 6);
                 break;
 
+            case UnitType.TRIARCH_SNIPER_ELITE:
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.lineStyle(3, 0xe9fbff, 0.9);
+                impactGraphics.lineBetween(-14, 0, 14, 0);
+                impactGraphics.lineBetween(0, -10, 0, 10);
+                impactGraphics.fillStyle(0x9be8ff, 0.45);
+                impactGraphics.fillCircle(0, 0, 10);
+                break;
+
             case UnitType.TRIARCH_MANA_SIPHON_ADEPT:
                 // Mana siphon impact: violet burst with cross flare
                 impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
@@ -486,6 +562,16 @@ export class Projectile extends Phaser.GameObjects.Container {
                 impactGraphics.strokeCircle(0, 0, 32);
                 impactGraphics.fillStyle(0x90CAF9, 0.35);
                 impactGraphics.fillCircle(0, 0, 24);
+                break;
+
+            case UnitType.TRIARCH_FIRETHROWER_UNIT:
+                impactGraphics.setBlendMode(Phaser.BlendModes.ADD);
+                impactGraphics.fillStyle(0xff8a18, 0.45);
+                impactGraphics.fillCircle(0, 0, 18);
+                impactGraphics.fillStyle(0xffe08a, 0.5);
+                impactGraphics.fillCircle(0, 0, 8);
+                impactGraphics.lineStyle(2, 0xb82010, 0.75);
+                impactGraphics.strokeCircle(0, 0, 20);
                 break;
         }
 
@@ -522,9 +608,101 @@ export class ProjectileSystem {
     }
 
     public createProjectile(config: ProjectileConfig): Projectile {
+        if (config.unitType === UnitType.TRIARCH_FIRETHROWER_UNIT) {
+            this.createFlamethrowerParticles(config);
+        }
         const projectile = new Projectile(this.scene, config);
         this.projectiles.push(projectile);
         return projectile;
+    }
+
+    private createFlamethrowerParticles(config: ProjectileConfig): void {
+        const dx = config.targetX - config.startX;
+        const dy = config.targetY - config.startY;
+        const distanceToTarget = Math.sqrt(dx * dx + dy * dy);
+        if (distanceToTarget < 1) return;
+
+        const angle = Math.atan2(dy, dx);
+        const directionX = Math.cos(angle);
+        const directionY = Math.sin(angle);
+        const sideX = Math.cos(angle + Math.PI / 2);
+        const sideY = Math.sin(angle + Math.PI / 2);
+        const streamLength = Math.min(distanceToTarget, 190);
+        const baseDepth = Math.max(config.startY, config.targetY) + 5200;
+
+        const cone = this.scene.add.graphics();
+        cone.setPosition(config.startX, config.startY);
+        cone.setDepth(baseDepth - 1);
+        cone.setBlendMode(Phaser.BlendModes.ADD);
+
+        const spread = Phaser.Math.DegToRad(17);
+        const leftX = Math.cos(angle - spread) * streamLength;
+        const leftY = Math.sin(angle - spread) * streamLength;
+        const rightX = Math.cos(angle + spread) * streamLength;
+        const rightY = Math.sin(angle + spread) * streamLength;
+        cone.fillStyle(0xff7a18, 0.2);
+        cone.fillTriangle(0, 0, leftX, leftY, rightX, rightY);
+        cone.lineStyle(5, 0xffd36a, 0.35);
+        cone.lineBetween(0, 0, directionX * streamLength, directionY * streamLength);
+
+        this.scene.tweens.add({
+            targets: cone,
+            alpha: 0,
+            scaleX: 1.04,
+            scaleY: 1.08,
+            duration: 180,
+            ease: 'Quad.easeOut',
+            onComplete: () => cone.destroy()
+        });
+
+        const particleCount = 28;
+        const palette = [0xfff2a6, 0xffc247, 0xff7a18, 0xd83a12];
+        for (let i = 0; i < particleCount; i++) {
+            const t = (i + Phaser.Math.FloatBetween(0, 0.85)) / particleCount;
+            const forward = streamLength * t;
+            const coneWidth = 8 + t * 52;
+            const lateral = Phaser.Math.FloatBetween(-coneWidth, coneWidth);
+            const x = config.startX + directionX * forward + sideX * lateral;
+            const y = config.startY + directionY * forward + sideY * lateral;
+            const color = palette[Math.min(palette.length - 1, Math.floor(t * palette.length))];
+            const radius = Phaser.Math.FloatBetween(3, 7 + t * 8);
+            const particle = this.scene.add.circle(x, y, radius, color, 0.9 - t * 0.28);
+            particle.setDepth(baseDepth + i);
+            particle.setBlendMode(Phaser.BlendModes.ADD);
+
+            this.scene.tweens.add({
+                targets: particle,
+                x: x + directionX * Phaser.Math.FloatBetween(14, 34) + sideX * Phaser.Math.FloatBetween(-10, 10),
+                y: y + directionY * Phaser.Math.FloatBetween(14, 34) + sideY * Phaser.Math.FloatBetween(-10, 10),
+                alpha: 0,
+                scaleX: 1.7 + t * 0.8,
+                scaleY: 1.5 + t * 0.7,
+                duration: Phaser.Math.Between(150, 290),
+                ease: 'Quad.easeOut',
+                onComplete: () => particle.destroy()
+            });
+        }
+
+        for (let i = 0; i < 8; i++) {
+            const t = Phaser.Math.FloatBetween(0.45, 1);
+            const forward = streamLength * t;
+            const lateral = Phaser.Math.FloatBetween(-18, 18) * t;
+            const x = config.startX + directionX * forward + sideX * lateral;
+            const y = config.startY + directionY * forward + sideY * lateral;
+            const ember = this.scene.add.circle(x, y, Phaser.Math.FloatBetween(1.5, 3), 0x5a1b10, 0.5);
+            ember.setDepth(baseDepth - 2);
+
+            this.scene.tweens.add({
+                targets: ember,
+                y: y - Phaser.Math.FloatBetween(10, 24),
+                alpha: 0,
+                scaleX: 2,
+                scaleY: 2,
+                duration: Phaser.Math.Between(260, 420),
+                ease: 'Sine.easeOut',
+                onComplete: () => ember.destroy()
+            });
+        }
     }
 
     public update(deltaTime: number) {
