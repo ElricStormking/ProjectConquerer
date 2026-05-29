@@ -1097,6 +1097,18 @@ export class Unit extends Phaser.Events.EventEmitter {
         });
     }
 
+    public faceToward(target: { x: number; y: number }): void {
+        if (this.dead) return;
+
+        const dx = target.x - this.body.position.x;
+        const dy = target.y - this.body.position.y;
+        if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return;
+
+        this.facing = Math.atan2(dy, dx);
+        this.lastMoveDirection = this.directionFromVector(dx, dy);
+        this.applyIdleFacingFrame();
+    }
+
     public markBuildingBuff(): void {
         if (this.buildingBuffActive) {
             return;
@@ -2060,6 +2072,21 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
     }
     
+    private directionFromVector(dx: number, dy: number): 'down' | 'up' | 'left' | 'right' {
+        if (Math.abs(dx) > Math.abs(dy)) {
+            return dx > 0 ? 'right' : 'left';
+        }
+        return dy < 0 ? 'up' : 'down';
+    }
+
+    private applyIdleFacingFrame(): void {
+        if (this.sprite.anims.isPlaying) {
+            this.sprite.anims.stop();
+        }
+        const idleFrame = this.idleFrameByDirection[this.lastMoveDirection] ?? 0;
+        this.sprite.setFrame(idleFrame);
+    }
+
     private updateAnimation(): void {
         const spriteKey = this.getSpriteKey();
         const velocity = this.body.velocity;
@@ -2072,20 +2099,10 @@ export class Unit extends Phaser.Events.EventEmitter {
 
         if (this.isMeleeUnit()) {
             const angle = this.facing;
-            const dx = Math.cos(angle);
-            const dy = Math.sin(angle);
-            if (Math.abs(dx) > Math.abs(dy)) {
-                direction = dx > 0 ? 'right' : 'left';
-            } else {
-                direction = dy < 0 ? 'up' : 'down';
-            }
+            direction = this.directionFromVector(Math.cos(angle), Math.sin(angle));
         } else {
-            if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
-                direction = velocity.x > 0 ? 'right' : 'left';
-            } else if (velocity.y < 0) {
-                direction = 'up';
-            } else {
-                direction = 'down';
+            if (moving) {
+                direction = this.directionFromVector(velocity.x, velocity.y);
             }
         }
 
@@ -2104,11 +2121,7 @@ export class Unit extends Phaser.Events.EventEmitter {
         }
 
         // If idle, stop animation and set the idle frame for the last direction
-        if (this.sprite.anims.isPlaying) {
-            this.sprite.anims.stop();
-        }
-        const idleFrame = this.idleFrameByDirection[this.lastMoveDirection] ?? 0;
-        this.sprite.setFrame(idleFrame);
+        this.applyIdleFacingFrame();
 
         // Visuals for status: tint for slow, icon for stun/slow
         const hasSlow = this.statusEffects.has(StatusEffect.SLOWED);

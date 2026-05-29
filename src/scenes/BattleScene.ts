@@ -84,6 +84,12 @@ export class BattleScene extends Phaser.Scene {
     private abyssGorefiendArmorTick: Map<string, number> = new Map();
     private abyssHellcannonRegenTick: Map<string, number> = new Map();
     private abyssSacrificeTick: Map<string, number> = new Map();
+    private distanceRetreatAttempts: Map<string, {
+        attempts: number;
+        active?: { startX: number; startY: number; dirX: number; dirY: number };
+    }> = new Map();
+    private readonly maxDistanceRetreatAttempts = 5;
+    private readonly distanceRetreatDistance = 120;
     
     // Scene data passed from NodeEncounterSystem
     private nodeId: string = '';
@@ -1090,20 +1096,36 @@ export class BattleScene extends Phaser.Scene {
                 unitConfig.type === 'support' ||
                 unitConfig.type === 'summoner' ||
                 this.isSupportUnit(unitConfig.unitType);
+            const isDistanceKeeper = isSupportBackline || this.isArcherUnit(unitConfig.unitType);
 
-            // Healers/supporters: stay in a safe band and kite away if enemies get too close.
-            if (isSupportBackline) {
+            // Healers/supporters and archer units can kite, but only for a
+            // few retreat bursts so they do not flee forever.
+            if (isDistanceKeeper) {
                 const preferred = Math.max(unit.getRange(), 200); // desired standoff distance
                 const retreatThreshold = Math.max(140, preferred * 0.65);
                 const advanceThreshold = Math.max(180, preferred * 0.9);
 
                 if (distanceToTarget < retreatThreshold) {
-                    // Too close: move away from the nearest threat
-                    dxToTarget *= -1;
-                    dyToTarget *= -1;
-                } else if (distanceToTarget <= advanceThreshold) {
-                    // In the safe band: hold position
-                    return;
+                    const retreatDirection = this.getDistanceRetreatDirection(
+                        unit.getId(),
+                        currentPos,
+                        -dxToTarget,
+                        -dyToTarget
+                    );
+                    if (retreatDirection) {
+                        dxToTarget = retreatDirection.x;
+                        dyToTarget = retreatDirection.y;
+                    } else {
+                        // Retreat limit reached: stop repositioning and let
+                        // combat handling keep attacking/healing from here.
+                        return;
+                    }
+                } else {
+                    this.clearDistanceRetreat(unit.getId());
+                    if (distanceToTarget <= advanceThreshold) {
+                        // In the safe band: hold position.
+                        return;
+                    }
                 }
             } else {
                 if (this.isRangedUnit(unitConfig.unitType) && distanceToTarget <= unit.getRange()) {
@@ -1220,6 +1242,7 @@ export class BattleScene extends Phaser.Scene {
     private handleRangedAttack(attacker: any, target: any): void {
         const unitType = attacker.getConfig().unitType as UnitType;
         const now = this.time.now;
+        attacker.faceToward?.(target.getPosition());
         const enemyTeam = attacker.hasStatusEffect?.(StatusEffect.CHARMED)
             ? attacker.getTeam()
             : (attacker.getTeam() === 1 ? 2 : 1);
@@ -1531,6 +1554,7 @@ export class BattleScene extends Phaser.Scene {
 
     private drawChainLightning(origin: { x: number; y: number }, points: { x: number; y: number }[]): void {
         const g = this.add.graphics();
+        g.setPosition(origin.x, origin.y);
         g.setDepth(7000);
         g.setBlendMode(Phaser.BlendModes.ADD);
 
@@ -1560,20 +1584,22 @@ export class BattleScene extends Phaser.Scene {
             g.strokePath();
         };
 
-        let last = origin;
+        let last = { x: 0, y: 0 };
         points.forEach(p => {
-            stroke(last, p);
+            const localPoint = {
+                x: p.x - origin.x,
+                y: p.y - origin.y
+            };
+            stroke(last, localPoint);
             // impact spark
             g.fillStyle(0xd7fbff, 0.95);
-            g.fillCircle(p.x, p.y, 10);
-            last = p;
+            g.fillCircle(localPoint.x, localPoint.y, 10);
+            last = localPoint;
         });
 
         this.tweens.add({
             targets: g,
             alpha: 0,
-            scaleX: 1.12,
-            scaleY: 1.12,
             duration: 260,
             ease: 'Quad.easeOut',
             onComplete: () => g.destroy()
@@ -2457,6 +2483,7 @@ export class BattleScene extends Phaser.Scene {
     private createProjectileAttackAgainstFortress(attackerUnit: any, unitType: UnitType) {
         const attackerPos = attackerUnit.getPosition();
         const targetPos = this.fortressCoreWorld;
+        attackerUnit.faceToward?.(targetPos);
         let speed = 320;
         switch (unitType) {
             case UnitType.SNIPER:
@@ -2636,6 +2663,60 @@ export class BattleScene extends Phaser.Scene {
             UnitType.ABYSS_SACRIFICE_MASTER,
             UnitType.ABYSS_ABYSSAL_PROPHET
         ].includes(unitType);
+    }
+
+    private isArcherUnit(unitType: UnitType): boolean {
+        const value = String(unitType);
+        return value.includes('archer') ||
+            value.includes('bowmen') ||
+            value.includes('crossbow') ||
+            value.includes('sniper');
+    }
+
+    private getDistanceRetreatDirection(
+        unitId: string,
+        currentPos: { x: number; y: number },
+        awayX: number,
+        awayY: number
+    ): { x: number; y: number } | null {
+        const state = this.distanceRetreatAttempts.get(unitId);
+        let nextState = state ?? { attempts: 0 };
+
+        if (nextState.active) {
+            const traveled =
+                (currentPos.x - nextState.active.startX) * nextState.active.dirX +
+                (currentPos.y - nextState.active.startY) * nextState.active.dirY;
+            if (traveled >= this.distanceRetreatDistance) {
+                nextState = { attempts: nextState.attempts + 1 };
+                this.distanceRetreatAttempts.set(unitId, nextState);
+            }
+        }
+
+        if (nextState.attempts >= this.maxDistanceRetreatAttempts) {
+            return null;
+        }
+
+        if (!nextState.active) {
+            const magnitude = Math.hypot(awayX, awayY);
+            if (magnitude <= 0.001) {
+                return null;
+            }
+            nextState.active = {
+                startX: currentPos.x,
+                startY: currentPos.y,
+                dirX: awayX / magnitude,
+                dirY: awayY / magnitude
+            };
+            this.distanceRetreatAttempts.set(unitId, nextState);
+        }
+
+        return { x: nextState.active.dirX, y: nextState.active.dirY };
+    }
+
+    private clearDistanceRetreat(unitId: string): void {
+        const state = this.distanceRetreatAttempts.get(unitId);
+        if (!state?.active) return;
+        this.distanceRetreatAttempts.set(unitId, { attempts: state.attempts });
     }
 
     private isMeleeUnit(unitType: UnitType): boolean {
