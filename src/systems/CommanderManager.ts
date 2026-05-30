@@ -3,8 +3,8 @@ import { DataManager } from './DataManager';
 import { SaveManager } from './SaveManager';
 import { ICommanderFullConfig, ICard } from '../types/ironwars';
 
-export const STARTING_COMMANDER_DECK_SIZE = 5;
-const BASE_EXPANSION_CARD_IDS = ['card_jade_expansion_slots'];
+export const STARTING_COMMANDER_DECK_SIZE = 3;
+const SHARED_CARD_IDS = ['card_jade_expansion_slots', 'card_shared_sacrifice'];
 
 const BASIC_STARTER_CARDS_BY_FACTION: Record<string, string[]> = {
     jade_dynasty: ['card_jade_scimitar_soldier', 'card_jade_archer'],
@@ -164,11 +164,15 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
     }
 
     public getBaseExpansionCards(): ICard[] {
-        return BASE_EXPANSION_CARD_IDS
+        return this.getSharedCards();
+    }
+
+    public getSharedCards(): ICard[] {
+        return SHARED_CARD_IDS
             .map(cardId => {
                 const card = this.dataManager.getCard(cardId);
                 if (!card) {
-                    console.warn(`[CommanderManager] Missing base expansion card '${cardId}'`);
+                    console.warn(`[CommanderManager] Missing shared card '${cardId}'`);
                 }
                 return card;
             })
@@ -180,7 +184,7 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         const starterDeck = [...cards];
         const existingTemplateIds = new Set(starterDeck.map(card => this.getTemplateCardId(card.id)));
 
-        this.getBaseExpansionCards().forEach(card => {
+        this.getSharedCards().forEach(card => {
             if (!existingTemplateIds.has(card.id)) {
                 starterDeck.push(card);
                 existingTemplateIds.add(card.id);
@@ -278,7 +282,7 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         // For usability checks we work on template ids exactly as stored in
         // commanders.csv (e.g. 'card_soldier_1', 'card_overclock').
         const key = this.getTemplateCardId(cardId);
-        if (BASE_EXPANSION_CARD_IDS.includes(key)) {
+        if (SHARED_CARD_IDS.includes(key)) {
             return true;
         }
 

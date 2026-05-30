@@ -21,6 +21,7 @@ const INITIAL_WAVE_HAND_SIZE = 3;
 const NEXT_WAVE_HAND_SIZE = 2;
 const NORMAL_ENCOUNTER_WAVE_COUNT = 3;
 const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
+const SACRIFICE_EFFECT_ID = 'sacrifice';
 
 import { DataManager } from '../systems/DataManager';
 import { RunProgressionManager } from '../systems/RunProgressionManager';
@@ -58,6 +59,8 @@ export class BattleScene extends Phaser.Scene {
     private battleState: 'preparation' | 'running' | 'victory' | 'defeat' = 'preparation';
     private hasStartedFirstWave = false;
     private waveIntermissionCameraLock = false;
+    private preparationCameraTimer?: Phaser.Time.TimerEvent;
+    private waveClearedOverlayTimer?: Phaser.Time.TimerEvent;
     private bgm?: Phaser.Sound.BaseSound;
     private bgmKey: string = '';
     private medicLastHeal: Map<string, number> = new Map();
@@ -429,7 +432,12 @@ export class BattleScene extends Phaser.Scene {
             this.waveManager.destroy();
         }
 
-        this.waveManager = new WaveManager(this, this.unitManager, this.gameState);
+        this.waveManager = new WaveManager(
+            this,
+            this.unitManager,
+            this.gameState,
+            this.fortressSystem.getCellDimensions()
+        );
         
         // Load waves for this specific encounter (battle/elite/boss node)
         const encounterWaves = DataManager.getInstance().getWavesForEncounter(this.encounterId);
@@ -466,8 +474,9 @@ export class BattleScene extends Phaser.Scene {
         this.createPhaseControls();
         this.gameState.setDeckState(this.deckSystem.getState());
 
-        // Start in building phase view, zoomed in on the fortress grid.
-        this.updateCameraForPhase('PREPARATION');
+        // Start by previewing the incoming enemy formation, then return
+        // to the player's fortress grid for the building phase.
+        this.playPreparationCameraIntro('Start Battle');
         this.updateSpawnGridCollisions(this.gameState.getState().phase);
     }
 
@@ -624,12 +633,15 @@ export class BattleScene extends Phaser.Scene {
                 
                 // Hide start button while the victory UI is up
                 this.hideStartButton();
-                // Between waves: show a Wave Cleared overlay, then redraw a fresh hand.
-                this.showWaveClearedOverlay(() => {
-                    this.redrawPreparationHand(NEXT_WAVE_HAND_SIZE);
-                    this.setWaveIntermissionLock(false);
-                    this.updateCameraForPhase('PREPARATION');
-                    this.showStartButton('Start Next Wave');
+                // Let enemy death visuals breathe briefly before the intermission UI appears.
+                this.waveClearedOverlayTimer?.remove(false);
+                this.waveClearedOverlayTimer = this.time.delayedCall(1000, () => {
+                    this.waveClearedOverlayTimer = undefined;
+                    this.showWaveClearedOverlay(() => {
+                        this.redrawPreparationHand(NEXT_WAVE_HAND_SIZE);
+                        this.waveManager.prepareNextWavePreview();
+                        this.playPreparationCameraIntro('Start Next Wave');
+                    });
                 });
             } else {
                 console.log('[BattleScene] No more waves, triggering victory');
@@ -664,6 +676,8 @@ export class BattleScene extends Phaser.Scene {
         this.events.off('ui:card-sell');
         this.events.off('ui:start-wave');
         this.events.off('ui:commander-cast');
+        this.waveClearedOverlayTimer?.remove(false);
+        this.waveClearedOverlayTimer = undefined;
         
         // Note: We don't aggressively clear GameStateManager listeners here because
         // we didn't store the references to remove them specifically. 
@@ -822,8 +836,24 @@ export class BattleScene extends Phaser.Scene {
             const cell = this.fortressSystem.getCell(gridX, gridY);
             return !!cell && cell.type === 'buildable' && !this.fortressSystem.isUnlocked(gridX, gridY) && !cell.occupantId;
         }
+        if (card.spellEffectId === SACRIFICE_EFFECT_ID) {
+            const cell = this.fortressSystem.getCell(gridX, gridY);
+            return !!cell
+                && cell.type === 'buildable'
+                && this.fortressSystem.isUnlocked(gridX, gridY)
+                && this.hasLivePlayerUnitAtCell(gridX, gridY);
+        }
 
         return this.fortressSystem.isValidCell(gridX, gridY);
+    }
+
+    private hasLivePlayerUnitAtCell(gridX: number, gridY: number): boolean {
+        return this.unitManager.getUnitsByTeam(1).some(unit => {
+            if (unit.isDead?.()) return false;
+            const pos = unit.getPosition();
+            const grid = this.fortressSystem.worldToGrid(pos.x, pos.y);
+            return grid.x === gridX && grid.y === gridY;
+        });
     }
 
     private handleCardPlacement(payload: CardPlayPayload) {
@@ -984,6 +1014,33 @@ export class BattleScene extends Phaser.Scene {
             camera.pan(this.battlefield.centerX, this.battlefield.centerY, duration, 'Sine.easeInOut');
             camera.zoomTo(1, duration);
         }
+    }
+
+    private playPreparationCameraIntro(startButtonText: string): void {
+        const camera = this.cameras.main;
+        const enemyTarget = this.waveManager.getPreviewGridCenter();
+        const playerTarget = this.fortressCoreWorld;
+        const moveDuration = 600;
+        const holdDuration = 1000;
+
+        this.preparationCameraTimer?.remove(false);
+        this.preparationCameraTimer = undefined;
+        this.setWaveIntermissionLock(true);
+        this.hideStartButton();
+
+        camera.pan(enemyTarget.x, enemyTarget.y, moveDuration, 'Sine.easeInOut');
+        camera.zoomTo(2.2, moveDuration);
+
+        this.preparationCameraTimer = this.time.delayedCall(moveDuration + holdDuration, () => {
+            camera.pan(playerTarget.x, playerTarget.y, moveDuration, 'Sine.easeInOut');
+            camera.zoomTo(2.5, moveDuration);
+
+            this.preparationCameraTimer = this.time.delayedCall(moveDuration, () => {
+                this.preparationCameraTimer = undefined;
+                this.setWaveIntermissionLock(false);
+                this.showStartButton(startButtonText);
+            });
+        });
     }
 
     private showOverlay(title: string, subtitle: string, tint: number) {

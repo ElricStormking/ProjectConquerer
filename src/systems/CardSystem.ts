@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CardType, ICardPlacementPayload, ICard, IFortressCellState, ResourceType } from '../types/ironwars';
+import { CardType, ICardPlacementPayload, ICard, IFortressCell, IFortressCellState, ResourceType } from '../types/ironwars';
 import { DeckSystem } from './DeckSystem';
 import { GameStateManager } from './GameStateManager';
 import { FortressSystem } from './FortressSystem';
@@ -12,6 +12,7 @@ import { TurretVFXSystem } from './TurretVFXSystem';
 import { applyUnitLevelScalingToStats, clampUnitLevel } from './UnitLevelScaling';
 
 const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
+const SACRIFICE_EFFECT_ID = 'sacrifice';
 const UNIT_LEVELS_PER_CARD_UPGRADE = 3;
 
 export class CardSystem {
@@ -196,6 +197,10 @@ export class CardSystem {
             return false;
         }
         
+        if (this.isSacrificeCard(card)) {
+            return this.resolveSacrifice(card, gridX, gridY);
+        }
+
         // Check for ENHANCEMENT (Merge)
         if (cell.occupantId) {
             let targetId: string | undefined;
@@ -1254,6 +1259,176 @@ export class CardSystem {
         }
 
         return true;
+    }
+
+    private isSacrificeCard(card: ICard): boolean {
+        return card.type === CardType.SPELL && card.spellEffectId === SACRIFICE_EFFECT_ID;
+    }
+
+    private resolveSacrifice(card: ICard, gridX: number, gridY: number): boolean {
+        const sourceUnits = this.getAssignedUnitsForCell(gridX, gridY);
+        if (sourceUnits.length === 0) {
+            console.log(`[CardSystem] Sacrifice requires player units on (${gridX}, ${gridY})`);
+            return false;
+        }
+
+        if (!this.gameState.spendResource(card.cost)) {
+            console.log('[CardSystem] ??Not enough resources');
+            return false;
+        }
+
+        const targets = this.getSacrificeUpgradeTargets(gridX, gridY);
+        const target = targets.length > 0
+            ? targets[Phaser.Math.Between(0, targets.length - 1)]
+            : undefined;
+        const sacrificedCount = this.destroyUnitsInCell(gridX, gridY);
+        if (sacrificedCount === 0) {
+            this.gameState.gainResource(card.cost);
+            return false;
+        }
+
+        if (target) {
+            const upgradedLevel = this.getNextUnitLevelForCell(target.cell, target.card);
+            this.applyUnitLevelUpgradeToCell(target.cell, target.card, upgradedLevel);
+            this.playSacrificeEffect(gridX, gridY, target.cell.x, target.cell.y, upgradedLevel, sacrificedCount);
+        } else {
+            this.playSacrificeDestroyEffect(gridX, gridY, sacrificedCount);
+        }
+
+        this.deckSystem.discard(card.id);
+        return true;
+    }
+
+    private getSacrificeUpgradeTargets(gridX: number, gridY: number): Array<{ cell: IFortressCell; card: ICard }> {
+        const targets: Array<{ cell: IFortressCell; card: ICard }> = [];
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) {
+                    continue;
+                }
+
+                const cell = this.fortressSystem.getCell(gridX + dx, gridY + dy);
+                if (!cell?.occupantType) {
+                    continue;
+                }
+
+                const units = this.getAssignedUnitsForCell(cell.x, cell.y);
+                if (units.length === 0) {
+                    continue;
+                }
+
+                const targetCard = this.getCardForOccupant(CardType.UNIT, cell.occupantType);
+                if (!targetCard?.unitId) {
+                    continue;
+                }
+
+                const currentLevel = this.getCurrentUnitLevelForCell(cell, targetCard);
+                const nextLevel = clampUnitLevel(currentLevel + UNIT_LEVELS_PER_CARD_UPGRADE);
+                if (nextLevel <= currentLevel) {
+                    continue;
+                }
+
+                targets.push({ cell, card: targetCard });
+            }
+        }
+        return targets;
+    }
+
+    private destroyUnitsInCell(gridX: number, gridY: number): number {
+        const units = this.getAssignedUnitsForCell(gridX, gridY);
+        units.forEach(unit => {
+            if (typeof unit.setHealth === 'function') {
+                unit.setHealth(0);
+            } else {
+                const health = Number(unit.getHealth?.() ?? 0);
+                const maxHealth = Number(unit.getMaxHealth?.() ?? 0);
+                unit.takeDamage?.(Math.max(999999, health + maxHealth));
+            }
+
+            const unitId = unit.getId?.();
+            if (unitId) {
+                this.unitCellAssignments.delete(unitId);
+            }
+        });
+
+        const cell = this.fortressSystem.getCell(gridX, gridY);
+        if (cell?.occupantId) {
+            const released = this.fortressSystem.releaseCellByOccupant(cell.occupantId);
+            this.clearPersistedCells(released);
+        } else {
+            this.clearCellState(gridX, gridY);
+        }
+
+        return units.length;
+    }
+
+    private playSacrificeEffect(
+        sourceGridX: number,
+        sourceGridY: number,
+        targetGridX: number,
+        targetGridY: number,
+        upgradedLevel: number,
+        sacrificedCount: number
+    ): void {
+        const source = this.fortressSystem.gridToWorld(sourceGridX, sourceGridY);
+        const target = this.fortressSystem.gridToWorld(targetGridX, targetGridY);
+        const burst = this.scene.add.graphics().setDepth(9200);
+        burst.lineStyle(3, 0xaa1133, 0.9);
+        burst.fillStyle(0x5b0718, 0.35);
+        burst.fillCircle(source.x, source.y, 34 + sacrificedCount * 3);
+        burst.strokeCircle(source.x, source.y, 42 + sacrificedCount * 3);
+
+        const beam = this.scene.add.graphics().setDepth(9201);
+        beam.lineStyle(4, 0xffcc66, 0.85);
+        beam.lineBetween(source.x, source.y, target.x, target.y - 20);
+
+        const label = this.scene.add.text(target.x, target.y - 58, `Lv ${upgradedLevel}`, {
+            fontSize: '20px',
+            color: '#ffef9a',
+            stroke: '#2b1100',
+            strokeThickness: 4
+        }).setOrigin(0.5).setDepth(9202);
+
+        this.scene.tweens.add({
+            targets: [burst, beam, label],
+            alpha: 0,
+            y: '-=18',
+            duration: 900,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+                burst.destroy();
+                beam.destroy();
+                label.destroy();
+            }
+        });
+    }
+
+    private playSacrificeDestroyEffect(gridX: number, gridY: number, sacrificedCount: number): void {
+        const source = this.fortressSystem.gridToWorld(gridX, gridY);
+        const burst = this.scene.add.graphics().setDepth(9200);
+        burst.lineStyle(3, 0xaa1133, 0.9);
+        burst.fillStyle(0x5b0718, 0.42);
+        burst.fillCircle(source.x, source.y, 34 + sacrificedCount * 3);
+        burst.strokeCircle(source.x, source.y, 42 + sacrificedCount * 3);
+
+        const label = this.scene.add.text(source.x, source.y - 58, 'Sacrificed', {
+            fontSize: '18px',
+            color: '#ffb3c0',
+            stroke: '#2b0008',
+            strokeThickness: 4
+        }).setOrigin(0.5).setDepth(9201);
+
+        this.scene.tweens.add({
+            targets: [burst, label],
+            alpha: 0,
+            y: '-=18',
+            duration: 900,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+                burst.destroy();
+                label.destroy();
+            }
+        });
     }
 
     private isBaseExpansionCard(card: ICard): boolean {
