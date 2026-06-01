@@ -114,12 +114,8 @@ export class WaveManager extends Phaser.Events.EventEmitter {
 
         const waveStartContext = this.relicManager.applyTrigger(RelicTrigger.ON_WAVE_START, {});
         this.emit('relic-wave-start', waveStartContext);
-        if (this.previewWaveIndex === index && this.previewEnemyIds.size > 0) {
-            this.activatePreviewEnemies();
-        } else {
-            this.clearPreviewEnemies();
-            this.spawnWaveEnemies(wave);
-        }
+        this.clearPreviewEnemies();
+        this.spawnWaveEnemies(wave);
         this.tryCompleteWave();
     }
 
@@ -172,7 +168,19 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         const formationEntries = this.getFormationEntries(this.expandWaveSpawns(wave));
 
         formationEntries.forEach(entry => {
-            this.spawnEnemy(entry.spawn, entry.formationIndex);
+            const delayMs = Math.max(0, Number(entry.spawn.spawnTime) || 0) * 1000;
+            if (delayMs <= 0) {
+                this.spawnEnemy(entry.spawn, entry.formationIndex);
+                return;
+            }
+
+            this.pendingSpawnEvents++;
+            const timer = this.scene.time.delayedCall(delayMs, () => {
+                this.pendingSpawnEvents = Math.max(0, this.pendingSpawnEvents - 1);
+                this.spawnEnemy(entry.spawn, entry.formationIndex);
+                this.tryCompleteWave();
+            });
+            this.timers.push(timer);
         });
     }
 
@@ -294,7 +302,8 @@ export class WaveManager extends Phaser.Events.EventEmitter {
                 spawnPoint.x + offset.x,
                 spawnPoint.y + offset.y
             );
-            this.applyEnemyLevelScaling(config);
+            this.applyEnemyLevelScaling(config, spawn.unitLevel);
+            this.applySpawnStatOverrides(config, spawn);
             const unit = this.unitManager.spawnUnit(config);
             if (unit) {
                 spawned.push(unit);
@@ -304,29 +313,44 @@ export class WaveManager extends Phaser.Events.EventEmitter {
         return spawned;
     }
 
-    private activatePreviewEnemies(): void {
-        this.activeEnemyIds.clear();
-        this.previewEnemyIds.forEach(unitId => {
-            const unit = this.unitManager.getUnit(unitId);
-            if (!unit || unit.isDead?.()) {
-                return;
-            }
-            this.activeEnemyIds.add(unitId);
-            this.applyEnemyBehavior(unit);
-        });
-        this.previewEnemyIds.clear();
-        this.previewWaveIndex = -1;
-    }
-
     private applyEnemyBehavior(unit: any) {
         unit.setAttackSpeedMultiplier(1);
     }
 
-    private applyEnemyLevelScaling(config: ReturnType<UnitManager['createUnitConfig']>): void {
-        const level = clampUnitLevel(this.enemyLevel);
+    private applyEnemyLevelScaling(config: ReturnType<UnitManager['createUnitConfig']>, unitLevel?: number): void {
+        const level = clampUnitLevel(unitLevel ?? this.enemyLevel);
         config.stats = applyUnitLevelScalingToStats(config.stats, level);
         config.unitLevel = level;
         config.enemyLevel = level;
+    }
+
+    private applySpawnStatOverrides(config: ReturnType<UnitManager['createUnitConfig']>, spawn: IEnemySpawn): void {
+        const hpMultiplier = this.getPositiveMultiplier(spawn.hpMultiplier);
+        const damageMultiplier = this.getPositiveMultiplier(spawn.damageMultiplier);
+        const moveSpeedMultiplier = this.getPositiveMultiplier(spawn.moveSpeedMultiplier);
+        const attackSpeedMultiplier = this.getPositiveMultiplier(spawn.attackSpeedMultiplier);
+        const armorBonus = Number(spawn.armorBonus);
+
+        if (hpMultiplier !== undefined) {
+            config.stats.maxHealth = Math.max(1, Math.round(config.stats.maxHealth * hpMultiplier));
+        }
+        if (damageMultiplier !== undefined) {
+            config.stats.damage = Math.max(0, Math.round(config.stats.damage * damageMultiplier));
+        }
+        if (Number.isFinite(armorBonus) && armorBonus !== 0) {
+            config.stats.armor = Math.max(0, Math.round(config.stats.armor + armorBonus));
+        }
+        if (moveSpeedMultiplier !== undefined) {
+            config.stats.moveSpeed = Math.max(1, Math.round(config.stats.moveSpeed * moveSpeedMultiplier));
+        }
+        if (attackSpeedMultiplier !== undefined) {
+            config.stats.attackSpeed = Math.max(0.05, config.stats.attackSpeed * attackSpeedMultiplier);
+        }
+    }
+
+    private getPositiveMultiplier(value?: number): number | undefined {
+        const multiplier = Number(value);
+        return Number.isFinite(multiplier) && multiplier > 0 ? multiplier : undefined;
     }
 
     private clampNodeLevel(nodeLevel: number): number {

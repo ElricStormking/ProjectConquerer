@@ -439,12 +439,15 @@ export class BattleScene extends Phaser.Scene {
             this.fortressSystem.getCellDimensions()
         );
         
-        // Load waves for this specific encounter (battle/elite/boss node)
-        const encounterWaves = DataManager.getInstance().getWavesForEncounter(this.encounterId);
-        const waves = this.nodeType === NodeType.BATTLE
-            ? encounterWaves.slice(0, NORMAL_ENCOUNTER_WAVE_COUNT)
-            : encounterWaves;
-        console.log(`[BattleScene] Loading waves for encounter: ${this.encounterId}, node: ${this.nodeId}, nodeLevel: ${this.nodeLevel}, enemyLevel: ${this.enemyLevel}, nodeType: ${this.nodeType}, found ${waves.length} waves`);
+        // Prefer node-specific designer wave rows; shared encounter templates
+        // remain as fallback for legacy data and quick prototyping.
+        const dataManager = DataManager.getInstance();
+        const hasNodeSpecificWaves = dataManager.hasNodeSpecificWaves(this.nodeId);
+        const configuredWaves = dataManager.getWavesForNode(this.nodeId, this.encounterId);
+        const waves = this.nodeType === NodeType.BATTLE && !hasNodeSpecificWaves
+            ? configuredWaves.slice(0, NORMAL_ENCOUNTER_WAVE_COUNT)
+            : configuredWaves;
+        console.log(`[BattleScene] Loading waves for node: ${this.nodeId}, encounter: ${this.encounterId}, nodeLevel: ${this.nodeLevel}, enemyLevel: ${this.enemyLevel}, nodeType: ${this.nodeType}, nodeSpecific: ${hasNodeSpecificWaves}, found ${waves.length} waves`);
         this.waveManager.loadWaves(waves, this.enemyLevel, this.nodeLevel);
 
         const commanderManager = CommanderManager.getInstance();

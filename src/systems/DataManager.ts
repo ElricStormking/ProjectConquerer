@@ -31,6 +31,8 @@ export class DataManager {
     private cards: Map<string, ICard> = new Map();
     // Waves grouped by encounter_id, then by wave index
     private wavesByEncounter: Map<string, Map<number, IWaveConfig>> = new Map();
+    // Node-specific wave designs override shared encounter templates.
+    private wavesByNode: Map<string, Map<number, IWaveConfig>> = new Map();
     private skills: Map<string, Omit<Skill, 'currentRank'>> = new Map();
     
     // Placeholders for future data
@@ -73,6 +75,7 @@ export class DataManager {
         if (cache.text.exists('relics_data')) this.parseRelics(cache.text.get('relics_data'));
         if (cache.text.exists('events_data')) this.parseEvents(cache.text.get('events_data'));
         if (cache.text.exists('map_nodes_data')) this.parseMapNodes(cache.text.get('map_nodes_data'));
+        if (cache.text.exists('battle_node_waves_data')) this.parseBattleNodeWaves(cache.text.get('battle_node_waves_data'));
         
         // Faction and commander data
         if (cache.text.exists('factions_data')) this.parseFactions(cache.text.get('factions_data'));
@@ -83,7 +86,23 @@ export class DataManager {
         
         console.log('DataManager: Parsing complete.');
         const totalWaves = Array.from(this.wavesByEncounter.values()).reduce((sum, m) => sum + m.size, 0);
-        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} waves (${this.wavesByEncounter.size} encounters), ${this.skills.size} skills, ${this.unitSkills.size} unit skills, ${this.commanderSkills.size} commander skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
+        const totalNodeWaves = Array.from(this.wavesByNode.values()).reduce((sum, m) => sum + m.size, 0);
+        console.log(`Loaded ${this.units.size} units, ${this.cards.size} cards, ${totalWaves} encounter waves (${this.wavesByEncounter.size} encounters), ${totalNodeWaves} node waves (${this.wavesByNode.size} nodes), ${this.skills.size} skills, ${this.unitSkills.size} unit skills, ${this.commanderSkills.size} commander skills, ${this.factions.size} factions, ${this.commanders.size} commanders, ${this.fortressGrids.size} fortress grids.`);
+    }
+
+    private toOptionalNumber(value: any): number | undefined {
+        if (value === undefined || value === null || value === '') return undefined;
+        const numberValue = Number(value);
+        return Number.isFinite(numberValue) ? numberValue : undefined;
+    }
+
+    private toOptionalBoolean(value: any): boolean | undefined {
+        if (value === undefined || value === null || value === '') return undefined;
+        if (typeof value === 'boolean') return value;
+        const normalized = String(value).trim().toLowerCase();
+        if (['true', 'yes', 'y', '1'].includes(normalized)) return true;
+        if (['false', 'no', 'n', '0'].includes(normalized)) return false;
+        return undefined;
     }
 
     private parseUnits(csv: string): void {
@@ -296,40 +315,127 @@ export class DataManager {
     private parseWaves(csv: string): void {
         if (!csv) return;
         const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true, comments: '#' });
         
         // Group by encounter_id, then by wave_index
         this.wavesByEncounter.clear();
 
         result.data.forEach((row: any) => {
             if (!row.encounter_id || !row.wave_id || !row.spawn_unit_id) return;
-            const encounterId = row.encounter_id || 'default';
-            const waveIndex = row.wave_index;
-            
-            if (!this.wavesByEncounter.has(encounterId)) {
-                this.wavesByEncounter.set(encounterId, new Map());
-            }
-            
-            const encounterWaves = this.wavesByEncounter.get(encounterId)!;
-            
-            if (!encounterWaves.has(waveIndex)) {
-                encounterWaves.set(waveIndex, {
-                    id: row.wave_id,
-                    encounterId: encounterId,
-                    index: waveIndex,
-                    spawns: []
-                });
-            }
+            const encounterId = String(row.encounter_id || 'default').trim();
+            const waveIndex = this.toOptionalNumber(row.wave_index) ?? 1;
+            const waveId = String(row.wave_id).trim();
+            const spawn = this.parseEnemySpawn(row);
+            if (!spawn) return;
 
-            const wave = encounterWaves.get(waveIndex)!;
-            const spawn: IEnemySpawn = {
-                unitId: row.spawn_unit_id,
-                count: row.count,
-                spawnTime: row.spawn_time,
-                lane: row.lane as EnemyLane
-            };
-            wave.spawns.push(spawn);
+            const encounterWaves = this.getOrCreateWaveMap(this.wavesByEncounter, encounterId);
+            this.addSpawnToWave(encounterWaves, waveIndex, waveId, encounterId, spawn);
         });
+    }
+
+    private parseBattleNodeWaves(csv: string): void {
+        if (!csv) return;
+        const normalizedCsv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const result = Papa.parse(normalizedCsv, { header: true, dynamicTyping: true, skipEmptyLines: true, comments: '#' });
+
+        this.wavesByNode.clear();
+
+        result.data.forEach((row: any) => {
+            const nodeId = typeof row.node_id === 'string' ? row.node_id.trim() : row.node_id;
+            if (!nodeId || !row.spawn_unit_id) return;
+
+            const waveIndex = this.toOptionalNumber(row.wave_index) ?? 1;
+            const waveId = row.wave_id ? String(row.wave_id).trim() : `${nodeId}_wave_${waveIndex}`;
+            const encounterId = row.encounter_id ? String(row.encounter_id).trim() : String(nodeId);
+            const spawn = this.parseEnemySpawn(row);
+            if (!spawn) return;
+
+            const nodeWaves = this.getOrCreateWaveMap(this.wavesByNode, String(nodeId));
+            this.addSpawnToWave(nodeWaves, waveIndex, waveId, encounterId, spawn);
+            this.applyBattleNodeWaveMetadata(String(nodeId), row);
+        });
+    }
+
+    private getOrCreateWaveMap(
+        parent: Map<string, Map<number, IWaveConfig>>,
+        groupId: string
+    ): Map<number, IWaveConfig> {
+        if (!parent.has(groupId)) {
+            parent.set(groupId, new Map());
+        }
+        return parent.get(groupId)!;
+    }
+
+    private addSpawnToWave(
+        waves: Map<number, IWaveConfig>,
+        waveIndex: number,
+        waveId: string,
+        encounterId: string,
+        spawn: IEnemySpawn
+    ): void {
+        if (!waves.has(waveIndex)) {
+            waves.set(waveIndex, {
+                id: waveId,
+                encounterId,
+                index: waveIndex,
+                spawns: []
+            });
+        }
+
+        waves.get(waveIndex)!.spawns.push(spawn);
+    }
+
+    private parseEnemySpawn(row: any): IEnemySpawn | undefined {
+        const unitId = typeof row.spawn_unit_id === 'string' ? row.spawn_unit_id.trim() : row.spawn_unit_id;
+        if (!unitId) return undefined;
+
+        const spawn: IEnemySpawn = {
+            unitId,
+            count: this.toOptionalNumber(row.spawn_count) ?? this.toOptionalNumber(row.count) ?? 0,
+            spawnTime: this.toOptionalNumber(row.spawn_time_seconds) ?? this.toOptionalNumber(row.spawn_time) ?? 0,
+            lane: (row.lane || 'center') as EnemyLane
+        };
+
+        const unitLevel = this.toOptionalNumber(row.unit_level) ?? this.toOptionalNumber(row.unit_level_override);
+        if (unitLevel !== undefined) spawn.unitLevel = unitLevel;
+
+        const hpMultiplier = this.toOptionalNumber(row.hp_multiplier);
+        if (hpMultiplier !== undefined) spawn.hpMultiplier = hpMultiplier;
+
+        const damageMultiplier = this.toOptionalNumber(row.damage_multiplier);
+        if (damageMultiplier !== undefined) spawn.damageMultiplier = damageMultiplier;
+
+        const armorBonus = this.toOptionalNumber(row.armor_bonus);
+        if (armorBonus !== undefined) spawn.armorBonus = armorBonus;
+
+        const moveSpeedMultiplier = this.toOptionalNumber(row.move_speed_multiplier);
+        if (moveSpeedMultiplier !== undefined) spawn.moveSpeedMultiplier = moveSpeedMultiplier;
+
+        const attackSpeedMultiplier = this.toOptionalNumber(row.attack_speed_multiplier);
+        if (attackSpeedMultiplier !== undefined) spawn.attackSpeedMultiplier = attackSpeedMultiplier;
+
+        const isBossSpawn = this.toOptionalBoolean(row.is_boss_spawn ?? row.is_boss);
+        if (isBossSpawn !== undefined) spawn.isBossSpawn = isBossSpawn;
+
+        return spawn;
+    }
+
+    private applyBattleNodeWaveMetadata(nodeId: string, row: any): void {
+        const node = this.mapNodes.get(nodeId);
+        if (!node) return;
+
+        const enemyLevel = this.toOptionalNumber(row.enemy_level);
+        if (enemyLevel !== undefined) node.enemyLevel = enemyLevel;
+
+        const nodeTier = this.toOptionalNumber(row.node_tier) ?? this.toOptionalNumber(row.tier);
+        if (nodeTier !== undefined) node.tier = nodeTier;
+
+        const rewardTier = this.toOptionalNumber(row.reward_tier);
+        if (rewardTier !== undefined) node.rewardTier = rewardTier;
+
+        if (row.encounter_id) {
+            node.encounterId = String(row.encounter_id).trim();
+        }
     }
 
     private parseSkills(csv: string): void {
@@ -564,6 +670,27 @@ export class DataManager {
     public getWave(encounterId: string, index: number): IWaveConfig | undefined {
         const encounterWaves = this.wavesByEncounter.get(encounterId);
         return encounterWaves?.get(index);
+    }
+
+    public hasNodeSpecificWaves(nodeId: string): boolean {
+        return this.wavesByNode.has(nodeId);
+    }
+
+    /**
+     * Get waves for a map node. Node-specific CSV rows take priority, with
+     * shared encounter templates retained as fallback for older data.
+     */
+    public getWavesForNode(nodeId: string, encounterId?: string): IWaveConfig[] {
+        const nodeWaves = this.wavesByNode.get(nodeId);
+        if (nodeWaves) {
+            return Array.from(nodeWaves.values()).sort((a, b) => a.index - b.index);
+        }
+
+        if (encounterId) {
+            return this.getWavesForEncounter(encounterId);
+        }
+
+        return [];
     }
     
     /**

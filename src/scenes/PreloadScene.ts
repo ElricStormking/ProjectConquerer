@@ -62,6 +62,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('units_data', 'data/units.csv');
         this.load.text('cards_data', 'data/cards.csv');
         this.load.text('waves_data', 'data/waves.csv');
+        this.load.text('battle_node_waves_data', 'data/battle_node_waves.csv');
         this.load.text('skills_data', 'data/skills.csv');
         this.load.text('unit_skills_data', 'data/unit_skills.csv');
         this.load.text('commander_skills_data', 'data/commander_skills.csv');

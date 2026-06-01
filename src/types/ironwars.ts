@@ -111,6 +111,13 @@ export interface IEnemySpawn {
     count: number;
     spawnTime: number;
     lane: EnemyLane;
+    unitLevel?: number;
+    hpMultiplier?: number;
+    damageMultiplier?: number;
+    armorBonus?: number;
+    moveSpeedMultiplier?: number;
+    attackSpeedMultiplier?: number;
+    isBossSpawn?: boolean;
 }
 
 export interface IWaveConfig {
