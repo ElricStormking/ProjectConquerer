@@ -225,6 +225,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('building_triarch_cannon_turret', 'assets/buildings/triarch_buildings/build_Cannon_Turret.png');
         this.load.image('building_triarch_lightbringer_tower', 'assets/buildings/triarch_buildings/build_lightbringer_tower.png');
         this.load.image('building_triarch_machine_gun_nest', 'assets/buildings/triarch_buildings/build_machine_gun_nest.png');
+        this.load.image('building_triarch_aether_tower', 'assets/buildings/triarch_buildings/build_aether_tower.png');
         this.load.image('building_triarch_storm_generator', 'assets/buildings/triarch_buildings/build_Storm_Generator.png');
         // Card portraits (unit and spell cards)
         this.load.image('card_soldier', 'assets/cards/card_soldier.png');

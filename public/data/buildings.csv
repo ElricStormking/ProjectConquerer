@@ -9,7 +9,7 @@ triarch_healing_beacon,Healing Beacon,180,1,1,triarch_healing_pulse,building_tri
 triarch_cannon_turret,Cannon Turret,260,1,1,triarch_cannon_blast,building_triarch_cannon_turret
 triarch_lightbringer_tower,Lightbringer Tower,220,1,1,triarch_lightbringer_tower,building_triarch_lightbringer_tower
 triarch_machine_gun_nest,Machine Gun Nest,200,1,1,triarch_machine_gun_nest,building_triarch_machine_gun_nest
-triarch_aether_tower,Aether Tower,230,1,1,triarch_aether_tower,
+triarch_aether_tower,Aether Tower,230,1,1,triarch_aether_tower,building_triarch_aether_tower
 triarch_storm_generator,Storm Generator,200,1,1,triarch_storm_zone,building_triarch_storm_generator
 elf_altar_of_heroes,Altar of Heroes,200,1,1,elf_altar_of_heroes,card_elf_altar_of_heroes
 elf_bloom_hatchery,Bloom Hatchery,220,1,1,elf_bloom_hatchery,card_elf_bloom_hatchery

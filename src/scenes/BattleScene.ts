@@ -994,8 +994,119 @@ export class BattleScene extends Phaser.Scene {
     private handleDefeat() {
         if (this.battleState === 'defeat') return;
         this.battleState = 'defeat';
-        this.showOverlay('Fortress Destroyed', 'Rebuild and try again.', 0xff5566);
-        this.events.emit('battle-defeat');
+        this.playFortressDestroyedSequence();
+    }
+
+    private playFortressDestroyedSequence(): void {
+        this.cameras.main.shake(900, 0.018);
+        this.cameras.main.flash(220, 255, 210, 120);
+        this.playFortressExplosionFx();
+
+        if (this.fortressImage) {
+            this.tweens.add({
+                targets: this.fortressImage,
+                alpha: 0.28,
+                angle: { from: -2, to: 2 },
+                duration: 80,
+                yoyo: true,
+                repeat: 7,
+                onComplete: () => this.fortressImage?.setAngle(0)
+            });
+        }
+
+        this.time.delayedCall(760, () => {
+            this.showOverlay('Battle Lost!', 'Your mobile base was destroyed.', 0xff5533, {
+                actionText: 'Returning to map...',
+                registerRestart: false
+            });
+        });
+
+        this.time.delayedCall(1750, () => {
+            this.events.emit('battle-defeat');
+        });
+    }
+
+    private playFortressExplosionFx(): void {
+        const x = this.fortressImage?.x ?? this.fortressCoreWorld.x;
+        const y = this.fortressImage?.y ?? this.fortressCoreWorld.y;
+        const explosion = this.add.container(x, y);
+        explosion.setDepth(9500);
+
+        const shockwave = this.add.circle(0, 0, 36, 0xfff1a8, 0.75);
+        shockwave.setStrokeStyle(8, 0xff6a00, 0.95);
+        shockwave.setBlendMode(Phaser.BlendModes.ADD);
+        explosion.add(shockwave);
+
+        const core = this.add.circle(0, 0, 110, 0xffaa22, 0.9);
+        core.setBlendMode(Phaser.BlendModes.ADD);
+        explosion.add(core);
+
+        const inner = this.add.circle(0, 0, 64, 0xffffff, 0.95);
+        inner.setBlendMode(Phaser.BlendModes.ADD);
+        explosion.add(inner);
+
+        for (let i = 0; i < 18; i++) {
+            const angle = Phaser.Math.DegToRad((360 / 18) * i + Phaser.Math.Between(-8, 8));
+            const length = Phaser.Math.Between(170, 310);
+            const spark = this.add.rectangle(0, 0, length, Phaser.Math.Between(8, 18), 0xffd166, 0.95);
+            spark.setOrigin(0, 0.5);
+            spark.setRotation(angle);
+            spark.setBlendMode(Phaser.BlendModes.ADD);
+            explosion.add(spark);
+
+            this.tweens.add({
+                targets: spark,
+                alpha: 0,
+                scaleX: 0.15,
+                duration: Phaser.Math.Between(420, 680),
+                ease: 'Cubic.easeOut'
+            });
+        }
+
+        for (let i = 0; i < 22; i++) {
+            const smoke = this.add.circle(
+                Phaser.Math.Between(-90, 90),
+                Phaser.Math.Between(-70, 70),
+                Phaser.Math.Between(24, 58),
+                0x2f261f,
+                0.42
+            );
+            explosion.add(smoke);
+
+            this.tweens.add({
+                targets: smoke,
+                x: smoke.x + Phaser.Math.Between(-120, 120),
+                y: smoke.y + Phaser.Math.Between(-120, 80),
+                alpha: 0,
+                scale: 2.2,
+                duration: Phaser.Math.Between(760, 1150),
+                ease: 'Sine.easeOut'
+            });
+        }
+
+        this.tweens.add({
+            targets: shockwave,
+            radius: 330,
+            alpha: 0,
+            duration: 720,
+            ease: 'Cubic.easeOut'
+        });
+        this.tweens.add({
+            targets: core,
+            scale: 2.4,
+            alpha: 0,
+            duration: 620,
+            ease: 'Cubic.easeOut'
+        });
+        this.tweens.add({
+            targets: inner,
+            scale: 3,
+            alpha: 0,
+            duration: 360,
+            ease: 'Cubic.easeOut'
+        });
+
+        this.time.delayedCall(1250, () => explosion.destroy());
     }
 
     private updateCameraForPhase(phase: BattlePhase) {
@@ -1046,10 +1157,17 @@ export class BattleScene extends Phaser.Scene {
         });
     }
 
-    private showOverlay(title: string, subtitle: string, tint: number) {
+    private showOverlay(
+        title: string,
+        subtitle: string,
+        tint: number,
+        options: { actionText?: string; registerRestart?: boolean } = {}
+    ) {
         if (this.overlayContainer) {
             this.overlayContainer.destroy();
         }
+        const actionText = options.actionText ?? 'Press R to restart prototype';
+        const registerRestart = options.registerRestart ?? true;
         const container = this.add.container(960, 540);
         const bg = this.add.rectangle(0, 0, 620, 260, 0x0b0c10, 0.9)
             .setStrokeStyle(3, tint, 0.8)
@@ -1064,17 +1182,19 @@ export class BattleScene extends Phaser.Scene {
             fontSize: '24px',
             color: '#bfc5d2'
         }).setOrigin(0.5);
-        const restart = this.add.text(0, 100, 'Press R to restart prototype', {
+        const restart = this.add.text(0, 100, actionText, {
             fontSize: '20px',
             color: '#ffffff'
         }).setOrigin(0.5);
         container.add([bg, titleText, subtitleText, restart]);
-        container.setDepth(9000);
+        container.setDepth(10000);
         this.overlayContainer = container;
 
-        this.input.keyboard?.once('keydown-R', () => {
-            this.scene.restart();
-        });
+        if (registerRestart) {
+            this.input.keyboard?.once('keydown-R', () => {
+                this.scene.restart();
+            });
+        }
     }
 
     private updateUnitAI() {

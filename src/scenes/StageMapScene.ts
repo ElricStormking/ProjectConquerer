@@ -8,6 +8,9 @@ import { ICommanderFullConfig, IMapNode, IStageConfig } from '../types/ironwars'
 
 const MAP_WIDTH = 2400;
 const MAP_HEIGHT = 1080;
+const CONQUERED_NODE_TINT = 0x777777;
+const CONQUERED_LABEL_COLOR = '#5f5f5f';
+const DEFAULT_NODE_LABEL_COLOR = '#352315';
 
 interface StageMapSceneData {
     loadSavedRun?: boolean;
@@ -1226,7 +1229,7 @@ export class StageMapScene extends Phaser.Scene {
 
         const label = this.add.text(0, 58, node.type.toUpperCase(), {
             fontSize: '16px',
-            color: '#352315',
+            color: DEFAULT_NODE_LABEL_COLOR,
             fontFamily: 'Georgia, serif',
             fontStyle: 'bold',
             stroke: '#e7c77a',
@@ -1444,20 +1447,27 @@ export class StageMapScene extends Phaser.Scene {
             const node = this.runManager.getNodeSnapshot(nodeId);
             if (!node) return;
             const icon = container.list[0] as Phaser.GameObjects.Image;
+            const label = container.list[1] as Phaser.GameObjects.Text;
             const iconBase = node.iconKey || 'node_battle';
             const onKey = `${iconBase}_on`;
             const offKey = `${iconBase}_off`;
 
             if (node.isCompleted) {
                 icon.setTexture(onKey);
+                icon.setTint(CONQUERED_NODE_TINT);
+                label.setColor(CONQUERED_LABEL_COLOR);
                 container.setAlpha(1);
                 container.setScale(1);
             } else if (node.isAccessible) {
                 icon.setTexture(onKey);
+                icon.clearTint();
+                label.setColor(DEFAULT_NODE_LABEL_COLOR);
                 container.setAlpha(1);
                 container.setScale(1.08);
             } else {
                 icon.setTexture(offKey);
+                icon.clearTint();
+                label.setColor(DEFAULT_NODE_LABEL_COLOR);
                 container.setAlpha(0.55);
                 container.setScale(1);
             }
