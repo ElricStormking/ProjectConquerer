@@ -32,6 +32,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     private availableCards: ICard[] = [];
     private newRunBonusCards: ICard[] = [];
     private selectedCommander: string | null = null;
+    private newCardIds: Set<string> = new Set();
 
     // Per-card limits for how many copies can be added to the deck from the available pool
     // Keyed by a stable card key (e.g. base id without copy suffix)
@@ -174,6 +175,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.availableCards = [];
         this.newRunBonusCards = [];
         this.selectedCommander = null;
+        this.newCardIds.clear();
         this.deckScrollY = 0;
         this.cardGridScrollY = 0;
 
@@ -184,14 +186,8 @@ export class DeckBuildingScene extends Phaser.Scene {
                 : this.commanderManager.getStarterCommander(this.factionId);
             if (starterCommander) {
                 this.commanderRoster = [starterCommander.id];
-                // New runs start with the faction's basic melee and archer cards.
-                this.currentDeck = this.commanderManager.getStarterDeck(this.factionId);
+                this.currentDeck = this.commanderManager.getRandomLowLevelStartingDeckForCommander(starterCommander.id);
                 this.selectedCommander = starterCommander.id;
-                this.newRunBonusCards = this.commanderManager.getRandomUnlockCardsForCommander(
-                    starterCommander.id,
-                    this.currentDeck.map(card => card.id),
-                    3
-                );
             }
         } else {
             // Existing run - load from run state
@@ -201,6 +197,7 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.commanderRoster = [...runState.commanderRoster];
                 this.currentDeck = [...runState.deck];
                 this.selectedCommander = this.commanderRoster[0] || null;
+                this.newCardIds = new Set((runState.newCardIds ?? []).map(id => this.normalizeCardId(id)));
             }
         }
 
@@ -241,7 +238,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     }
 
     private getCommanderAvailableCardCount(commanderId: string): number {
-        return this.getBaseAvailableCards().filter(card =>
+        return this.currentDeck.filter(card =>
             this.commanderManager.isCardUsableByRoster(card.id, [commanderId])
         ).length;
     }
@@ -322,7 +319,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.cardGridPanel.add(bg);
         
         // Title
-        const title = this.add.text(panelWidth / 2, 25, 'AVAILABLE CARDS', {
+        const title = this.add.text(panelWidth / 2, 25, 'CURRENT DECK', {
             fontFamily: 'Georgia, serif',
             fontSize: '20px',
             color: '#f0dba5',
@@ -331,7 +328,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.cardGridPanel.add(title);
         
         // Card count
-        this.availableCardCountText = this.add.text(panelWidth - 30, 25, `${this.availableCards.length} cards`, {
+        this.availableCardCountText = this.add.text(panelWidth - 30, 25, `${this.currentDeck.length}/${MAX_DECK_SIZE}`, {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
@@ -378,7 +375,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.deckPanel.add(bg);
         
         // Title
-        const title = this.add.text(panelWidth / 2, 25, 'YOUR DECK', {
+        const title = this.add.text(panelWidth / 2, 25, 'DECK SUMMARY', {
             fontFamily: 'Georgia, serif',
             fontSize: '20px',
             color: '#f0dba5',
@@ -520,7 +517,7 @@ export class DeckBuildingScene extends Phaser.Scene {
             
             // Card count
             const cardCount = this.getCommanderAvailableCardCount(commanderId);
-            const cardLabel = this.isNewRun ? `${cardCount} starting cards` : `${cardCount} cards`;
+            const cardLabel = `${cardCount} deck cards`;
             const cardText = this.add.text(75, 42, cardLabel, {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '12px',
@@ -547,7 +544,7 @@ export class DeckBuildingScene extends Phaser.Scene {
             return;
         }
 
-        // "Show All" button
+        // "Show Full Deck" button
         const showAllY = startY + this.commanderRoster.length * itemHeight + 10;
         const showAllBtn = this.add.container(10, showAllY);
         
@@ -556,7 +553,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         showAllBg.fillRoundedRect(0, 0, 230, 40, 6);
         showAllBtn.add(showAllBg);
         
-        const showAllText = this.add.text(115, 20, 'Show All Cards', {
+        const showAllText = this.add.text(115, 20, 'Show Full Deck', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#8a9cc5'
@@ -571,7 +568,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         showAllBg.on('pointerup', () => {
             this.selectedCommander = null;
-            this.refreshAvailableCards(true);
+            this.cardGridScrollY = 0;
             this.renderCommanders();
             this.renderAvailableCards();
         });
@@ -581,14 +578,15 @@ export class DeckBuildingScene extends Phaser.Scene {
 
     private filterCardsByCommander(commanderId: string): void {
         this.selectedCommander = commanderId;
-        this.refreshAvailableCards(true);
+        this.cardGridScrollY = 0;
         this.renderAvailableCards();
     }
 
     private renderAvailableCards(): void {
         // Clear existing
         this.cardGridContainer.removeAll(true);
-        this.availableCardCountText.setText(`${this.availableCards.length} cards`);
+        this.availableCardCountText.setText(`${this.currentDeck.length}/${MAX_DECK_SIZE}`);
+        this.availableCardCountText.setColor(this.currentDeck.length <= MAX_DECK_SIZE ? '#8a9cc5' : '#e74c3c');
 
         const startX = 10;
         const startY = 10;
@@ -596,16 +594,20 @@ export class DeckBuildingScene extends Phaser.Scene {
         const availableWidth = this.cardPanelBounds.width - startX * 2;
         const cardsPerRow = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
 
-        // Count how many copies of each card type are currently in the deck
-        const deckCounts = new Map<string, number>();
+        const deckGroups = new Map<string, { card: ICard; count: number }>();
         this.currentDeck.forEach(card => {
             const key = this.getCardKey(card);
-            deckCounts.set(key, (deckCounts.get(key) ?? 0) + 1);
+            const existing = deckGroups.get(key);
+            if (existing) {
+                existing.count++;
+            } else {
+                deckGroups.set(key, { card, count: 1 });
+            }
         });
 
-        const groupedCards = Array.from(this.availableCardLimits.values());
+        const groupedCards = Array.from(deckGroups.values());
 
-        groupedCards.forEach(({ card, max }, index) => {
+        groupedCards.forEach(({ card, count }, index) => {
             const col = index % cardsPerRow;
             const row = Math.floor(index / cardsPerRow);
 
@@ -613,32 +615,25 @@ export class DeckBuildingScene extends Phaser.Scene {
             const y = startY + row * (CARD_HEIGHT + CARD_GAP) + this.cardGridScrollY;
 
             const key = this.getCardKey(card);
-            const usedInDeck = deckCounts.get(key) ?? 0;
-            const remaining = Math.max(0, max - usedInDeck);
+            const showNewDot = this.newCardIds.has(key);
+            const cardContainer = this.createCardDisplay(card, x, y, false, showNewDot);
 
-            // Determine if this card can be used with the current commander roster
-            const isUsable = this.commanderManager.isCardUsableByRoster(card.id, this.commanderRoster);
-
-            const canAdd = remaining > 0 && isUsable;
-
-            const cardContainer = this.createCardDisplay(card, x, y, canAdd);
-
-            // Quantity badge shows remaining copies that can still be added (e.g. \"x2\")
-            const qtyText = this.add.text(CARD_WIDTH - 6, CARD_HEIGHT - 6, `x${remaining}`, {
+            const qtyText = this.add.text(CARD_WIDTH - 6, CARD_HEIGHT - 6, `x${count}`, {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '12px',
-                color: canAdd ? '#f0dba5' : '#666666',
+                color: '#f0dba5',
                 fontStyle: 'bold'
             }).setOrigin(1, 1);
             cardContainer.add(qtyText);
 
-            // If no copies remain or card is unusable due to missing commander,
-            // visually dim the card.
-            if (!canAdd) {
-                cardContainer.setAlpha(0.4);
-            }
-
             this.cardGridContainer.add(cardContainer);
+
+            const visibleHeight = this.cardPanelBounds.height - 65;
+            const isVisible = y + CARD_HEIGHT >= 0 && y <= visibleHeight;
+            if (showNewDot && !this.isNewRun && isVisible) {
+                this.runManager.markNewCardSeen(key);
+                this.newCardIds.delete(key);
+            }
         });
     }
 
@@ -731,26 +726,12 @@ export class DeckBuildingScene extends Phaser.Scene {
                 itemContainer.add(countBadge);
             }
 
-            // Remove button
-            const removeBtn = this.add.text(275, 20, '×', {
-                fontFamily: 'Arial, sans-serif',
-                fontSize: '20px',
-                color: '#e74c3c'
-            }).setOrigin(0.5);
-            removeBtn.setInteractive({ useHandCursor: true });
-            
-            // Use a stable card key so we always remove one copy of this
-            // specific card type from the deck, regardless of runtime id.
-            const cardKey = this.getCardKey(card);
-            removeBtn.on('pointerup', () => this.removeCardFromDeck(cardKey));
-            itemContainer.add(removeBtn);
-
             this.deckListContainer.add(itemContainer);
             index++;
         });
     }
 
-    private createCardDisplay(card: ICard, x: number, y: number, isClickable: boolean): Phaser.GameObjects.Container {
+    private createCardDisplay(card: ICard, x: number, y: number, isClickable: boolean, showNewDot = false): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
         
         // Card background
@@ -785,7 +766,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         const typeIndicator = this.add.rectangle(CARD_WIDTH - 15, 15, 20, 20, typeColor, 0.8);
         typeIndicator.setStrokeStyle(1, 0xffffff, 0.3);
         container.add(typeIndicator);
-        
+
         // Card portrait area (scaled to fill ~70% height, keeping padding)
         const portraitAreaHeight = CARD_HEIGHT * 0.7;
         const portraitBg = this.add.rectangle(CARD_WIDTH / 2, 10 + portraitAreaHeight / 2, CARD_WIDTH - 16, portraitAreaHeight, 0x1a1d2e);
@@ -836,6 +817,12 @@ export class DeckBuildingScene extends Phaser.Scene {
                 strokeThickness: 3
             }).setOrigin(0.5);
             container.add(levelLabel);
+        }
+
+        if (showNewDot) {
+            const dot = this.add.circle(CARD_WIDTH - 8, 8, 7, 0xe74c3c);
+            dot.setStrokeStyle(2, 0xffffff, 0.95);
+            container.add(dot);
         }
         
         // Attach input to the card background graphics instead of the container.
@@ -964,19 +951,6 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.showMessage(`Added ${card.name}`, '#2ecc71');
     }
 
-    private removeCardFromDeck(cardKey: string): void {
-        // Find the first deck entry whose normalized key matches the row
-        // we clicked in the deck list. This avoids accidentally matching
-        // other cards that merely share the "card_" prefix.
-        const index = this.currentDeck.findIndex(c => this.getCardKey(c) === cardKey);
-        if (index !== -1) {
-            const removed = this.currentDeck.splice(index, 1)[0];
-            this.renderDeck();
-            this.renderAvailableCards();
-            this.showMessage(`Removed ${removed.name}`, '#e74c3c');
-        }
-    }
-
     private showMessage(text: string, color: string): void {
         const { width } = this.cameras.main;
         const msg = this.add.text(width / 2, 820, text, {
@@ -999,7 +973,8 @@ export class DeckBuildingScene extends Phaser.Scene {
     private scrollCardGrid(deltaY: number): void {
         const availableWidth = this.cardPanelBounds.width - 20;
         const cardsPerRow = Math.max(1, Math.floor((availableWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
-        const maxScroll = Math.max(0, Math.ceil(this.availableCardLimits.size / cardsPerRow) * (CARD_HEIGHT + CARD_GAP) - 600);
+        const groupedCount = new Set(this.currentDeck.map(card => this.getCardKey(card))).size;
+        const maxScroll = Math.max(0, Math.ceil(groupedCount / cardsPerRow) * (CARD_HEIGHT + CARD_GAP) - 600);
         this.cardGridScrollY = Phaser.Math.Clamp(this.cardGridScrollY - deltaY * 0.5, -maxScroll, 0);
         this.renderAvailableCards();
     }
@@ -1045,7 +1020,11 @@ export class DeckBuildingScene extends Phaser.Scene {
         // Use a stable \"card type\" key:
         // 1) Strip trailing runtime timestamp suffix: _123456789
         // 2) Strip trailing deck index: _1, _2, _3 (so Feral Warrior variants collapse)
-        let base = card.id.replace(/_\d+$/, '');
+        return this.normalizeCardId(card.id);
+    }
+
+    private normalizeCardId(id: string): string {
+        let base = id.replace(/_\d+$/, '');
         base = base.replace(/_\d+$/, '');
         return base;
     }
@@ -1080,10 +1059,9 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.factionId,
                 0,
                 this.selectedCommander ?? undefined,
-                this.newRunBonusCards
+                [],
+                this.currentDeck
             );
-            // Override deck with player's customized deck
-            this.runManager.setRunDeck(this.currentDeck);
         } else {
             // Save deck changes
             this.runManager.setRunDeck(this.currentDeck);

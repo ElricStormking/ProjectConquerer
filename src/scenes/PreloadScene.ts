@@ -1,6 +1,41 @@
 import Phaser from 'phaser';
 import { DataManager } from '../systems/DataManager';
 
+const ARTIFACT_ICON_KEYS = [
+    'icon_1_steam_core',
+    'icon_2_forged_plating',
+    'icon_3_brass_compass',
+    'icon_4_molten_heart',
+    'icon_5_emberstone_charm',
+    'icon_6_skywhisper_feather',
+    'icon_7_storm_reservoir',
+    'icon_8_portable_workshop',
+    'icon_9_gilded_token',
+    'icon_10_adaptive_matrix',
+    'icon_11_iron_resolve',
+    'icon_12_battle_standard',
+    'icon_13_veteran_medal',
+    'icon_14_arcane_lens',
+    'icon_15_berserker_tooth',
+    'icon_16_clockwork_heart',
+    'icon_17_phoenix_feather',
+    'icon_18_merchant_seal',
+    'icon_19_warhorn',
+    'icon_20_ancient_tome',
+    'icon_21_lucky_coin',
+    'icon_22_healing_salve',
+    'icon_23_commanders_signet',
+    'icon_24_soul_anchor',
+    'icon_25_cursed_furnace',
+    'icon_26_ashen_contract',
+    'icon_27_blood_pact',
+    'icon_28_weighted_chains',
+    'icon_29_cracked_shield',
+    'icon_30_gamblers_dice',
+    'icon_31_hollow_crown',
+    'icon_32_fragile_hourglass'
+];
+
 export class PreloadScene extends Phaser.Scene {
     constructor() {
         super({ key: 'PreloadScene' });
@@ -68,11 +103,16 @@ export class PreloadScene extends Phaser.Scene {
         this.load.text('commander_skills_data', 'data/commander_skills.csv');
         this.load.text('buildings_data', 'data/buildings.csv');
         this.load.text('stages_data', 'data/stages.csv');
+        this.load.text('artifacts_data', 'data/artifacts.csv');
         this.load.text('relics_data', 'data/relics.csv');
         this.load.text('events_data', 'data/events.csv');
         this.load.text('map_nodes_data', 'data/map_nodes.csv');
         this.load.text('factions_data', 'data/factions.csv');
         this.load.text('commanders_data', 'data/commanders.csv');
+
+        ARTIFACT_ICON_KEYS.forEach(key => {
+            this.load.image(key, `assets/artifacts/${key}.png`);
+        });
         
         // Title screen
         this.load.image('title_bg', 'assets/ui/ui_title_menu/TitleScreen.png');

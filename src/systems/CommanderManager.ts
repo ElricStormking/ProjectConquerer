@@ -4,6 +4,10 @@ import { SaveManager } from './SaveManager';
 import { ICommanderFullConfig, ICard } from '../types/ironwars';
 
 export const STARTING_COMMANDER_DECK_SIZE = 3;
+export const STARTING_RANDOM_DECK_SIZE = 8;
+const STARTER_UNIT_LEVEL_CAP = 30;
+const STARTER_MAX_COST = 3;
+const INITIAL_EXPANSION_CARD_ID = 'card_jade_expansion_slots';
 const SHARED_CARD_IDS = ['card_jade_expansion_slots', 'card_shared_sacrifice'];
 
 const BASIC_STARTER_CARDS_BY_FACTION: Record<string, string[]> = {
@@ -85,6 +89,66 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
         return this.getStarterDeck(commander.factionId, deckSize);
     }
 
+    public getRandomLowLevelStartingDeckForCommander(
+        commanderId: string,
+        deckSize = STARTING_RANDOM_DECK_SIZE
+    ): ICard[] {
+        if (deckSize <= 0) {
+            return [];
+        }
+
+        const commanderCards = this.dataManager.getCardsForCommander(commanderId);
+        if (commanderCards.length === 0) {
+            return this.getStartingDeckForCommander(commanderId);
+        }
+
+        const commander = this.getCommander(commanderId);
+        const factionStarterCards = commander ? this.getBasicStarterCardsForFaction(commander.factionId) : [];
+        const requiredStarterCards = factionStarterCards
+            .filter(card => this.isLowLevelStarterCard(card))
+            .slice(0, Math.min(factionStarterCards.length, deckSize));
+        const expansionCard = this.dataManager.getCard(INITIAL_EXPANSION_CARD_ID);
+        const reservedCards = [...requiredStarterCards];
+        if (expansionCard && reservedCards.length < deckSize) {
+            reservedCards.push(expansionCard);
+        }
+        const reservedTemplateIds = new Set(reservedCards.map(card => card.id));
+        const lowLevelCards = commanderCards.filter(card => this.isLowLevelStarterCard(card));
+        const cardPool = lowLevelCards.length > 0
+            ? lowLevelCards
+            : factionStarterCards.filter(card => this.isLowLevelStarterCard(card));
+        const starterPool = cardPool.length > 0 ? cardPool : commanderCards;
+        const sortedLowLevelCards = [...starterPool].sort((a, b) =>
+            this.getLowLevelStarterScore(a) - this.getLowLevelStarterScore(b)
+        );
+        const lowTierPool = sortedLowLevelCards.slice(0, Math.min(sortedLowLevelCards.length, Math.max(1, deckSize)));
+        const randomPoolWithoutRequired = lowTierPool.filter(card => !reservedTemplateIds.has(card.id));
+        const fallbackRandomPool = starterPool.filter(card => card.id !== INITIAL_EXPANSION_CARD_ID);
+        const randomPool = randomPoolWithoutRequired.length > 0
+            ? randomPoolWithoutRequired
+            : fallbackRandomPool.length > 0
+            ? fallbackRandomPool
+            : reservedCards.filter(card => card.id !== INITIAL_EXPANSION_CARD_ID);
+        const randomCardCount = Math.max(0, deckSize - reservedCards.length);
+        if (randomCardCount > 0 && randomPool.length === 0) {
+            return reservedCards.map((template, index) => {
+                return {
+                    ...template,
+                    id: `${template.id}_${index + 1}`
+                };
+            });
+        }
+
+        const randomCards = Array.from({ length: randomCardCount }, () => Phaser.Utils.Array.GetRandom(randomPool));
+
+        return [...reservedCards, ...randomCards].map((template, index) => {
+            return {
+                ...template,
+                id: `${template.id}_${index + 1}`
+            };
+        });
+    }
+
     public getStarterDeck(factionId: string, deckSize = STARTING_COMMANDER_DECK_SIZE): ICard[] {
         const basicStarterCards = this.getBasicStarterCardsForFaction(factionId);
         if (basicStarterCards.length > 0) {
@@ -144,6 +208,36 @@ export class CommanderManager extends Phaser.Events.EventEmitter {
                 id: `${template.id}_${index + 1}`
             }))
         );
+    }
+
+    private getLowLevelStarterScore(card: ICard): number {
+        const rarityWeight: Record<string, number> = {
+            common: 0,
+            rare: 25,
+            epic: 55,
+            legendary: 90
+        };
+        const levelScore = card.type === 'unit'
+            ? Number(card.unitLevel ?? 999)
+            : Number(card.cost ?? 0) * 8;
+
+        return levelScore + (rarityWeight[card.rarity ?? 'common'] ?? 0) + Number(card.cost ?? 0);
+    }
+
+    private isLowLevelStarterCard(card: ICard): boolean {
+        if (card.rarity && card.rarity !== 'common') {
+            return false;
+        }
+
+        if (Number(card.cost ?? 0) > STARTER_MAX_COST) {
+            return false;
+        }
+
+        if (card.type === 'unit') {
+            return Number(card.unitLevel ?? 999) <= STARTER_UNIT_LEVEL_CAP;
+        }
+
+        return true;
     }
 
     private getBasicStarterCardsForFaction(factionId: string): ICard[] {

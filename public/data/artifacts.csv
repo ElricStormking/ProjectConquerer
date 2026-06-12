@@ -1,0 +1,33 @@
+id,name,description,rarity,effect_type,trigger,value,percent_value,condition,effect_cost,extra_json,is_cursed,icon_key,shop_cost
+steam_core,Steam Core,+1 card draw at the start of each wave.,rare,card_draw,on_wave_start,1,,,,,false,icon_1_steam_core,0
+forged_plating,Forged Plating,Fortress gains +150 max HP.,common,fortress_hp,passive,150,,,,,false,icon_2_forged_plating,0
+brass_compass,Brass Compass,Gain +1 selectable node after elite battles.,rare,bonus_path_choice,on_node_complete,1,,elite,,,false,icon_3_brass_compass,0
+molten_heart,Molten Heart,Units deal +20% damage but take 5% self-burn per attack.,epic,unit_damage_pct,on_damage_dealt,,20,,self_burn_5,,false,icon_4_molten_heart,0
+emberstone_charm,Emberstone Charm,Heal 40 fortress HP after every battle.,rare,post_battle_heal,on_node_complete,40,,,,,false,icon_5_emberstone_charm,0
+skywhisper_feather,Skywhisper Feather,Units gain +15% move speed.,epic,unit_move_speed_pct,passive,,15,,,,false,icon_6_skywhisper_feather,0
+storm_reservoir,Storm Reservoir,Gain +1 random rare card after defeating bosses.,legendary,boss_reward_bonus,on_node_complete,1,,boss,,,false,icon_7_storm_reservoir,0
+portable_workshop,Portable Workshop,Shop items cost 15% less gold.,rare,shop_discount_pct,on_shop_enter,,15,,,,false,icon_8_portable_workshop,0
+gilded_token,Gilded Token,Gain 50 gold when acquiring any relic.,common,relic_gold_bonus,on_run_start,50,,,,,false,icon_9_gilded_token,0
+adaptive_matrix,Adaptive Matrix,First card reward each stage is upgraded to rare or better.,legendary,auto_upgrade_reward,passive,,,,,,false,icon_10_adaptive_matrix,0
+iron_resolve,Iron Resolve,Units gain +10 armor.,common,unit_armor,passive,10,,,,,false,icon_11_iron_resolve,0
+battle_standard,Battle Standard,Units deal +10% damage when fortress HP is above 75%.,rare,unit_damage_pct,passive,,10,fortress_hp_above_75,,,false,icon_12_battle_standard,0
+veteran_medal,Veteran Medal,Start each wave with +3 resources.,common,resource_gain,on_wave_start,3,,,,,false,icon_13_veteran_medal,0
+arcane_lens,Arcane Lens,Ranged units gain +50 range.,rare,unit_range,passive,50,,ranged,,,false,icon_14_arcane_lens,0
+berserker_tooth,Berserker Tooth,Units deal +30% damage when below 50% HP.,epic,unit_damage_pct,passive,,30,unit_hp_below_50,,,false,icon_15_berserker_tooth,0
+clockwork_heart,Clockwork Heart,Units attack 15% faster.,epic,unit_attack_speed_pct,passive,,15,,,,false,icon_16_clockwork_heart,0
+phoenix_feather,Phoenix Feather,Once per battle: prevent fortress from being destroyed and restore 100 HP.,legendary,fortress_revive,on_damage_taken,100,,fortress_lethal,,,false,icon_17_phoenix_feather,0
+merchant_seal,Merchant Seal,Gain +25% more gold from all sources.,rare,gold_gain_pct,on_gold_gain,,25,,,,false,icon_18_merchant_seal,0
+warhorn,Warhorn,At battle start all units gain +20% damage for the first wave.,rare,unit_damage_pct,on_battle_start,,20,,,"{""duration"":""first_wave""}",false,icon_19_warhorn,0
+ancient_tome,Ancient Tome,Start each battle with +2 cards drawn.,epic,card_draw,on_battle_start,2,,,,,false,icon_20_ancient_tome,0
+lucky_coin,Lucky Coin,10% chance to gain double gold from battles.,common,gold_double_chance,on_node_complete,,10,,,,false,icon_21_lucky_coin,0
+healing_salve,Healing Salve,Heal 15 fortress HP at the start of each wave.,common,fortress_heal,on_wave_start,15,,,,,false,icon_22_healing_salve,0
+commanders_signet,Commander's Signet,Commander skill cooldown reduced by 20%.,epic,commander_cooldown_pct,passive,,-20,,,,false,icon_23_commanders_signet,0
+soul_anchor,Soul Anchor,When a unit dies there is a 15% chance to spawn a ghost ally.,legendary,unit_death_spawn,on_unit_death,,15,,,"{""spawnId"":""ghost_ally""}",false,icon_24_soul_anchor,0
+cursed_furnace,Cursed Furnace,Battle rewards give +1 card choice but fortress loses 15 HP per wave.,cursed,reward_choice_bonus,on_wave_end,1,,,fortress_damage_15,,true,icon_25_cursed_furnace,0
+ashen_contract,Ashen Contract,Gain +200 gold immediately but shop prices increase by 25%.,cursed,gain_gold_flat,on_run_start,200,,,shop_cost_increase_25,,true,icon_26_ashen_contract,0
+blood_pact,Blood Pact,Units deal +25% damage but healing effects are halved.,cursed,unit_damage_pct,passive,,25,,healing_halved,,true,icon_27_blood_pact,0
+weighted_chains,Weighted Chains,Gain +2 cards drawn per wave but units move 20% slower.,cursed,card_draw,on_wave_start,2,,,unit_speed_reduce_20,,true,icon_28_weighted_chains,0
+cracked_shield,Cracked Shield,Start with +300 fortress HP but lose 5 HP per wave.,cursed,fortress_hp,passive,300,,,fortress_damage_per_wave_5,,true,icon_29_cracked_shield,0
+gamblers_dice,Gambler's Dice,50% chance for double gold or no gold from battles.,cursed,gold_gamble,on_node_complete,,50,,,,true,icon_30_gamblers_dice,0
+hollow_crown,Hollow Crown,+50% commander skill damage but cooldown increased by 50%.,cursed,commander_damage_pct,passive,,50,,commander_cooldown_increase_50,,true,icon_31_hollow_crown,0
+fragile_hourglass,Fragile Hourglass,Draw 3 extra cards at battle start but max hand size reduced by 2.,cursed,card_draw,on_battle_start,3,,,hand_size_reduce_2,,true,icon_32_fragile_hourglass,0

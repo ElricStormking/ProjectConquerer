@@ -168,6 +168,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             commanderRescues: this.cloneCommanderRescues(this.runState.commanderRescues),
             cardCollection: [...(this.runState.cardCollection ?? [])],
             newCardsAvailable: this.runState.newCardsAvailable ?? false,
+            newCardIds: [...(this.runState.newCardIds ?? [])],
             factionId: this.runState.factionId,
             lives: this.runState.lives,
             fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined,
@@ -321,7 +322,8 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         factionId = 'cog_dominion',
         difficulty = 0,
         commanderIdOverride?: string,
-        initialBonusCards: ICard[] = []
+        initialBonusCards: ICard[] = [],
+        initialDeckOverride?: ICard[]
     ): void {
         this.difficultyLevel = difficulty;
         this.buildStageGraph();
@@ -332,21 +334,19 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             ? this.commanderManager.getCommander(commanderIdOverride)
             : this.commanderManager.getStarterCommander(factionId);
         const starterDeck = starterCommander
-            ? this.commanderManager.getStartingDeckForCommander(starterCommander.id)
+            ? this.commanderManager.getRandomLowLevelStartingDeckForCommander(starterCommander.id)
             : this.commanderManager.getStarterDeck(factionId);
         
         // Fallback to COG_DOMINION_STARTER if faction data not found
         const fallbackStarter = COG_DOMINION_STARTER;
         const baseFortressHp = fortress?.maxHp ?? fallbackStarter.fortress.maxHp;
         const commanderId = starterCommander?.id ?? fallbackStarter.commander.id;
-        const deck = this.commanderManager.withBaseExpansionCards(
-            starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck]
-        );
-        const starterCollection = this.commanderManager.getStarterCardPool(factionId);
-        const initialCollection =
-            starterCollection.length > 0 || initialBonusCards.length > 0
-                ? [...starterCollection, ...initialBonusCards]
-                : deck;
+        const deck = initialDeckOverride && initialDeckOverride.length > 0
+            ? [...initialDeckOverride]
+            : (starterDeck.length > 0 ? starterDeck : [...fallbackStarter.deck]);
+        const initialCollection = initialBonusCards.length > 0
+            ? [...deck, ...initialBonusCards]
+            : deck;
         const fortressId = fortress?.id ?? fallbackStarter.fortress.id;
         const fortressConfig = fortress ?? this.factionRegistry.getFortressConfig(fortressId) ?? fallbackStarter.fortress;
         const initialUnlocked = this.getInitialUnlockedCells(fortressConfig);
@@ -386,6 +386,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             deck: [...deck],
             cardCollection: this.buildCollectionFromCards(initialCollection),
             newCardsAvailable: false,
+            newCardIds: [],
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
@@ -426,6 +427,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         }
         if (this.runState) {
             this.runState.newCardsAvailable = this.runState.newCardsAvailable ?? false;
+            this.runState.newCardIds = this.runState.newCardIds ?? [];
             this.ensureCardCollectionInitialized();
             this.ensureCommanderRescueAssignments();
             const storySlides = this.ensureStorySlidesState(true);
@@ -580,8 +582,11 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
     public addCardToRunDeck(card: ICard): void {
         if (!this.runState) return;
         this.runState.deck.push(card);
+        this.markNewCardId(card.id);
+        this.runState.newCardsAvailable = true;
         this.saveRun();
         this.emit('deck-updated', [...this.runState.deck]);
+        this.emit('new-cards-available-updated', true);
     }
 
     public removeCardFromRunDeck(cardId: string): ICard | undefined {
@@ -601,24 +606,41 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.emit('deck-updated', [...this.runState.deck]);
     }
 
-    /**
-     * Track that the player has acquired a card template (by id) during this run.
-     * This does NOT add the card to the active deck; it only expands the pool
-     * of cards visible in DeckBuilding \"Available Cards\".
-     */
     public addCardToCollection(card: ICard): void {
         if (!this.runState) return;
         this.ensureCardCollectionInitialized();
-        this.runState.cardCollection!.push(this.normalizeCardId(card.id));
+        this.addAcquiredCardToDeck(card);
         this.runState.newCardsAvailable = true;
         this.saveRun();
+        this.emit('deck-updated', [...this.runState.deck]);
         this.emit('new-cards-available-updated', true);
+    }
+
+    private addAcquiredCardToDeck(card: ICard): void {
+        if (!this.runState) return;
+        const templateId = this.normalizeCardId(card.id);
+        this.runState.cardCollection!.push(templateId);
+        this.markNewCardId(templateId);
+        const template = this.dataManager.getCard(templateId) ?? card;
+        this.runState.deck.push({
+            ...template,
+            id: `${template.id}_${Date.now()}_${this.runState.deck.length + 1}`
+        });
     }
 
     public clearCardCollection(): void {
         if (!this.runState) return;
         this.runState.cardCollection = [];
         this.saveRun();
+    }
+
+    private markNewCardId(cardId: string): void {
+        if (!this.runState) return;
+        const templateId = this.normalizeCardId(cardId);
+        this.runState.newCardIds = this.runState.newCardIds ?? [];
+        if (!this.runState.newCardIds.includes(templateId)) {
+            this.runState.newCardIds.push(templateId);
+        }
     }
 
     private normalizeCardId(id: string): string {
@@ -637,11 +659,10 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             this.runState.cardCollection ?? [],
             3
         );
-        unlockCards.forEach(card => {
-            this.runState?.cardCollection?.push(this.normalizeCardId(card.id));
-        });
+        unlockCards.forEach(card => this.addAcquiredCardToDeck(card));
         if (unlockCards.length > 0) {
             this.runState.newCardsAvailable = true;
+            this.emit('deck-updated', [...this.runState.deck]);
             this.emit('new-cards-available-updated', true);
         }
         this.saveRun();
@@ -651,6 +672,24 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
 
     public hasNewCardsAvailable(): boolean {
         return this.runState?.newCardsAvailable ?? false;
+    }
+
+    public getNewCardIds(): string[] {
+        return this.runState ? [...(this.runState.newCardIds ?? [])] : [];
+    }
+
+    public markNewCardSeen(cardId: string): void {
+        if (!this.runState?.newCardIds?.length) return;
+        const templateId = this.normalizeCardId(cardId);
+        const nextIds = this.runState.newCardIds.filter(id => this.normalizeCardId(id) !== templateId);
+        if (nextIds.length === this.runState.newCardIds.length) return;
+
+        this.runState.newCardIds = nextIds;
+        if (nextIds.length === 0 && this.runState.newCardsAvailable) {
+            this.runState.newCardsAvailable = false;
+            this.emit('new-cards-available-updated', false);
+        }
+        this.saveRun();
     }
 
     public clearNewCardsAvailable(): void {
@@ -894,7 +933,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         const stages = Array.from(this.stageGraph.values()).sort((a, b) => a.index - b.index);
 
         stages.forEach(stage => {
-            this.getLevelTenNodeIds(stage).forEach(nodeId => {
+            this.getCommanderRescueNodeIds(stage).forEach(nodeId => {
                 const key = this.getCommanderRescueKey(nodeId);
                 const existing = existingAssignments[key];
                 if (!existing?.commanderId) {
@@ -911,14 +950,14 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         });
 
         // Migrate old per-stage rescue assignments to one branch node, then
-        // assign distinct commanders to any remaining level-10 branch nodes.
+        // assign distinct commanders to any remaining rescue branch nodes.
         stages.forEach(stage => {
             const legacy = existingAssignments[String(stage.index)];
             if (!legacy?.commanderId || usedCommanderIds.has(legacy.commanderId)) {
                 return;
             }
 
-            const openNodeId = this.getLevelTenNodeIds(stage)
+            const openNodeId = this.getCommanderRescueNodeIds(stage)
                 .find(nodeId => !nextAssignments[this.getCommanderRescueKey(nodeId)]);
             if (!openNodeId) {
                 return;
@@ -940,7 +979,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         );
 
         stages.forEach(stage => {
-            this.getLevelTenNodeIds(stage).forEach(nodeId => {
+            this.getCommanderRescueNodeIds(stage).forEach(nodeId => {
                 const key = this.getCommanderRescueKey(nodeId);
                 if (nextAssignments[key]) {
                     return;
@@ -963,9 +1002,9 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         this.runState.commanderRescues = nextAssignments;
     }
 
-    private getLevelTenNodeIds(stage: IStageConfig): string[] {
+    private getCommanderRescueNodeIds(stage: IStageConfig): string[] {
         return stage.nodes
-            .filter(node => /^10[A-Z]_/.test(node.id))
+            .filter(node => /^8[A-Z]_/.test(node.id))
             .map(node => node.id);
     }
 

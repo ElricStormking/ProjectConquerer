@@ -387,6 +387,10 @@ export interface IRunState {
      * the player has not reviewed in DeckBuilding yet.
      */
     newCardsAvailable?: boolean;
+    /**
+     * Stable card template ids that should show first-view markers in DeckBuilding.
+     */
+    newCardIds?: string[];
     relics: string[];
     curses: string[];
     commanderRoster: string[];

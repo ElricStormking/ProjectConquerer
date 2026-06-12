@@ -72,7 +72,11 @@ export class DataManager {
         // Optional future data
         if (cache.text.exists('buildings_data')) this.parseBuildings(cache.text.get('buildings_data'));
         if (cache.text.exists('stages_data')) this.parseStages(cache.text.get('stages_data'));
-        if (cache.text.exists('relics_data')) this.parseRelics(cache.text.get('relics_data'));
+        if (cache.text.exists('artifacts_data')) {
+            this.parseRelics(cache.text.get('artifacts_data'));
+        } else if (cache.text.exists('relics_data')) {
+            this.parseRelics(cache.text.get('relics_data'));
+        }
         if (cache.text.exists('events_data')) this.parseEvents(cache.text.get('events_data'));
         if (cache.text.exists('map_nodes_data')) this.parseMapNodes(cache.text.get('map_nodes_data'));
         if (cache.text.exists('battle_node_waves_data')) this.parseBattleNodeWaves(cache.text.get('battle_node_waves_data'));
@@ -500,16 +504,7 @@ export class DataManager {
         if (!csv) return;
         const result = Papa.parse(csv, { header: true, dynamicTyping: true, skipEmptyLines: true });
         result.data.forEach((row: any) => {
-            let effect: IRelicEffect = { type: 'custom' };
-            if (row.effect_json) {
-                try {
-                    effect = JSON.parse(row.effect_json);
-                } catch (e) {
-                    console.error(`Failed to parse effect_json for relic ${row.id}`, e);
-                }
-            } else if (row.effect_id) {
-                effect = { type: row.effect_id };
-            }
+            const effect = this.parseRelicEffect(row);
 
             const relic: IRelicConfig = {
                 id: row.id,
@@ -519,11 +514,43 @@ export class DataManager {
                 effect: effect,
                 isCursed: row.is_cursed === true || row.is_cursed === 'true' || row.rarity === 'cursed',
                 iconKey: row.icon_key,
-                cost: typeof row.cost === 'number' ? row.cost : Number(row.cost) || 0
+                cost: typeof row.shop_cost === 'number'
+                    ? row.shop_cost
+                    : typeof row.cost === 'number'
+                    ? row.cost
+                    : Number(row.shop_cost ?? row.cost) || 0
             };
 
             this.relics.set(relic.id, relic);
         });
+    }
+
+    private parseRelicEffect(row: any): IRelicEffect {
+        if (row.effect_json) {
+            try {
+                return JSON.parse(row.effect_json);
+            } catch (e) {
+                console.error(`Failed to parse effect_json for relic ${row.id}`, e);
+            }
+        }
+
+        const effect: IRelicEffect = { type: row.effect_type || row.effect_id || 'custom' };
+
+        if (row.trigger) effect.trigger = row.trigger;
+        if (row.value !== undefined && row.value !== '') effect.value = Number(row.value);
+        if (row.percent_value !== undefined && row.percent_value !== '') effect.percentValue = Number(row.percent_value);
+        if (row.condition) effect.condition = row.condition;
+        if (row.effect_cost) effect.cost = row.effect_cost;
+
+        if (row.extra_json) {
+            try {
+                Object.assign(effect, JSON.parse(row.extra_json));
+            } catch (e) {
+                console.error(`Failed to parse extra_json for relic ${row.id}`, e);
+            }
+        }
+
+        return effect;
     }
 
     private parseEvents(csv: string): void {

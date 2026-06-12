@@ -58,6 +58,7 @@ export class BattleScene extends Phaser.Scene {
     private overlayContainer?: Phaser.GameObjects.Container;
     private battleState: 'preparation' | 'running' | 'victory' | 'defeat' = 'preparation';
     private hasStartedFirstWave = false;
+    private battleStartTransitionActive = false;
     private waveIntermissionCameraLock = false;
     private preparationCameraTimer?: Phaser.Time.TimerEvent;
     private waveClearedOverlayTimer?: Phaser.Time.TimerEvent;
@@ -233,10 +234,12 @@ export class BattleScene extends Phaser.Scene {
 
     public update(_time: number, delta: number) {
         const deltaSeconds = delta / 1000;
-        this.physicsManager.update(deltaSeconds);
-        this.unitManager.update(deltaSeconds);
-        this.combatSystem.update(deltaSeconds);
-        this.projectileSystem.update(deltaSeconds);
+        if (!this.battleStartTransitionActive) {
+            this.physicsManager.update(deltaSeconds);
+            this.unitManager.update(deltaSeconds);
+            this.combatSystem.update(deltaSeconds);
+            this.projectileSystem.update(deltaSeconds);
+        }
         this.isometricRenderer.update();
 
         if (this.battleState === 'running') {
@@ -624,6 +627,7 @@ export class BattleScene extends Phaser.Scene {
                 this.setWaveIntermissionLock(true); // keep camera centered until intermission is dismissed
                 this.battleState = 'preparation';
                 this.gameState.setPhase('PREPARATION');
+                this.resetFortressVisualForPreparation();
                 this.resetAlliedUnitsToSpawnPositions();
                 
                 // Grant resources between waves (scales with wave progression)
@@ -745,20 +749,109 @@ export class BattleScene extends Phaser.Scene {
         if (this.waveIntermissionCameraLock) {
             return;
         }
-        if (this.battleState === 'running') {
+        if (this.battleState === 'running' || this.battleStartTransitionActive) {
             return;
         }
-        // When the player starts the fighting phase, apply all building
-        // buffs (Armor Shop, Overclock Stable) to units in their adjacent
-        // fortress cells.
-        this.cardSystem.applyBuildingBuffsAtBattleStart();
-        if (!this.hasStartedFirstWave) {
-            this.waveManager.startFirstWave();
-            this.hasStartedFirstWave = true;
-        } else {
-            this.waveManager.startNextWave();
-        }
         this.hideStartButton();
+        this.playBattleStartTransition(() => {
+            // When the player starts the fighting phase, apply all building
+            // buffs (Armor Shop, Overclock Stable) to units in their adjacent
+            // fortress cells.
+            this.cardSystem.applyBuildingBuffsAtBattleStart();
+            if (!this.hasStartedFirstWave) {
+                this.waveManager.startFirstWave();
+                this.hasStartedFirstWave = true;
+            } else {
+                this.waveManager.startNextWave();
+            }
+        });
+    }
+
+    private playBattleStartTransition(onComplete: () => void): void {
+        this.battleStartTransitionActive = true;
+        this.setWaveIntermissionLock(true);
+        this.fortressSystem.clearHover();
+        this.fortressSystem.clearPlacementHints();
+        this.fortressSystem.setGridVisible(false);
+
+        const allies = this.unitManager.getUnitsByTeam(1).filter(unit => !unit.isDead());
+        allies.forEach(unit => {
+            const pos = unit.getPosition();
+            (unit as any).teleportTo(pos.x, pos.y);
+        });
+
+        const baseMove = this.getFortressRetreatDelta();
+        this.cardSystem.moveFortressStructuresBy(baseMove.x, baseMove.y, 780);
+
+        if (this.fortressImage && this.fortressImageRetreat) {
+            this.tweens.killTweensOf(this.fortressImage);
+            this.tweens.add({
+                targets: this.fortressImage,
+                x: this.fortressImageRetreat.x,
+                y: this.fortressImageRetreat.y,
+                duration: 780,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        allies.forEach((unit, index) => {
+            const start = unit.getPosition();
+            const landing = this.getUnitDismountLandingPoint(start, index);
+            const progress = { value: 0 };
+            this.tweens.add({
+                targets: progress,
+                value: 1,
+                duration: 520,
+                delay: 80 + index * 35,
+                ease: 'Sine.easeInOut',
+                onUpdate: () => {
+                    const p = progress.value;
+                    const arc = Math.sin(p * Math.PI) * 42;
+                    const x = Phaser.Math.Linear(start.x, landing.x, p);
+                    const y = Phaser.Math.Linear(start.y, landing.y, p) - arc;
+                    (unit as any).teleportTo(x, y);
+                },
+                onComplete: () => {
+                    (unit as any).teleportTo(landing.x, landing.y);
+                }
+            });
+        });
+
+        const totalDuration = Math.max(900, 640 + Math.max(0, allies.length - 1) * 35);
+        this.time.delayedCall(totalDuration, () => {
+            this.battleStartTransitionActive = false;
+            this.setWaveIntermissionLock(false);
+            onComplete();
+        });
+    }
+
+    private getUnitDismountLandingPoint(start: { x: number; y: number }, index: number): { x: number; y: number } {
+        const columnOffset = (index % 3 - 1) * 16;
+        const rowOffset = Math.floor(index / 3) * 8;
+        return {
+            x: start.x + columnOffset + 24,
+            y: start.y + 78 + rowOffset
+        };
+    }
+
+    private getFortressRetreatDelta(): { x: number; y: number } {
+        if (!this.fortressImage || !this.fortressImageRetreat) {
+            return { x: -260, y: -180 };
+        }
+        return {
+            x: this.fortressImageRetreat.x - this.fortressImage.x,
+            y: this.fortressImageRetreat.y - this.fortressImage.y
+        };
+    }
+
+    private resetFortressVisualForPreparation(): void {
+        this.fortressSystem.setGridVisible(true);
+        this.cardSystem.resetFortressStructurePositions();
+        if (!this.fortressImage || !this.fortressImageHome) {
+            return;
+        }
+        this.tweens.killTweensOf(this.fortressImage);
+        this.fortressImage.setPosition(this.fortressImageHome.x, this.fortressImageHome.y);
     }
 
     private restoreFortressStateFromRun(): void {
@@ -899,6 +992,8 @@ export class BattleScene extends Phaser.Scene {
     }
 
     private fortressImage?: Phaser.GameObjects.Image;
+    private fortressImageHome?: { x: number; y: number };
+    private fortressImageRetreat?: { x: number; y: number };
 
     /**
      * Create the fortress image behind the spawn grid.
@@ -942,6 +1037,11 @@ export class BattleScene extends Phaser.Scene {
         fortress.setDepth(-500);
         
         this.fortressImage = fortress;
+        this.fortressImageHome = { x: fortress.x, y: fortress.y };
+        this.fortressImageRetreat = {
+            x: fortress.x - 260,
+            y: fortress.y - 180
+        };
         console.log(`[BattleScene] Created fortress image: ${imageKey} at (${coreX}, ${coreY}), scale: ${targetScale.toFixed(2)}`);
     }
 

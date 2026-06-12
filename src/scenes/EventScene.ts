@@ -159,9 +159,9 @@ export class EventScene extends Phaser.Scene {
         if (lower.includes('gain_relic_cursed')) return 'Gain 1 cursed relic.';
         if (lower.includes('gain_relic_epic')) return 'Gain 1 epic relic.';
         if (lower.includes('gain_relic_common')) return 'Gain 1 common relic.';
-        if (lower.includes('add_card_epic') || lower.includes('gain_card_epic')) return 'Gain 1 epic card.';
-        if (lower.includes('add_card_rare') || lower.includes('gain_card_rare')) return 'Gain 1 rare card.';
-        if (lower.includes('gain_random_card') || lower.includes('gain_card_common')) return 'Gain 1 common card.';
+        if (lower.includes('add_card_epic') || lower.includes('gain_card_epic')) return 'Add 1 epic card to your deck.';
+        if (lower.includes('add_card_rare') || lower.includes('gain_card_rare')) return 'Add 1 rare card to your deck.';
+        if (lower.includes('gain_random_card') || lower.includes('gain_card_common')) return 'Add 1 common card to your deck.';
         if (lower.includes('remove_card') || lower.includes('lose_card')) return 'Lose 1 card from your deck.';
         if (lower.includes('add_curse')) return 'Gain 1 curse relic.';
         return '';

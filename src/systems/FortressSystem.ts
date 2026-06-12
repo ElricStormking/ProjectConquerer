@@ -231,6 +231,12 @@ export class FortressSystem extends Phaser.Events.EventEmitter {
         return this.config.id;
     }
 
+    public setGridVisible(visible: boolean): void {
+        this.gridGraphics?.setVisible(visible);
+        this.placementGraphics?.setVisible(visible);
+        this.hoverGraphics?.setVisible(visible);
+    }
+
     private drawGrid(): void {
         this.gridGraphics.clear();
         this.gridGraphics.lineStyle(1.5, 0xffffff, 0.25);

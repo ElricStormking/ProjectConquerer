@@ -14,11 +14,14 @@ import { applyUnitLevelScalingToStats, clampUnitLevel } from './UnitLevelScaling
 const BASE_EXPANSION_EFFECT_ID = 'jade_expansion';
 const SACRIFICE_EFFECT_ID = 'sacrifice';
 const UNIT_LEVELS_PER_CARD_UPGRADE = 3;
+type FortressStructureVisual = Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
 
 export class CardSystem {
     private isRestoring: boolean = false;
     private turretVFX: TurretVFXSystem;
     private unitCellAssignments: Map<string, { x: number; y: number }> = new Map();
+    private fortressStructureOffset = { x: 0, y: 0 };
+    private fortressStructureVisuals: Map<string, FortressStructureVisual[]> = new Map();
     private buildingBuffs: Array<{ type: 'armor_shop' | 'overclock'; gridX: number; gridY: number; occupantId: string; enhancementLevel: number }> = [];
     private cannonTowers: Array<{
         x: number;
@@ -164,6 +167,60 @@ export class CardSystem {
         this.updateStructureEffects(now, _deltaSeconds);
         this.updateCannonTowers(now);
         this.turretVFX.update(_deltaSeconds * 1000);
+    }
+
+    public moveFortressStructuresBy(dx: number, dy: number, duration = 0): void {
+        if (dx === 0 && dy === 0) return;
+        this.fortressStructureOffset.x += dx;
+        this.fortressStructureOffset.y += dy;
+
+        this.fortressStructureVisuals.forEach(visuals => {
+            visuals.forEach(visual => this.moveStructureVisual(visual, dx, dy, duration));
+        });
+
+        this.cannonTowers.forEach(tower => {
+            const fromX = tower.x;
+            const fromY = tower.y;
+            const toX = tower.x + dx;
+            const toY = tower.y + dy;
+            tower.x = toX;
+            tower.y = toY;
+
+            if (duration > 0) {
+                this.scene.tweens.killTweensOf(tower.body);
+                this.scene.tweens.add({
+                    targets: tower.body,
+                    x: toX,
+                    y: toY,
+                    duration,
+                    ease: 'Sine.easeInOut'
+                });
+
+                const progress = { value: 0 };
+                this.scene.tweens.add({
+                    targets: progress,
+                    value: 1,
+                    duration,
+                    ease: 'Sine.easeInOut',
+                    onUpdate: () => {
+                        const x = Phaser.Math.Linear(fromX, toX, progress.value);
+                        const y = Phaser.Math.Linear(fromY, toY, progress.value);
+                        this.drawTowerHPBarAt(tower, x, y);
+                    },
+                    onComplete: () => this.updateTowerHPBar(tower)
+                });
+            } else {
+                tower.body.setPosition(toX, toY);
+                this.updateTowerHPBar(tower);
+            }
+        });
+    }
+
+    public resetFortressStructurePositions(duration = 0): void {
+        const { x, y } = this.fortressStructureOffset;
+        if (x === 0 && y === 0) return;
+        this.moveFortressStructuresBy(-x, -y, duration);
+        this.fortressStructureOffset = { x: 0, y: 0 };
     }
 
     public resolveCardPlacement(payload: ICardPlacementPayload): boolean {
@@ -746,6 +803,7 @@ export class CardSystem {
         sprite.setOrigin(0.5, 0.8);
         this.fitBuildingToFortressCell(sprite);
         sprite.setDepth(worldPos.y + 3600);
+        this.trackFortressStructureVisual(occupantId, sprite);
 
         if (effectId) {
             this.registerStructureEffect(effectId, gridX, gridY, occupantId);
@@ -893,7 +951,7 @@ export class CardSystem {
             if (now - hatchery.lastSpawnTime < intervalMs) return;
             hatchery.lastSpawnTime = now;
 
-            const pos = this.fortressSystem.gridToWorld(hatchery.gridX, hatchery.gridY);
+            const pos = this.getStructureWorldPosition(hatchery.gridX, hatchery.gridY);
             const offsetX = Phaser.Math.Between(-8, 8);
             const offsetY = Phaser.Math.Between(-6, 6);
             const config = this.unitManager.createUnitConfig(
@@ -918,7 +976,7 @@ export class CardSystem {
         this.altarOfHeroes.forEach(altar => {
             if (now - altar.lastPulseTime < intervalMs) return;
             altar.lastPulseTime = now;
-            const pos = this.fortressSystem.gridToWorld(altar.gridX, altar.gridY);
+            const pos = this.getStructureWorldPosition(altar.gridX, altar.gridY);
 
             let target: any = null;
             let bestScore = Infinity;
@@ -955,7 +1013,7 @@ export class CardSystem {
             if (battery.lastWaveApplied >= waveIndex) return;
             battery.lastWaveApplied = waveIndex;
 
-            const pos = this.fortressSystem.gridToWorld(battery.gridX, battery.gridY);
+            const pos = this.getStructureWorldPosition(battery.gridX, battery.gridY);
             const cell = this.fortressSystem.getCell(battery.gridX, battery.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -986,7 +1044,7 @@ export class CardSystem {
         const radius = width * 3;
 
         this.soulStoneMonuments.forEach(monument => {
-            const pos = this.fortressSystem.gridToWorld(monument.gridX, monument.gridY);
+            const pos = this.getStructureWorldPosition(monument.gridX, monument.gridY);
             const dist = Phaser.Math.Distance.Between(pos.x, pos.y, uPos.x, uPos.y);
             if (dist > radius) return;
 
@@ -1032,7 +1090,7 @@ export class CardSystem {
             if (now - beacon.lastPulseTime < intervalMs) return;
             beacon.lastPulseTime = now;
 
-            const pos = this.fortressSystem.gridToWorld(beacon.gridX, beacon.gridY);
+            const pos = this.getStructureWorldPosition(beacon.gridX, beacon.gridY);
             const cell = this.fortressSystem.getCell(beacon.gridX, beacon.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -1090,7 +1148,7 @@ export class CardSystem {
         const slowTickMs = 500;
 
         this.stormGenerators.forEach(storm => {
-            const pos = this.fortressSystem.gridToWorld(storm.gridX, storm.gridY);
+            const pos = this.getStructureWorldPosition(storm.gridX, storm.gridY);
             const cell = this.fortressSystem.getCell(storm.gridX, storm.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -1135,7 +1193,7 @@ export class CardSystem {
             if (now - aura.lastPulseTime < intervalMs) return;
             aura.lastPulseTime = now;
 
-            const pos = this.fortressSystem.gridToWorld(aura.gridX, aura.gridY);
+            const pos = this.getStructureWorldPosition(aura.gridX, aura.gridY);
             const cell = this.fortressSystem.getCell(aura.gridX, aura.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -1169,7 +1227,7 @@ export class CardSystem {
             if (now - field.lastTickTime < tickMs) return;
             field.lastTickTime = now;
 
-            const pos = this.fortressSystem.gridToWorld(field.gridX, field.gridY);
+            const pos = this.getStructureWorldPosition(field.gridX, field.gridY);
             const cell = this.fortressSystem.getCell(field.gridX, field.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -1206,7 +1264,7 @@ export class CardSystem {
             if (now - tower.lastPulseTime < intervalMs) return;
             tower.lastPulseTime = now;
 
-            const pos = this.fortressSystem.gridToWorld(tower.gridX, tower.gridY);
+            const pos = this.getStructureWorldPosition(tower.gridX, tower.gridY);
             const cell = this.fortressSystem.getCell(tower.gridX, tower.gridY);
             const level = cell?.enhancementLevel || 0;
             const scale = 1 + 1.5 * level;
@@ -1241,6 +1299,7 @@ export class CardSystem {
             this.fitBuildingToFortressCell(sprite);
             sprite.setScale(sprite.scale * 0.7); // Modules appear smaller than full buildings
             sprite.setDepth(worldPos.y + 3600);
+            this.trackFortressStructureVisual(occupantId, sprite);
         } else {
             // Fallback simple diamond marker.
             const g = this.scene.add.graphics();
@@ -1256,6 +1315,7 @@ export class CardSystem {
             g.closePath();
             g.fillPath();
             g.strokePath();
+            this.trackFortressStructureVisual(occupantId, g);
         }
 
         return true;
@@ -1882,6 +1942,7 @@ export class CardSystem {
         shop.setOrigin(0.5, 0.8);
         this.fitBuildingToFortressCell(shop);
         shop.setDepth(y + 3600);
+        this.trackFortressStructureVisual(occupantId, shop);
 
         this.scene.tweens.add({
             targets: shop,
@@ -1908,14 +1969,15 @@ export class CardSystem {
         this.fortressSystem.occupyCell(gridX, gridY, occupantId, spellId);
         this.buildingBuffs.push({ type: 'overclock', gridX, gridY, occupantId, enhancementLevel: 0 });
 
-        this.createOverclockStable(x, y);
+        const stable = this.createOverclockStable(x, y);
+        this.trackFortressStructureVisual(occupantId, stable);
         const ring = this.scene.add.graphics();
         ring.lineStyle(2, 0xffcc33, 0.8);
         ring.strokeCircle(x, y, 120);
         this.scene.tweens.add({ targets: ring, alpha: 0, duration: 800, onComplete: () => ring.destroy() });
     }
 
-    private createOverclockStable(x: number, y: number) {
+    private createOverclockStable(x: number, y: number): Phaser.GameObjects.Graphics {
         const g = this.scene.add.graphics();
         g.setDepth(4050);
 
@@ -1968,6 +2030,8 @@ export class CardSystem {
             yoyo: true,
             repeat: -1
         });
+
+        return g;
     }
 
     private createCannonTower(x: number, y: number, gridX: number, gridY: number, spellId: string): void {
@@ -2082,6 +2146,37 @@ export class CardSystem {
         const textureWidth = sprite.width || 1;
         const scale = (width * 1.0) / textureWidth;
         sprite.setScale(scale);
+    }
+
+    private trackFortressStructureVisual(occupantId: string, visual: FortressStructureVisual): void {
+        const visuals = this.fortressStructureVisuals.get(occupantId) ?? [];
+        visuals.push(visual);
+        this.fortressStructureVisuals.set(occupantId, visuals);
+    }
+
+    private moveStructureVisual(visual: FortressStructureVisual, dx: number, dy: number, duration: number): void {
+        if (!visual.active) return;
+        const targetX = visual.x + dx;
+        const targetY = visual.y + dy;
+        if (duration > 0) {
+            this.scene.tweens.add({
+                targets: visual,
+                x: targetX,
+                y: targetY,
+                duration,
+                ease: 'Sine.easeInOut'
+            });
+            return;
+        }
+        visual.setPosition(targetX, targetY);
+    }
+
+    private getStructureWorldPosition(gridX: number, gridY: number): { x: number; y: number } {
+        const pos = this.fortressSystem.gridToWorld(gridX, gridY);
+        return {
+            x: pos.x + this.fortressStructureOffset.x,
+            y: pos.y + this.fortressStructureOffset.y
+        };
     }
 
     private getAdjacentFortressCells(gridX: number, gridY: number): Array<{ x: number; y: number }> {
@@ -2697,12 +2792,27 @@ export class CardSystem {
         hp: number;
         maxHp: number;
         body: Phaser.GameObjects.Image;
+        hpBg: Phaser.GameObjects.Graphics;
         hpBar: Phaser.GameObjects.Graphics;
     }): void {
+        this.drawTowerHPBarAt(tower, tower.x, tower.y);
+    }
+
+    private drawTowerHPBarAt(tower: {
+        hp: number;
+        maxHp: number;
+        body: Phaser.GameObjects.Image;
+        hpBg: Phaser.GameObjects.Graphics;
+        hpBar: Phaser.GameObjects.Graphics;
+    }, x: number, y: number): void {
         const hpWidth = 50;
         const hpHeight = 4;
-        const hpY = tower.y - tower.body.displayHeight * 0.9;
+        const hpY = y - tower.body.displayHeight * 0.9;
         const hpPercent = tower.hp / tower.maxHp;
+
+        tower.hpBg.clear();
+        tower.hpBg.fillStyle(0x000000, 0.7);
+        tower.hpBg.fillRect(x - hpWidth / 2, hpY, hpWidth, hpHeight);
 
         tower.hpBar.clear();
         // Color based on HP: green > yellow > red
@@ -2713,7 +2823,7 @@ export class CardSystem {
             color = 0xffaa00;
         }
         tower.hpBar.fillStyle(color, 1);
-        tower.hpBar.fillRect(tower.x - hpWidth / 2, hpY, hpWidth * hpPercent, hpHeight);
+        tower.hpBar.fillRect(x - hpWidth / 2, hpY, hpWidth * hpPercent, hpHeight);
     }
 
     private destroyTower(tower: {

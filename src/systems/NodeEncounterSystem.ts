@@ -140,14 +140,11 @@ export class NodeEncounterSystem {
         const scenePlugin = this.hostScene.scene;
         scenePlugin.launch(rewardSceneKey, {
             title: 'Battle Cleared',
-            subtitle: 'Choose one reward to add to your run',
+            subtitle: 'Choose one reward to add to your deck',
             cardChoices,
             goldReward,
             onComplete: (result: RewardSceneResult) => {
                 if (result.card) {
-                    // Rewards now expand the player's collection; they are not
-                    // automatically slotted into the active deck. The player
-                    // can add them later in DeckBuilding.
                     this.runManager.addCardToCollection(result.card);
                 }
                 if (result.goldAwarded) {
@@ -266,8 +263,6 @@ export class NodeEncounterSystem {
                 if (result.goldSpent > 0) {
                     this.runManager.spendGold(result.goldSpent);
                 }
-                // Purchased cards go into the collection; player can add them
-                // to the deck later in DeckBuilding.
                 result.purchasedCards.forEach(card => this.runManager.addCardToCollection(card));
                 if (result.purchasedRelic) {
                     this.runManager.addRelic(result.purchasedRelic.id);
@@ -328,7 +323,7 @@ export class NodeEncounterSystem {
             },
             {
                 title: 'Recruitment',
-                instruction: 'Choose a unit to add to your collection'
+                instruction: 'Choose a unit to add to your deck'
             }
         );
     }
