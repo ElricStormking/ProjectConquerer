@@ -391,6 +391,10 @@ export interface IRunState {
      * Stable card template ids that should show first-view markers in DeckBuilding.
      */
     newCardIds?: string[];
+    /**
+     * Commander ids that should show first-view markers in DeckBuilding.
+     */
+    newCommanderIds?: string[];
     relics: string[];
     curses: string[];
     commanderRoster: string[];

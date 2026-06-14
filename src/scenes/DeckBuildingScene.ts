@@ -33,6 +33,7 @@ export class DeckBuildingScene extends Phaser.Scene {
     private newRunBonusCards: ICard[] = [];
     private selectedCommander: string | null = null;
     private newCardIds: Set<string> = new Set();
+    private newCommanderIds: Set<string> = new Set();
 
     // Per-card limits for how many copies can be added to the deck from the available pool
     // Keyed by a stable card key (e.g. base id without copy suffix)
@@ -176,6 +177,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         this.newRunBonusCards = [];
         this.selectedCommander = null;
         this.newCardIds.clear();
+        this.newCommanderIds.clear();
         this.deckScrollY = 0;
         this.cardGridScrollY = 0;
 
@@ -198,6 +200,7 @@ export class DeckBuildingScene extends Phaser.Scene {
                 this.currentDeck = [...runState.deck];
                 this.selectedCommander = this.commanderRoster[0] || null;
                 this.newCardIds = new Set((runState.newCardIds ?? []).map(id => this.normalizeCardId(id)));
+                this.newCommanderIds = new Set(runState.newCommanderIds ?? []);
             }
         }
 
@@ -485,6 +488,7 @@ export class DeckBuildingScene extends Phaser.Scene {
             
             const y = startY + index * itemHeight;
             const isSelected = commanderId === this.selectedCommander;
+            const isNewCommander = this.newCommanderIds.has(commanderId);
             
             // Commander item container
             const itemContainer = this.add.container(10, y);
@@ -524,6 +528,12 @@ export class DeckBuildingScene extends Phaser.Scene {
                 color: '#8a9cc5'
             }).setOrigin(0, 0);
             itemContainer.add(cardText);
+
+            if (isNewCommander) {
+                const dot = this.add.circle(220, 10, 7, 0xe74c3c);
+                dot.setStrokeStyle(2, 0xffffff, 0.95);
+                itemContainer.add(dot);
+            }
             
             // Make interactive on the background graphics to avoid container quirks
             itemBg.setInteractive(
@@ -532,6 +542,10 @@ export class DeckBuildingScene extends Phaser.Scene {
             );
             
             itemBg.on('pointerup', () => {
+                if (this.newCommanderIds.has(commanderId)) {
+                    this.runManager.markNewCommanderSeen(commanderId);
+                    this.newCommanderIds.delete(commanderId);
+                }
                 this.selectedCommander = commanderId;
                 this.renderCommanders();
                 this.filterCardsByCommander(commanderId);
@@ -616,7 +630,10 @@ export class DeckBuildingScene extends Phaser.Scene {
 
             const key = this.getCardKey(card);
             const showNewDot = this.newCardIds.has(key);
-            const cardContainer = this.createCardDisplay(card, x, y, false, showNewDot);
+            const cardContainer = this.createCardDisplay(card, x, y, false, showNewDot, () => {
+                this.runManager.markNewCardSeen(key);
+                this.newCardIds.delete(key);
+            });
 
             const qtyText = this.add.text(CARD_WIDTH - 6, CARD_HEIGHT - 6, `x${count}`, {
                 fontFamily: 'Arial, sans-serif',
@@ -627,13 +644,6 @@ export class DeckBuildingScene extends Phaser.Scene {
             cardContainer.add(qtyText);
 
             this.cardGridContainer.add(cardContainer);
-
-            const visibleHeight = this.cardPanelBounds.height - 65;
-            const isVisible = y + CARD_HEIGHT >= 0 && y <= visibleHeight;
-            if (showNewDot && !this.isNewRun && isVisible) {
-                this.runManager.markNewCardSeen(key);
-                this.newCardIds.delete(key);
-            }
         });
     }
 
@@ -731,8 +741,23 @@ export class DeckBuildingScene extends Phaser.Scene {
         });
     }
 
-    private createCardDisplay(card: ICard, x: number, y: number, isClickable: boolean, showNewDot = false): Phaser.GameObjects.Container {
+    private createCardDisplay(
+        card: ICard,
+        x: number,
+        y: number,
+        isClickable: boolean,
+        showNewDot = false,
+        onNewSeen?: () => void
+    ): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
+        let newDot: Phaser.GameObjects.Arc | undefined;
+        let newDotActive = showNewDot;
+        const markNewSeen = () => {
+            if (!newDotActive) return;
+            newDotActive = false;
+            newDot?.destroy();
+            onNewSeen?.();
+        };
         
         // Card background
         const bg = this.add.graphics();
@@ -820,9 +845,9 @@ export class DeckBuildingScene extends Phaser.Scene {
         }
 
         if (showNewDot) {
-            const dot = this.add.circle(CARD_WIDTH - 8, 8, 7, 0xe74c3c);
-            dot.setStrokeStyle(2, 0xffffff, 0.95);
-            container.add(dot);
+            newDot = this.add.circle(CARD_WIDTH - 8, 8, 7, 0xe74c3c);
+            newDot.setStrokeStyle(2, 0xffffff, 0.95);
+            container.add(newDot);
         }
         
         // Attach input to the card background graphics instead of the container.
@@ -833,6 +858,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         );
 
         bg.on('pointerover', () => {
+            markNewSeen();
             container.setScale(1.08);
             container.setDepth(10);
             this.showHoverCard(card);
@@ -846,6 +872,7 @@ export class DeckBuildingScene extends Phaser.Scene {
         
         if (isClickable) {
             bg.on('pointerup', () => {
+                markNewSeen();
                 this.addCardToDeck(card);
             });
         }

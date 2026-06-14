@@ -15,6 +15,7 @@ interface ShopSceneData {
 export class ShopScene extends Phaser.Scene {
     private payload!: ShopSceneData;
     private goldText?: Phaser.GameObjects.Text;
+    private feedbackText?: Phaser.GameObjects.Text;
     private remainingGold = 0;
     private purchasedCards: ICard[] = [];
     private purchasedRelic?: IRelicConfig;
@@ -113,13 +114,16 @@ export class ShopScene extends Phaser.Scene {
 
         // Interactive on the background rect instead of the container
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight),
+            new Phaser.Geom.Rectangle(0, 0, cardWidth, cardHeight),
             Phaser.Geom.Rectangle.Contains
         );
         bg.on('pointerover', () => container.setScale(1.05));
         bg.on('pointerout', () => container.setScale(1));
         bg.on('pointerdown', () => {
-            if (this.remainingGold < cost) return;
+            if (this.remainingGold < cost) {
+                this.showFeedbackMessage('Not enough gold.');
+                return;
+            }
             this.remainingGold -= cost;
             this.purchasedCards.push(card);
             this.goldText?.setText(`Gold: ${this.remainingGold}`);
@@ -169,11 +173,15 @@ export class ShopScene extends Phaser.Scene {
 
         // Interactive on relic background
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight),
+            new Phaser.Geom.Rectangle(0, 0, cardWidth, cardHeight),
             Phaser.Geom.Rectangle.Contains
         );
         bg.on('pointerdown', () => {
-            if (this.remainingGold < cost || this.purchasedRelic) return;
+            if (this.purchasedRelic) return;
+            if (this.remainingGold < cost) {
+                this.showFeedbackMessage('Not enough gold.');
+                return;
+            }
             this.remainingGold -= cost;
             this.purchasedRelic = relic;
             this.goldText?.setText(`Gold: ${this.remainingGold}`);
@@ -221,14 +229,17 @@ export class ShopScene extends Phaser.Scene {
 
         // Interactive on curse background
         bg.setInteractive(
-            new Phaser.Geom.Rectangle(-90, -60, 180, 120),
+            new Phaser.Geom.Rectangle(0, 0, 180, 120),
             Phaser.Geom.Rectangle.Contains
         );
         bg.on('pointerover', () => container.setScale(1.05));
         bg.on('pointerout', () => container.setScale(1));
         bg.on('pointerdown', () => {
-            if (this.remainingGold < cost) return;
             if (this.removedCurses.includes(curse.id)) return;
+            if (this.remainingGold < cost) {
+                this.showFeedbackMessage('Not enough gold.');
+                return;
+            }
             this.remainingGold -= cost;
             this.removedCurses.push(curse.id);
             this.goldText?.setText(`Gold: ${this.remainingGold}`);
@@ -249,6 +260,29 @@ export class ShopScene extends Phaser.Scene {
         }).setOrigin(0.5);
         bg.setInteractive({ useHandCursor: true });
         bg.on('pointerdown', () => onClick());
+    }
+
+    private showFeedbackMessage(message: string): void {
+        this.feedbackText?.destroy();
+        this.feedbackText = this.add.text(960, 245, message, {
+            fontSize: '28px',
+            color: '#ff7777',
+            fontStyle: 'bold',
+            stroke: '#1a0b0b',
+            strokeThickness: 4
+        }).setOrigin(0.5).setDepth(10000);
+
+        this.tweens.add({
+            targets: this.feedbackText,
+            alpha: 0,
+            y: 230,
+            duration: 900,
+            delay: 650,
+            onComplete: () => {
+                this.feedbackText?.destroy();
+                this.feedbackText = undefined;
+            }
+        });
     }
 
     private finish(): void {

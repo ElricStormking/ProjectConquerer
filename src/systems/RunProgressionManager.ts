@@ -169,6 +169,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             cardCollection: [...(this.runState.cardCollection ?? [])],
             newCardsAvailable: this.runState.newCardsAvailable ?? false,
             newCardIds: [...(this.runState.newCardIds ?? [])],
+            newCommanderIds: [...(this.runState.newCommanderIds ?? [])],
             factionId: this.runState.factionId,
             lives: this.runState.lives,
             fortressUnlockedCells: this.runState.fortressUnlockedCells ? { ...this.runState.fortressUnlockedCells } : undefined,
@@ -387,6 +388,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
             cardCollection: this.buildCollectionFromCards(initialCollection),
             newCardsAvailable: false,
             newCardIds: [],
+            newCommanderIds: [],
             relics: this.relicManager.getActiveRelicIds(),
             curses: this.relicManager.getCurses().map(c => c.id),
             commanderRoster: [commanderId],
@@ -428,6 +430,7 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (this.runState) {
             this.runState.newCardsAvailable = this.runState.newCardsAvailable ?? false;
             this.runState.newCardIds = this.runState.newCardIds ?? [];
+            this.runState.newCommanderIds = this.runState.newCommanderIds ?? [];
             this.ensureCardCollectionInitialized();
             this.ensureCommanderRescueAssignments();
             const storySlides = this.ensureStorySlidesState(true);
@@ -643,6 +646,14 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         }
     }
 
+    private markNewCommanderId(commanderId: string): void {
+        if (!this.runState) return;
+        this.runState.newCommanderIds = this.runState.newCommanderIds ?? [];
+        if (!this.runState.newCommanderIds.includes(commanderId)) {
+            this.runState.newCommanderIds.push(commanderId);
+        }
+    }
+
     private normalizeCardId(id: string): string {
         let base = id.replace(/_\d+$/, '');
         base = base.replace(/_\d+$/, '');
@@ -654,17 +665,18 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (this.runState.commanderRoster.includes(commanderId)) return false;
         this.ensureCardCollectionInitialized();
         this.runState.commanderRoster.push(commanderId);
+        this.markNewCommanderId(commanderId);
         const unlockCards = this.commanderManager.getUnlockCardsForCommander(
             commanderId,
             this.runState.cardCollection ?? [],
             3
         );
         unlockCards.forEach(card => this.addAcquiredCardToDeck(card));
+        this.runState.newCardsAvailable = true;
         if (unlockCards.length > 0) {
-            this.runState.newCardsAvailable = true;
             this.emit('deck-updated', [...this.runState.deck]);
-            this.emit('new-cards-available-updated', true);
         }
+        this.emit('new-cards-available-updated', true);
         this.saveRun();
         this.emit('roster-updated', [...this.runState.commanderRoster]);
         return true;
@@ -678,6 +690,10 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         return this.runState ? [...(this.runState.newCardIds ?? [])] : [];
     }
 
+    public getNewCommanderIds(): string[] {
+        return this.runState ? [...(this.runState.newCommanderIds ?? [])] : [];
+    }
+
     public markNewCardSeen(cardId: string): void {
         if (!this.runState?.newCardIds?.length) return;
         const templateId = this.normalizeCardId(cardId);
@@ -685,11 +701,27 @@ export class RunProgressionManager extends Phaser.Events.EventEmitter {
         if (nextIds.length === this.runState.newCardIds.length) return;
 
         this.runState.newCardIds = nextIds;
-        if (nextIds.length === 0 && this.runState.newCardsAvailable) {
-            this.runState.newCardsAvailable = false;
-            this.emit('new-cards-available-updated', false);
-        }
+        this.clearNewCardsAvailableIfAllSeen();
         this.saveRun();
+    }
+
+    public markNewCommanderSeen(commanderId: string): void {
+        if (!this.runState?.newCommanderIds?.length) return;
+        const nextIds = this.runState.newCommanderIds.filter(id => id !== commanderId);
+        if (nextIds.length === this.runState.newCommanderIds.length) return;
+
+        this.runState.newCommanderIds = nextIds;
+        this.clearNewCardsAvailableIfAllSeen();
+        this.saveRun();
+    }
+
+    private clearNewCardsAvailableIfAllSeen(): void {
+        if (!this.runState?.newCardsAvailable) return;
+        const hasNewCards = (this.runState.newCardIds ?? []).length > 0;
+        const hasNewCommanders = (this.runState.newCommanderIds ?? []).length > 0;
+        if (hasNewCards || hasNewCommanders) return;
+        this.runState.newCardsAvailable = false;
+        this.emit('new-cards-available-updated', false);
     }
 
     public clearNewCardsAvailable(): void {

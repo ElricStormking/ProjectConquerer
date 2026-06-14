@@ -108,18 +108,20 @@ export class RelicRewardScene extends Phaser.Scene {
         }
 
         container.add([bg, iconBg, iconDisplay, nameText, rarityText, descText]);
-        container.setSize(cardWidth, cardHeight);
-        container.setInteractive(new Phaser.Geom.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight), Phaser.Geom.Rectangle.Contains);
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(0, 0, cardWidth, cardHeight),
+            Phaser.Geom.Rectangle.Contains
+        );
 
-        container.on('pointerover', () => {
+        bg.on('pointerover', () => {
             container.setScale(1.05);
             bg.setFillStyle(0x2a2a4a, 0.98);
         });
-        container.on('pointerout', () => {
+        bg.on('pointerout', () => {
             container.setScale(1);
             bg.setFillStyle(0x1b1b2f, 0.95);
         });
-        container.on('pointerdown', () => {
+        bg.on('pointerdown', () => {
             this.selectRelic(relic);
         });
     }
@@ -133,11 +135,13 @@ export class RelicRewardScene extends Phaser.Scene {
             color: '#aaaaaa'
         }).setOrigin(0.5);
         btn.add([bg, label]);
-        btn.setSize(200, 50);
-        btn.setInteractive(new Phaser.Geom.Rectangle(-100, -25, 200, 50), Phaser.Geom.Rectangle.Contains);
-        btn.on('pointerover', () => bg.setFillStyle(0x444455, 0.95));
-        btn.on('pointerout', () => bg.setFillStyle(0x333344, 0.9));
-        btn.on('pointerdown', () => this.finishSelection(null));
+        bg.setInteractive(
+            new Phaser.Geom.Rectangle(0, 0, 200, 50),
+            Phaser.Geom.Rectangle.Contains
+        );
+        bg.on('pointerover', () => bg.setFillStyle(0x444455, 0.95));
+        bg.on('pointerout', () => bg.setFillStyle(0x333344, 0.9));
+        bg.on('pointerdown', () => this.finishSelection(null));
     }
 
     private selectRelic(relic: IRelicConfig): void {
